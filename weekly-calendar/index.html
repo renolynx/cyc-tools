@@ -1,36 +1,291 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="format-detection" content="telephone=no">
-  <title>每周活动日历 · CYC 工具站</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
-                   "Microsoft YaHei", sans-serif;
-      background: #f8fafc;
-      color: #1e293b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px 16px;
-    }
-    .placeholder {
-      text-align: center;
-      color: #94a3b8;
-    }
-    .placeholder h2 { font-size: 18px; margin-bottom: 8px; color: #64748b; }
-    .back { display: inline-block; margin-top: 16px; font-size: 14px; color: #2563eb; text-decoration: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>每周活动通告 · CYC 工具站</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;color:#1a1a1a;background:#f5f4f0;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:0.5px solid #e0e0e0;position:sticky;top:0;z-index:20}
+.topbar a{font-size:13px;color:#639922;text-decoration:none;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.topbar a:active{background:#f0f5e8}
+.topbar-title{font-size:14px;font-weight:500;color:#444;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-spacer{width:60px}
+.content{padding:1.5rem}
+h1{font-size:17px;font-weight:500;color:#444;margin-bottom:1.25rem;padding-bottom:12px;border-bottom:0.5px solid #ddd}
+input,textarea{background:#fff;border:0.5px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;font-family:inherit;color:#1a1a1a;width:100%;outline:none}
+input:focus,textarea:focus{border-color:#639922;box-shadow:0 0 0 2px rgba(99,153,34,0.1)}
+textarea{resize:vertical;min-height:56px;line-height:1.5}
+button{cursor:pointer;font-family:inherit}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.nav-btn{background:#fff;border:0.5px solid #ccc;border-radius:8px;padding:5px 12px;font-size:13px;color:#666}
+.nav-btn:hover{background:#f0f0ec;color:#1a1a1a}
+.week-range{flex:1;text-align:center;font-size:13px;color:#666}
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:1rem}
+.day-btn{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border:0.5px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;gap:1px}
+.day-btn:hover{border-color:#999;background:#f9f9f7}
+.day-btn.is-today{border-color:#999}
+.day-btn.selected{background:#f0f5e8;border-color:#639922;border-width:1px}
+.day-btn.has-dot .dot{width:5px;height:5px;background:#639922;border-radius:50%;margin-top:2px}
+.day-name{font-size:11px;color:#888}
+.day-num{font-size:15px;font-weight:500}
+.day-tag{font-size:10px;color:#888}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1rem}
+.panel-head{font-size:13px;font-weight:500;color:#666;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid #e8e8e8}
+.acts-list{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.act-card{border:0.5px solid #e0e0e0;border-radius:8px;overflow:hidden;transition:border-color 0.15s}
+.act-card.highlight{border-color:#639922;border-width:1.5px}
+.act-hdr{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#f5f5f2;cursor:pointer;user-select:none}
+.act-num{width:20px;height:20px;border-radius:50%;background:#639922;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.act-preview{flex:1;font-size:13px;color:#1a1a1a}
+.del-btn{background:none;border:none;color:#bbb;font-size:16px;padding:2px 6px;border-radius:4px;line-height:1}
+.del-btn:hover{color:#e24b4a;background:#fcebeb}
+.act-body{padding:12px;display:flex;flex-direction:column;gap:9px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+label{font-size:11px;color:#888}
+.opt{font-size:10px;color:#aaa;background:#f0f0ec;padding:1px 5px;border-radius:4px;margin-left:3px}
+.add-act-btn{width:100%;padding:8px;border:0.5px dashed #ccc;border-radius:8px;background:none;font-size:13px;color:#888}
+.add-act-btn:hover{border-color:#639922;color:#3b6d11;background:#f0f5e8}
+.flow-list{display:flex;flex-direction:column;gap:5px}
+.flow-row{display:flex;gap:5px;align-items:center}
+.flow-row input{flex:1}
+.flow-row .rm,.spk-row .rm{background:none;border:0.5px solid #e0e0e0;border-radius:4px;padding:3px 7px;font-size:12px;color:#aaa}
+.flow-row .rm:hover,.spk-row .rm:hover{color:#e24b4a}
+.spk-list{display:flex;flex-direction:column;gap:5px}
+.spk-row{display:grid;grid-template-columns:1fr 2fr auto;gap:5px;align-items:start}
+.spk-row .rm{padding:6px 8px;white-space:nowrap}
+.add-sub{font-size:12px;color:#639922;background:none;border:none;padding:1px 0;text-align:left;margin-top:2px}
+.add-sub:hover{text-decoration:underline}
+.preview-box{border:0.5px solid #e0e0e0;border-radius:8px;font-size:13px;line-height:1.85;min-height:180px;max-height:520px;overflow-y:auto}
+.preview-empty{padding:14px;color:#aaa}
+.preview-global-head{padding:12px 14px 8px;font-size:13px;font-weight:500;color:#444;border-bottom:0.5px solid #e8e8e8;margin-bottom:4px}
+.preview-day{padding:6px 14px}
+.preview-act{border:0.5px solid #e0e0e0;border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.preview-act:hover{border-color:#639922;background:#f9fdf4}
+.preview-act.active-preview{border-color:#639922;border-width:1.5px}
+.preview-act-hdr{padding:8px 12px;font-size:13px;font-weight:500;display:flex;justify-content:space-between;align-items:center;color:#1a1a1a}
+.preview-act:hover .preview-act-hdr{color:#3b6d11}
+.edit-hint{font-size:10px;color:#bbb;font-weight:400;opacity:0}
+.preview-act:hover .edit-hint{opacity:1}
+.preview-act-body{padding:4px 12px 10px;font-size:12px;color:#666;line-height:1.8;white-space:pre-wrap;word-break:break-all}
+.copy-btn{margin-top:10px;width:100%;padding:9px;background:#639922;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500}
+.copy-btn:hover{background:#3b6d11}
+.copy-btn.ok{background:#1d9e75}
+</style>
 </head>
 <body>
-  <div class="placeholder">
-    <div style="font-size:48px;margin-bottom:12px">📅</div>
-    <h2>每周活动日历</h2>
-    <p>工具文件待上传</p>
-    <a class="back" href="/">← 返回工具站</a>
+
+<div class="topbar">
+  <a href="/">← 工具站</a>
+  <div class="topbar-title">每周活动通告</div>
+  <div class="topbar-spacer"></div>
+</div>
+
+<div class="content">
+<h1>CYC 活动通告生成器</h1>
+
+<div class="week-nav">
+  <button class="nav-btn" onclick="changeWeek(-1)">← 上周</button>
+  <span class="week-range" id="wkRange"></span>
+  <button class="nav-btn" onclick="changeWeek(1)">下周 →</button>
+</div>
+<div class="week-strip" id="wkStrip"></div>
+
+<div class="layout">
+  <div>
+    <div class="panel">
+      <div class="panel-head" id="dayHead">选择上方日期开始添加活动</div>
+      <div class="acts-list" id="actsList"></div>
+      <button class="add-act-btn" id="addActBtn" style="display:none" onclick="addAct()">＋ 添加活动</button>
+    </div>
   </div>
+  <div>
+    <div class="panel">
+      <div class="panel-head">通告预览 <span style="font-size:11px;color:#aaa;font-weight:400">— 点击活动快速跳转编辑</span></div>
+      <div class="preview-box" id="preview"><div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div></div>
+      <button class="copy-btn" id="copyBtn" onclick="doCopy()">复制通告文本</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const CN_DAYS=['周日','周一','周二','周三','周四','周五','周六'];
+const today=new Date();today.setHours(0,0,0,0);
+let wkOffset=0,selDate=null,data={},uid=0,activePreviewId=null;
+
+function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function getMonStart(off){const d=new Date(today),day=d.getDay(),diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff+off*7);return d}
+function dayLabel(d){
+  const f=new Date(d);f.setHours(0,0,0,0);
+  const tom=new Date(today);tom.setDate(today.getDate()+1);
+  if(f.getTime()===today.getTime())return'今天';
+  if(f.getTime()===tom.getTime())return'明天';
+  return CN_DAYS[f.getDay()];
+}
+function renderWeek(){
+  const s=getMonStart(wkOffset),e=new Date(s);e.setDate(s.getDate()+6);
+  document.getElementById('wkRange').textContent=(s.getMonth()+1)+'月'+s.getDate()+'日 — '+(e.getMonth()+1)+'月'+e.getDate()+'日';
+  const strip=document.getElementById('wkStrip');strip.innerHTML='';
+  for(let i=0;i<7;i++){
+    const d=new Date(s);d.setDate(s.getDate()+i);
+    const key=fmt(d),lbl=dayLabel(d),isToday=d.getTime()===today.getTime(),isSel=selDate===key,hasDot=data[key]&&data[key].length>0;
+    const b=document.createElement('button');
+    b.className='day-btn'+(isToday?' is-today':'')+(isSel?' selected':'')+(hasDot?' has-dot':'');
+    b.innerHTML='<span class="day-name">'+CN_DAYS[d.getDay()]+'</span><span class="day-num">'+d.getDate()+'</span>'
+      +(lbl==='今天'||lbl==='明天'?'<span class="day-tag">'+lbl+'</span>':'<span class="day-tag" style="visibility:hidden">-</span>')
+      +(hasDot?'<span class="dot"></span>':'<span style="height:7px"></span>');
+    b.onclick=()=>selDay(key);
+    strip.appendChild(b);
+  }
+}
+function changeWeek(d){wkOffset+=d;renderWeek()}
+function selDay(key){selDate=key;if(!data[key])data[key]=[];renderWeek();renderActs()}
+function jumpToAct(key,aid){
+  const target=new Date(key+'T00:00:00');
+  const s=getMonStart(wkOffset),e=new Date(s);e.setDate(s.getDate()+6);
+  if(target<s||target>e){const ms=getMonStart(0);const diffDays=Math.round((target-ms)/86400000);wkOffset=Math.floor(diffDays/7);}
+  selDate=key;activePreviewId=aid;
+  renderWeek();renderActs();
+  setTimeout(()=>{
+    const card=document.getElementById('card-'+aid);
+    if(card){
+      const body=document.getElementById('body-'+aid);
+      if(body)body.style.display='';
+      card.classList.add('highlight');
+      card.scrollIntoView({behavior:'smooth',block:'nearest'});
+      setTimeout(()=>card.classList.remove('highlight'),1500);
+    }
+  },50);
+}
+function renderActs(){
+  if(!selDate)return;
+  const d=new Date(selDate+'T00:00:00');
+  document.getElementById('dayHead').textContent='【'+dayLabel(d)+'】'+(d.getMonth()+1)+'月'+d.getDate()+'日';
+  document.getElementById('addActBtn').style.display='block';
+  const list=document.getElementById('actsList');list.innerHTML='';
+  (data[selDate]||[]).forEach((a,i)=>list.appendChild(makeCard(a,i)));
+  genPreview();
+}
+function find(id){for(const k in data){const f=data[k].find(a=>a.id===id);if(f)return f;}return null}
+function upd(id,f,v){
+  const a=find(id);if(a){a[f]=v;genPreview();
+    if(f==='title'){const el=document.querySelector('#hdr-'+id+' .act-preview');if(el)el.textContent=v||'（未填标题）';}}
+}
+function makeCard(a,idx){
+  const card=document.createElement('div');card.className='act-card';card.id='card-'+a.id;
+  card.innerHTML='<div class="act-hdr" id="hdr-'+a.id+'" onclick="toggle(\''+a.id+'\')">'
+    +'<div class="act-num">'+(idx+1)+'</div>'
+    +'<div class="act-preview">'+(a.title||'（未填标题）')+'</div>'
+    +'<button class="del-btn" onclick="event.stopPropagation();delAct(\''+a.id+'\')">×</button>'
+    +'</div>'
+    +'<div class="act-body" id="body-'+a.id+'" style="display:none">'
+    +'<div class="field"><label>活动标题</label><input placeholder="如：手机摄影美学工作坊" value="'+esc(a.title)+'" oninput="upd(\''+a.id+'\',\'title\',this.value)"></div>'
+    +'<div class="field-row">'
+      +'<div class="field"><label>时间段</label><input placeholder="如：14:30-17:00" value="'+esc(a.time)+'" oninput="upd(\''+a.id+'\',\'time\',this.value)"></div>'
+      +'<div class="field"><label>地点</label><input placeholder="如：CYC链岛青年社区" value="'+esc(a.loc)+'" oninput="upd(\''+a.id+'\',\'loc\',this.value)"></div>'
+    +'</div>'
+    +'<div class="field-row">'
+      +'<div class="field"><label>费用<span class="opt">选填</span></label><input placeholder="如：随喜 / 60元" value="'+esc(a.fee)+'" oninput="upd(\''+a.id+'\',\'fee\',this.value)"></div>'
+      +'<div class="field"><label>报名方式<span class="opt">选填</span></label><input placeholder="如：群内接龙" value="'+esc(a.signup)+'" oninput="upd(\''+a.id+'\',\'signup\',this.value)"></div>'
+    +'</div>'
+    +'<div class="field"><label>活动简介</label><textarea placeholder="1-3句话介绍内容和氛围" oninput="upd(\''+a.id+'\',\'desc\',this.value)">'+esc(a.desc)+'</textarea></div>'
+    +'<div class="field"><label>活动流程<span class="opt">选填，适合半日以上活动</span></label>'
+      +'<div class="flow-list" id="flow-'+a.id+'"></div>'
+      +'<button class="add-sub" onclick="addFlow(\''+a.id+'\')">＋ 添加流程节点</button>'
+    +'</div>'
+    +'<div class="field"><label>带领人 / 分享嘉宾<span class="opt">选填</span></label>'
+      +'<div class="spk-list" id="spk-'+a.id+'"></div>'
+      +'<button class="add-sub" onclick="addSpk(\''+a.id+'\')">＋ 添加嘉宾</button>'
+    +'</div>'
+    +'</div>';
+  setTimeout(()=>{renderFlows(a);renderSpks(a);},0);
+  return card;
+}
+function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function toggle(id){const b=document.getElementById('body-'+id);b.style.display=b.style.display==='none'?'':'none'}
+function addAct(){
+  if(!selDate)return;
+  if(!data[selDate])data[selDate]=[];
+  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[]};
+  data[selDate].push(a);renderActs();renderWeek();
+  setTimeout(()=>{const b=document.getElementById('body-'+a.id);if(b)b.style.display='';},50);
+}
+function delAct(id){for(const k in data)data[k]=data[k].filter(a=>a.id!==id);renderActs();renderWeek()}
+function addFlow(id){const a=find(id);if(!a)return;a.flow.push('');renderFlows(a);genPreview()}
+function rmFlow(id,i){const a=find(id);if(!a)return;a.flow.splice(i,1);renderFlows(a);genPreview()}
+function updFlow(id,i,v){const a=find(id);if(a){a.flow[i]=v;genPreview()}}
+function renderFlows(a){
+  const c=document.getElementById('flow-'+a.id);if(!c)return;
+  c.innerHTML=a.flow.map((f,i)=>'<div class="flow-row"><input type="text" placeholder="如：15:00 自由交换开始" value="'+esc(f)+'" oninput="updFlow(\''+a.id+'\','+i+',this.value)"><button class="rm" onclick="rmFlow(\''+a.id+'\','+i+')">×</button></div>').join('');
+}
+function addSpk(id){const a=find(id);if(!a)return;a.spk.push({name:'',bio:''});renderSpks(a)}
+function rmSpk(id,i){const a=find(id);if(!a)return;a.spk.splice(i,1);renderSpks(a);genPreview()}
+function updSpk(id,i,f,v){const a=find(id);if(a){a.spk[i][f]=v;genPreview()}}
+function renderSpks(a){
+  const c=document.getElementById('spk-'+a.id);if(!c)return;
+  c.innerHTML=a.spk.map((s,i)=>'<div class="spk-row"><input type="text" placeholder="姓名" value="'+esc(s.name)+'" oninput="updSpk(\''+a.id+'\','+i+',\'name\',this.value)"><input type="text" placeholder="背景简介" value="'+esc(s.bio)+'" oninput="updSpk(\''+a.id+'\','+i+',\'bio\',this.value)"><button class="rm" onclick="rmSpk(\''+a.id+'\','+i+')">×</button></div>').join('');
+}
+function actBodyText(a){
+  let t='';
+  if(a.time)t+='⏰ '+a.time+'\n';
+  if(a.loc)t+='📍 '+a.loc+'\n';
+  if(a.fee)t+='💰 '+a.fee+'\n';
+  if(a.signup)t+='🙋 报名：'+a.signup+'\n';
+  if(a.desc)t+='\n'+a.desc+'\n';
+  const fl=a.flow.filter(f=>f);
+  if(fl.length)t+='\n🗓️ 活动流程：\n'+fl.join('\n')+'\n';
+  const sp=a.spk.filter(s=>s.name||s.bio);
+  if(sp.length)t+='\n分享嘉宾：\n'+sp.map(s=>s.name+(s.bio?'，'+s.bio:'')).join('\n')+'\n';
+  return t.trim();
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function genPreview(){
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].length).sort();
+  const box=document.getElementById('preview');
+  if(!days.length){box.innerHTML='<div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div>';return}
+  let html='<div class="preview-global-head">CYC本周活动更新</div>';
+  days.forEach(key=>{
+    const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
+    html+='<div class="preview-day">';
+    data[key].forEach(a=>{
+      const isActive=activePreviewId===a.id;
+      const body=actBodyText(a);
+      html+='<div class="preview-act'+(isActive?' active-preview':'')+'" onclick="jumpToAct(\''+key+'\',\''+a.id+'\')">'
+        +'<div class="preview-act-hdr"><span>【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题')+'</span><span class="edit-hint">点击编辑 →</span></div>'
+        +(body?'<div class="preview-act-body">'+escHtml(body)+'</div>':'')
+        +'</div>';
+    });
+    html+='</div>';
+  });
+  box.innerHTML=html;
+}
+function plainText(){
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].length).sort();
+  if(!days.length)return'';
+  let txt='CYC本周活动更新';
+  days.forEach(key=>{
+    const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
+    data[key].forEach(a=>{
+      txt+='\n\n【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题');
+      const b=actBodyText(a);if(b)txt+='\n'+b;
+    });
+  });
+  return txt.trim();
+}
+function doCopy(){
+  const t=plainText();if(!t)return;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById('copyBtn');b.textContent='✓ 已复制！';b.classList.add('ok');
+    setTimeout(()=>{b.textContent='复制通告文本';b.classList.remove('ok')},2000);
+  });
+}
+renderWeek();
+</script>
 </body>
 </html>
