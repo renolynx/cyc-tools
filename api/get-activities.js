@@ -124,8 +124,8 @@ export default async function handler(req, res) {
           filter: {
             conjunction: 'and',
             conditions: [
-              { field_name: '意向/确认举办日期', operator: 'isGreaterEqual', value: ['ExactDate', startTs] },
-              { field_name: '意向/确认举办日期', operator: 'isLessEqual',    value: ['ExactDate', endTs]   },
+              { field_name: '意向/确认举办日期', operator: 'isGreaterEqual', value: [String(startTs)] },
+              { field_name: '意向/确认举办日期', operator: 'isLessEqual',    value: [String(endTs)]   },
             ],
           },
           sort: [{ field_name: '意向/确认举办日期', desc: false }],
