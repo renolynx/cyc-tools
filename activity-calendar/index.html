@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>社群活动日历 · CYC 工具站</title>
+<style>
+/* ── Reset ── */
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── Tokens ── */
+:root{
+  --green:  #1c3d2e;
+  --orange: #d9652a;
+  --sand:   #f2ede6;
+  --card:   rgba(255,255,255,0.75);
+  --border: rgba(255,255,255,0.6);
+  --stroke: rgba(0,0,0,0.08);
+  --text:   #1a1a1a;
+  --muted:  #6b6b6b;
+  --r:      16px;
+}
+
+/* ── Full-height layout ── */
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  background:var(--sand);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Background blobs ── */
+.blob{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;}
+.b1{width:340px;height:340px;background:radial-gradient(circle,#d9652a,transparent 70%);opacity:.18;top:-80px;right:-60px;}
+.b2{width:280px;height:280px;background:radial-gradient(circle,#1c3d2e,transparent 70%);opacity:.16;bottom:40px;left:-70px;}
+.b3{width:200px;height:200px;background:radial-gradient(circle,#c8a96e,transparent 70%);opacity:.14;top:40%;left:60%;}
+
+/* ── Top bar ── */
+.topbar{
+  position:relative;z-index:10;flex-shrink:0;
+  display:flex;align-items:center;
+  padding:0 16px;height:52px;
+  background:rgba(242,237,230,0.85);
+  backdrop-filter:blur(20px) saturate(1.6);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  border-bottom:0.5px solid rgba(0,0,0,0.08);
+}
+.topbar-back{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:14px;font-weight:500;color:var(--green);
+  text-decoration:none;padding:6px 10px 6px 4px;border-radius:8px;
+  -webkit-tap-highlight-color:transparent;flex-shrink:0;
+}
+.topbar-back:active{background:rgba(28,61,46,0.08)}
+.topbar-title{
+  flex:1;text-align:center;
+  font-size:15px;font-weight:600;letter-spacing:-0.01em;
+  color:var(--text);
+}
+
+/* ── Toolbar strip ── */
+.toolbar{
+  position:relative;z-index:10;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;gap:10px;
+}
+.toolbar-left{
+  display:flex;align-items:center;gap:6px;
+}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#1d9e75;flex-shrink:0;
+  animation:pulse 2.5s ease-in-out infinite;
+}
+.status-dot.refreshing{background:var(--orange);}
+@keyframes pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.45;transform:scale(0.7)}
+}
+.status-text{font-size:12px;color:var(--muted);font-weight:500;}
+
+.toolbar-right{display:flex;align-items:center;gap:8px;}
+
+.btn-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;
+  background:var(--card);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);
+  border-radius:100px;
+  font-size:12px;font-weight:500;color:var(--green);
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  cursor:pointer;text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+  transition:background 0.15s,transform 0.1s;
+}
+.btn-pill:active{background:rgba(28,61,46,0.10);transform:scale(0.96)}
+.btn-pill.primary{
+  background:var(--green);color:#fff;border-color:transparent;
+  box-shadow:0 2px 8px rgba(28,61,46,0.22);
+}
+.btn-pill.primary:active{background:var(--green2,#2a5740)}
+
+/* ── iframe wrapper ── */
+.iframe-wrap{
+  position:relative;z-index:1;
+  flex:1;
+  margin:0 12px 12px;
+  border-radius:var(--r);
+  overflow:hidden;
+  background:var(--card);
+  backdrop-filter:blur(24px) saturate(1.8);
+  -webkit-backdrop-filter:blur(24px) saturate(1.8);
+  border:1px solid var(--border);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.08),
+    0 0 0 0.5px rgba(255,255,255,0.7) inset;
+}
+.iframe-wrap::before{
+  content:'';position:absolute;inset:0;z-index:2;
+  border-radius:var(--r);
+  background:linear-gradient(145deg,rgba(255,255,255,0.22) 0%,transparent 40%);
+  pointer-events:none;
+}
+
+/* Loading overlay */
+.loading-overlay{
+  position:absolute;inset:0;z-index:5;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;
+  background:rgba(242,237,230,0.7);
+  backdrop-filter:blur(8px);
+  transition:opacity 0.4s;
+}
+.loading-overlay.hidden{opacity:0;pointer-events:none;}
+.spinner{
+  width:32px;height:32px;border-radius:50%;
+  border:3px solid rgba(28,61,46,0.12);
+  border-top-color:var(--green);
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted);font-weight:500;}
+
+iframe{
+  width:100%;height:100%;
+  border:none;display:block;
+  border-radius:var(--r);
+}
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <a class="topbar-back" href="/">‹ 工具站</a>
+  <div class="topbar-title">社群活动日历</div>
+  <div style="width:80px"></div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <span class="status-dot" id="dot"></span>
+    <span class="status-text" id="statusText">加载中…</span>
+  </div>
+  <div class="toolbar-right">
+    <button class="btn-pill" onclick="doRefresh()" id="refreshBtn">↻ 刷新</button>
+    <a class="btn-pill primary"
+       href="https://my.feishu.cn/share/base/view/shrcnRlGNaYPsnyxHNMJCvfUuWo"
+       target="_blank" rel="noopener">
+      在飞书打开 ↗
+    </a>
+  </div>
+</div>
+
+<!-- iframe -->
+<div class="iframe-wrap">
+  <div class="loading-overlay" id="overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">正在加载活动日历…</div>
+  </div>
+  <iframe
+    id="calFrame"
+    src="https://my.feishu.cn/share/base/view/shrcnRlGNaYPsnyxHNMJCvfUuWo"
+    allowfullscreen
+    loading="lazy"
+    onload="onLoaded()"
+  ></iframe>
+</div>
+
+<script>
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 分钟
+let lastLoad = null;
+let timer = null;
+
+function fmt(date) {
+  const h = date.getHours(), m = date.getMinutes();
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+}
+
+function onLoaded() {
+  lastLoad = new Date();
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('dot').classList.remove('refreshing');
+  document.getElementById('statusText').textContent = '已更新 · ' + fmt(lastLoad);
+  scheduleNext();
+}
+
+function doRefresh() {
+  const frame = document.getElementById('calFrame');
+  const dot = document.getElementById('dot');
+  const overlay = document.getElementById('overlay');
+  const status = document.getElementById('statusText');
+
+  dot.classList.add('refreshing');
+  status.textContent = '刷新中…';
+  overlay.classList.remove('hidden');
+
+  // reload by resetting src
+  const src = frame.src;
+  frame.src = '';
+  setTimeout(() => { frame.src = src; }, 80);
+
+  clearTimeout(timer);
+}
+
+function scheduleNext() {
+  clearTimeout(timer);
+  timer = setTimeout(() => { doRefresh(); }, REFRESH_INTERVAL);
+}
+
+// Fallback: if iframe blocked by X-Frame-Options, show friendly message
+window.addEventListener('message', () => {}); // keep listener alive
+document.getElementById('calFrame').addEventListener('error', () => {
+  document.getElementById('statusText').textContent = '加载失败，请点击"在飞书打开"';
+  document.getElementById('dot').style.background = '#e24b4a';
+  document.getElementById('overlay').innerHTML =
+    '<div style="text-align:center;padding:24px">' +
+    '<div style="font-size:32px;margin-bottom:12px">🔒</div>' +
+    '<div style="font-size:14px;font-weight:600;color:#1c3d2e;margin-bottom:6px">飞书限制了嵌入</div>' +
+    '<div style="font-size:13px;color:#6b6b6b;margin-bottom:16px">请点击下方按钮在飞书中查看</div>' +
+    '<a href="https://my.feishu.cn/share/base/view/shrcnRlGNaYPsnyxHNMJCvfUuWo" target="_blank" ' +
+    'style="display:inline-block;padding:10px 20px;background:#1c3d2e;color:#fff;border-radius:100px;font-size:14px;font-weight:600;text-decoration:none">在飞书打开 ↗</a>' +
+    '</div>';
+});
+</script>
+
+</body>
+</html>
