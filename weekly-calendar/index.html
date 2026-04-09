@@ -928,19 +928,25 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
 
   // 按日期分组
   const groups = {};
-  activities.sort((a,b) => a.date < b.date ? -1 : 1).forEach(a => {
+  activities.forEach(a => {
     if (!groups[a.date]) groups[a.date] = [];
     groups[a.date].push(a);
   });
 
   const todayStr = fmt(new Date());
+  // 未来（含今天）升序在前，过去降序在后
+  const allDates  = Object.keys(groups);
+  const upcoming  = allDates.filter(d => d >= todayStr).sort();
+  const past      = allDates.filter(d => d <  todayStr).sort().reverse();
+  const sortedDates = [...upcoming, ...past];
+
   let html = '<div class="cal-range-label">' + rangeStart.slice(5).replace('-','/') + ' — ' + rangeEnd.slice(5).replace('-','/') + '</div>';
 
-  Object.keys(groups).sort().forEach(date => {
+  sortedDates.forEach(date => {
     const d   = new Date(date + 'T00:00:00');
     const m   = d.getMonth() + 1, day = d.getDate();
     const dow = CN_DAYS[d.getDay()];
-    const isPast = date < todayStr;
+    const isPast  = date < todayStr;
     const isToday = date === todayStr;
 
     html += '<div class="cal-group">';
