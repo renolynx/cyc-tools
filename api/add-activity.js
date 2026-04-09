@@ -91,21 +91,24 @@ export default async function handler(req, res) {
     // 来源标记
     fields['SourceID'] = 'cyc-tools';
 
-    // ── 3. 写入多维表格 ──
-    const recordRes  = await fetch(
-      `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records`,
-      {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ fields }),
-      }
-    );
+    // ── 3. 新建 or 更新 ──
+    const hasRecord = Boolean(activity.record_id);
+    const url = hasRecord
+      ? `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/${activity.record_id}`
+      : `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records`;
+
+    const recordRes  = await fetch(url, {
+      method:  hasRecord ? 'PUT' : 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ fields }),
+    });
     const recordData = await recordRes.json();
     if (recordData.code !== 0)
-      throw new Error(`写入失败 (${recordData.code}): ${recordData.msg}`);
+      throw new Error(`${hasRecord ? '更新' : '写入'}失败 (${recordData.code}): ${recordData.msg}`);
 
     return res.status(200).json({
       success:   true,
+      is_update: hasRecord,
       record_id: recordData.data.record.record_id,
     });
 

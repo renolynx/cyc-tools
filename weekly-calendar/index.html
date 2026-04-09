@@ -67,6 +67,25 @@ body{
 /* ── Page wrapper ── */
 .page{position:relative;z-index:1;padding:20px 16px env(safe-area-inset-bottom);}
 
+/* ── Fetch bar ── */
+.fetch-bar{
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
+}
+.fetch-btn{
+  flex:1;padding:8px 14px;
+  background:var(--card);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:100px;
+  font-size:12px;font-weight:600;color:var(--green);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:background 0.15s,transform 0.1s;
+}
+.fetch-btn:active{background:rgba(28,61,46,0.10);transform:scale(0.98)}
+.fetch-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.fetch-status{font-size:12px;color:var(--muted);white-space:nowrap}
+
 /* ── Week nav ── */
 .week-nav{
   display:flex;align-items:center;gap:8px;margin-bottom:12px;
@@ -346,6 +365,12 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
   <span class="week-range" id="wkRange"></span>
   <button class="nav-btn" onclick="changeWeek(1)">下周 ›</button>
 </div>
+<div class="fetch-bar">
+  <button class="fetch-btn" id="fetchBtn" onclick="fetchFromFeishu()">
+    <span id="fetchIcon">☁️</span><span id="fetchLabel">从飞书读取本周活动</span>
+  </button>
+  <span class="fetch-status" id="fetchStatus"></span>
+</div>
 <div class="week-strip" id="wkStrip"></div>
 
 <div class="layout">
@@ -479,7 +504,9 @@ function makeCard(a,idx){
     +'</div>';
   setTimeout(()=>{
     renderFlows(a); renderSpks(a); initStatusPills(a);
-    if (a.poster?.base64) showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
+    updateSyncBtn(a.id);
+    if (a.poster?.base64)      showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
+    else if (a.poster?.url)    showPosterPreview(a.id, a.poster.url);
   },0);
   return card;
 }
@@ -560,6 +587,74 @@ function doCopy(){
     const b=document.getElementById('copyBtn');b.textContent='✓ 已复制！';b.classList.add('ok');
     setTimeout(()=>{b.textContent='复制通告文本';b.classList.remove('ok')},2000);
   });
+}
+
+// ── 根据 record_id 动态更新同步按钮文案 ──
+function updateSyncBtn(id) {
+  const a     = find(id); if (!a) return;
+  const icon  = document.getElementById('sync-icon-'  + id);
+  const label = document.getElementById('sync-label-' + id);
+  if (!icon || !label) return;
+  if (a.record_id) {
+    icon.textContent  = '✏️';
+    label.textContent = '更新飞书记录';
+  } else {
+    icon.textContent  = '📥';
+    label.textContent = '录入飞书多维表格';
+  }
+}
+
+// ── 从飞书读取本周活动 ──
+async function fetchFromFeishu() {
+  const btn    = document.getElementById('fetchBtn');
+  const icon   = document.getElementById('fetchIcon');
+  const lbl    = document.getElementById('fetchLabel');
+  const status = document.getElementById('fetchStatus');
+
+  btn.disabled     = true;
+  icon.textContent = '⏳';
+  lbl.textContent  = '读取中…';
+  status.textContent = '';
+
+  const s = getMonStart(wkOffset);
+  const e = new Date(s); e.setDate(s.getDate() + 6);
+  const weekStart = fmt(s), weekEnd = fmt(e);
+
+  try {
+    const res  = await fetch('/api/get-activities', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ weekStart, weekEnd }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error || '请求失败');
+
+    if (json.count === 0) {
+      status.textContent = '本周暂无记录';
+    } else {
+      // 按日期分组写入 data
+      json.activities.forEach(act => {
+        if (!act.date) return;
+        if (!data[act.date]) data[act.date] = [];
+        // 已有相同 record_id 的跳过（避免重复）
+        const exists = data[act.date].find(x => x.record_id === act.record_id);
+        if (!exists) {
+          act.id = 'a' + (uid++); // 分配本地 id
+          data[act.date].push(act);
+        }
+      });
+      status.textContent = `已载入 ${json.count} 个活动`;
+      renderWeek();
+      if (selDate) renderActs();
+    }
+  } catch (err) {
+    status.textContent = '读取失败：' + err.message;
+  } finally {
+    btn.disabled     = false;
+    icon.textContent = '☁️';
+    lbl.textContent  = '从飞书读取本周活动';
+    setTimeout(() => { status.textContent = ''; }, 4000);
+  }
 }
 
 // ── Status pills ──
@@ -653,15 +748,19 @@ async function syncToFeishu(id) {
     const json = await res.json();
     if (!res.ok || !json.success) throw new Error(json.error || '未知错误');
 
+    // 保存 record_id，后续同步变为「更新」
+    if (json.record_id) {
+      const a2 = find(id);
+      if (a2) a2.record_id = json.record_id;
+    }
     btn.classList.remove('syncing');
     btn.classList.add('ok');
     icon.textContent  = '✓';
-    label.textContent = '已录入飞书';
+    label.textContent = json.is_update ? '已更新飞书记录' : '已录入飞书';
     setTimeout(() => {
       btn.classList.remove('ok');
       btn.disabled = false;
-      icon.textContent  = '📥';
-      label.textContent = '录入飞书多维表格';
+      updateSyncBtn(id);
     }, 3000);
 
   } catch (err) {
