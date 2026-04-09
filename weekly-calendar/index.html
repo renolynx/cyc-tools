@@ -4,95 +4,294 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="format-detection" content="telephone=no">
-<title>每周活动通告 · CYC 工具站</title>
+<title>活动通告生成器 · CYC 工具站</title>
 <style>
+/* ── Reset ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;color:#1a1a1a;background:#f5f4f0;min-height:100vh}
-.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:0.5px solid #e0e0e0;position:sticky;top:0;z-index:20}
-.topbar a{font-size:13px;color:#639922;text-decoration:none;padding:4px 8px;border-radius:6px;white-space:nowrap}
-.topbar a:active{background:#f0f5e8}
-.topbar-title{font-size:14px;font-weight:500;color:#444;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.topbar-spacer{width:60px}
-.content{padding:1.5rem}
-h1{font-size:17px;font-weight:500;color:#444;margin-bottom:1.25rem;padding-bottom:12px;border-bottom:0.5px solid #ddd}
-input,textarea{background:#fff;border:0.5px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;font-family:inherit;color:#1a1a1a;width:100%;outline:none}
-input:focus,textarea:focus{border-color:#639922;box-shadow:0 0 0 2px rgba(99,153,34,0.1)}
-textarea{resize:vertical;min-height:56px;line-height:1.5}
-button{cursor:pointer;font-family:inherit}
-.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.nav-btn{background:#fff;border:0.5px solid #ccc;border-radius:8px;padding:5px 12px;font-size:13px;color:#666}
-.nav-btn:hover{background:#f0f0ec;color:#1a1a1a}
-.week-range{flex:1;text-align:center;font-size:13px;color:#666}
-.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:1rem}
-.day-btn{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border:0.5px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;gap:1px}
-.day-btn:hover{border-color:#999;background:#f9f9f7}
-.day-btn.is-today{border-color:#999}
-.day-btn.selected{background:#f0f5e8;border-color:#639922;border-width:1px}
-.day-btn.has-dot .dot{width:5px;height:5px;background:#639922;border-radius:50%;margin-top:2px}
-.day-name{font-size:11px;color:#888}
-.day-num{font-size:15px;font-weight:500}
-.day-tag{font-size:10px;color:#888}
-.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── Tokens ── */
+:root{
+  --green:   #1c3d2e;
+  --green2:  #2a5740;
+  --orange:  #d9652a;
+  --sand:    #f2ede6;
+  --card:    rgba(255,255,255,0.75);
+  --border:  rgba(255,255,255,0.6);
+  --stroke:  rgba(0,0,0,0.08);
+  --text:    #1a1a1a;
+  --muted:   #6b6b6b;
+  --r:       16px;
+  --r-sm:    10px;
+}
+
+/* ── Base ── */
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  background:var(--sand);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── Background blobs ── */
+.blob{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;}
+.b1{width:380px;height:380px;background:radial-gradient(circle,#d9652a,transparent 70%);opacity:.22;top:-100px;right:-60px;}
+.b2{width:320px;height:320px;background:radial-gradient(circle,#1c3d2e,transparent 70%);opacity:.20;bottom:60px;left:-80px;}
+.b3{width:220px;height:220px;background:radial-gradient(circle,#c8a96e,transparent 70%);opacity:.18;top:50%;left:50%;}
+
+/* ── Top bar ── */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;gap:0;
+  padding:0 16px;height:52px;
+  background:rgba(242,237,230,0.82);
+  backdrop-filter:blur(20px) saturate(1.6);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  border-bottom:0.5px solid rgba(0,0,0,0.08);
+}
+.topbar-back{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:14px;font-weight:500;color:var(--green);
+  text-decoration:none;padding:6px 10px 6px 4px;border-radius:8px;
+  -webkit-tap-highlight-color:transparent;
+}
+.topbar-back:active{background:rgba(28,61,46,0.08)}
+.topbar-title{
+  flex:1;text-align:center;
+  font-size:15px;font-weight:600;letter-spacing:-0.01em;
+  color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  padding:0 8px;
+}
+.topbar-spacer{width:80px}
+
+/* ── Page wrapper ── */
+.page{position:relative;z-index:1;padding:20px 16px env(safe-area-inset-bottom);}
+
+/* ── Week nav ── */
+.week-nav{
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
+}
+.nav-btn{
+  display:flex;align-items:center;justify-content:center;
+  padding:7px 14px;
+  background:var(--card);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);
+  border-radius:100px;
+  font-size:13px;font-weight:500;color:var(--green);
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.nav-btn:active{background:rgba(28,61,46,0.10)}
+.week-range{
+  flex:1;text-align:center;
+  font-size:13px;font-weight:600;color:var(--muted);
+  letter-spacing:-0.01em;
+}
+
+/* ── Day strip ── */
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:16px;}
+.day-btn{
+  display:flex;flex-direction:column;align-items:center;
+  padding:8px 3px;gap:1px;
+  background:var(--card);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
+  transition:border-color 0.15s,background 0.15s;
+}
+.day-btn:active{transform:scale(0.95)}
+.day-btn.is-today{border-color:rgba(28,61,46,0.35)}
+.day-btn.selected{background:var(--green);border-color:var(--green);}
+.day-btn.selected .day-name,
+.day-btn.selected .day-num,
+.day-btn.selected .day-tag{color:#fff!important}
+.day-btn.has-dot .dot{width:5px;height:5px;background:var(--orange);border-radius:50%;margin-top:2px}
+.day-btn.selected.has-dot .dot{background:rgba(255,255,255,0.7)}
+.day-name{font-size:10px;color:var(--muted);font-weight:500}
+.day-num{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+.day-tag{font-size:9px;color:var(--orange);font-weight:600}
+
+/* ── Layout ── */
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 @media(max-width:680px){.layout{grid-template-columns:1fr}}
-.panel{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1rem}
-.panel-head{font-size:13px;font-weight:500;color:#666;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid #e8e8e8}
-.acts-list{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
-.act-card{border:0.5px solid #e0e0e0;border-radius:8px;overflow:hidden;transition:border-color 0.15s}
-.act-card.highlight{border-color:#639922;border-width:1.5px}
-.act-hdr{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#f5f5f2;cursor:pointer;user-select:none}
-.act-num{width:20px;height:20px;border-radius:50%;background:#639922;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.act-preview{flex:1;font-size:13px;color:#1a1a1a}
-.del-btn{background:none;border:none;color:#bbb;font-size:16px;padding:2px 6px;border-radius:4px;line-height:1}
-.del-btn:hover{color:#e24b4a;background:#fcebeb}
-.act-body{padding:12px;display:flex;flex-direction:column;gap:9px}
-.field{display:flex;flex-direction:column;gap:3px}
+
+/* ── Panel ── */
+.panel{
+  background:var(--card);
+  backdrop-filter:blur(24px) saturate(1.8);
+  -webkit-backdrop-filter:blur(24px) saturate(1.8);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:16px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.06),0 0 0 0.5px rgba(255,255,255,0.7) inset;
+  position:relative;overflow:hidden;
+}
+.panel::before{
+  content:'';position:absolute;inset:0;border-radius:var(--r);
+  background:linear-gradient(145deg,rgba(255,255,255,0.3) 0%,transparent 55%);
+  pointer-events:none;
+}
+.panel-head{
+  font-size:13px;font-weight:700;color:var(--green);
+  letter-spacing:-0.01em;
+  margin-bottom:12px;padding-bottom:10px;
+  border-bottom:0.5px solid var(--stroke);
+}
+.panel-head span{font-size:11px;color:var(--muted);font-weight:400;margin-left:4px}
+
+/* ── Activity cards ── */
+.acts-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.act-card{
+  border:1px solid var(--stroke);border-radius:var(--r-sm);
+  overflow:hidden;
+  background:rgba(255,255,255,0.6);
+  transition:border-color 0.15s,box-shadow 0.15s;
+}
+.act-card.highlight{border-color:var(--orange);box-shadow:0 0 0 3px rgba(217,101,42,0.12)}
+.act-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;
+  background:rgba(28,61,46,0.04);
+  cursor:pointer;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.act-num{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--green);color:#fff;
+  font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.act-preview{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.del-btn{
+  background:none;border:none;color:#ccc;
+  font-size:18px;padding:2px 6px;border-radius:6px;line-height:1;cursor:pointer;
+}
+.del-btn:active{color:#e24b4a;background:#fcebeb}
+
+/* ── Form inside card ── */
+.act-body{padding:12px;display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-label{font-size:11px;color:#888}
-.opt{font-size:10px;color:#aaa;background:#f0f0ec;padding:1px 5px;border-radius:4px;margin-left:3px}
-.add-act-btn{width:100%;padding:8px;border:0.5px dashed #ccc;border-radius:8px;background:none;font-size:13px;color:#888}
-.add-act-btn:hover{border-color:#639922;color:#3b6d11;background:#f0f5e8}
-.flow-list{display:flex;flex-direction:column;gap:5px}
+label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em}
+.opt{
+  font-size:10px;font-weight:500;color:#aaa;
+  background:rgba(0,0,0,0.05);
+  padding:1px 5px;border-radius:4px;margin-left:3px;
+}
+input,textarea{
+  background:rgba(255,255,255,0.9);
+  border:1px solid rgba(0,0,0,0.10);
+  border-radius:var(--r-sm);
+  padding:8px 10px;
+  font-size:13px;font-family:inherit;color:var(--text);
+  width:100%;outline:none;
+  transition:border-color 0.15s,box-shadow 0.15s;
+}
+input:focus,textarea:focus{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(28,61,46,0.10);
+}
+textarea{resize:vertical;min-height:60px;line-height:1.55}
+
+/* ── Add activity button ── */
+.add-act-btn{
+  width:100%;padding:10px;
+  border:1.5px dashed rgba(28,61,46,0.25);
+  border-radius:var(--r-sm);
+  background:rgba(28,61,46,0.03);
+  font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:all 0.15s;
+}
+.add-act-btn:active{border-color:var(--green);color:var(--green);background:rgba(28,61,46,0.06)}
+
+/* ── Sub-list rows ── */
+.flow-list,.spk-list{display:flex;flex-direction:column;gap:5px}
 .flow-row{display:flex;gap:5px;align-items:center}
 .flow-row input{flex:1}
-.flow-row .rm,.spk-row .rm{background:none;border:0.5px solid #e0e0e0;border-radius:4px;padding:3px 7px;font-size:12px;color:#aaa}
-.flow-row .rm:hover,.spk-row .rm:hover{color:#e24b4a}
-.spk-list{display:flex;flex-direction:column;gap:5px}
+.flow-row .rm,.spk-row .rm{
+  background:none;border:1px solid var(--stroke);
+  border-radius:6px;padding:6px 8px;
+  font-size:12px;color:#bbb;cursor:pointer;white-space:nowrap;
+}
+.flow-row .rm:active,.spk-row .rm:active{color:#e24b4a;border-color:#e24b4a}
 .spk-row{display:grid;grid-template-columns:1fr 2fr auto;gap:5px;align-items:start}
-.spk-row .rm{padding:6px 8px;white-space:nowrap}
-.add-sub{font-size:12px;color:#639922;background:none;border:none;padding:1px 0;text-align:left;margin-top:2px}
-.add-sub:hover{text-decoration:underline}
-.preview-box{border:0.5px solid #e0e0e0;border-radius:8px;font-size:13px;line-height:1.85;min-height:180px;max-height:520px;overflow-y:auto}
-.preview-empty{padding:14px;color:#aaa}
-.preview-global-head{padding:12px 14px 8px;font-size:13px;font-weight:500;color:#444;border-bottom:0.5px solid #e8e8e8;margin-bottom:4px}
-.preview-day{padding:6px 14px}
-.preview-act{border:0.5px solid #e0e0e0;border-radius:8px;margin-bottom:6px;overflow:hidden;cursor:pointer;transition:border-color 0.15s,background 0.15s}
-.preview-act:hover{border-color:#639922;background:#f9fdf4}
-.preview-act.active-preview{border-color:#639922;border-width:1.5px}
-.preview-act-hdr{padding:8px 12px;font-size:13px;font-weight:500;display:flex;justify-content:space-between;align-items:center;color:#1a1a1a}
-.preview-act:hover .preview-act-hdr{color:#3b6d11}
-.edit-hint{font-size:10px;color:#bbb;font-weight:400;opacity:0}
-.preview-act:hover .edit-hint{opacity:1}
-.preview-act-body{padding:4px 12px 10px;font-size:12px;color:#666;line-height:1.8;white-space:pre-wrap;word-break:break-all}
-.copy-btn{margin-top:10px;width:100%;padding:9px;background:#639922;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500}
-.copy-btn:hover{background:#3b6d11}
-.copy-btn.ok{background:#1d9e75}
+.add-sub{
+  font-size:12px;font-weight:500;color:var(--green);
+  background:none;border:none;padding:2px 0;
+  text-align:left;margin-top:3px;cursor:pointer;
+}
+.add-sub:active{opacity:0.6}
+
+/* ── Preview ── */
+.preview-box{
+  border:1px solid var(--stroke);border-radius:var(--r-sm);
+  font-size:13px;line-height:1.85;
+  min-height:180px;max-height:500px;overflow-y:auto;
+  background:rgba(255,255,255,0.5);
+}
+.preview-empty{padding:16px;color:var(--muted);font-size:13px}
+.preview-global-head{
+  padding:12px 14px 10px;
+  font-size:13px;font-weight:700;color:var(--green);
+  border-bottom:0.5px solid var(--stroke);margin-bottom:4px;
+}
+.preview-day{padding:6px 12px}
+.preview-act{
+  border:1px solid var(--stroke);border-radius:var(--r-sm);
+  margin-bottom:6px;overflow:hidden;cursor:pointer;
+  background:rgba(255,255,255,0.6);
+  transition:border-color 0.15s,background 0.15s;
+}
+.preview-act:active{border-color:var(--green);background:rgba(28,61,46,0.04)}
+.preview-act.active-preview{border-color:var(--orange);border-width:1.5px}
+.preview-act-hdr{
+  padding:9px 12px;font-size:13px;font-weight:600;
+  display:flex;justify-content:space-between;align-items:center;color:var(--text);
+}
+.edit-hint{font-size:10px;color:#ccc;font-weight:400;opacity:0}
+.preview-act:active .edit-hint{opacity:1}
+.preview-act-body{
+  padding:2px 12px 10px;font-size:12px;
+  color:var(--muted);line-height:1.8;
+  white-space:pre-wrap;word-break:break-all;
+}
+
+/* ── Copy button ── */
+.copy-btn{
+  margin-top:10px;width:100%;padding:12px;
+  background:var(--green);color:#fff;
+  border:none;border-radius:var(--r-sm);
+  font-size:14px;font-weight:600;letter-spacing:-0.01em;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 16px rgba(28,61,46,0.25);
+  transition:background 0.15s,transform 0.1s,box-shadow 0.15s;
+}
+.copy-btn:active{transform:scale(0.98);box-shadow:0 2px 8px rgba(28,61,46,0.2)}
+.copy-btn.ok{background:#1d9e75;box-shadow:0 4px 16px rgba(29,158,117,0.25)}
 </style>
 </head>
 <body>
 
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
 <div class="topbar">
-  <a href="/">← 工具站</a>
-  <div class="topbar-title">每周活动通告</div>
+  <a class="topbar-back" href="/">‹ 工具站</a>
+  <div class="topbar-title">活动通告生成器</div>
   <div class="topbar-spacer"></div>
 </div>
 
-<div class="content">
-<h1>CYC 活动通告生成器</h1>
+<div class="page">
 
 <div class="week-nav">
-  <button class="nav-btn" onclick="changeWeek(-1)">← 上周</button>
+  <button class="nav-btn" onclick="changeWeek(-1)">‹ 上周</button>
   <span class="week-range" id="wkRange"></span>
-  <button class="nav-btn" onclick="changeWeek(1)">下周 →</button>
+  <button class="nav-btn" onclick="changeWeek(1)">下周 ›</button>
 </div>
 <div class="week-strip" id="wkStrip"></div>
 
@@ -106,12 +305,13 @@ label{font-size:11px;color:#888}
   </div>
   <div>
     <div class="panel">
-      <div class="panel-head">通告预览 <span style="font-size:11px;color:#aaa;font-weight:400">— 点击活动快速跳转编辑</span></div>
+      <div class="panel-head">通告预览 <span>— 点击活动快速跳转编辑</span></div>
       <div class="preview-box" id="preview"><div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div></div>
       <button class="copy-btn" id="copyBtn" onclick="doCopy()">复制通告文本</button>
     </div>
   </div>
 </div>
+
 </div>
 
 <script>
