@@ -1,32 +1,21 @@
 /**
  * POST /api/add-activity
- * 将活动信息写入飞书多维表格
+ * 将活动信息写入飞书多维表格「📅活动日历」
  *
- * ── 字段映射：左边 = 你的飞书表格字段名，右边不要改 ──
- * 如果某个字段在你的表格里不存在，把左边改成 null 即可跳过
+ * 字段映射（根据 /api/list-fields 返回结果配置）：
+ *   标题                → activity.title
+ *   意向/确认举办日期    → date（转毫秒时间戳）
+ *   地点                → activity.loc
+ *   发起者              → activity.spk（带领人/嘉宾）
+ *   活动/项目描述        → 综合描述（时间段 + 费用 + 报名 + 简介 + 流程）
+ *   SourceID            → "cyc-tools"（来源标记）
  */
-const FIELD_MAP = {
-  title:  '活动标题',
-  date:   '日期',        // 飞书日期字段，会自动转时间戳
-  time:   '时间段',
-  loc:    '地点',
-  fee:    '费用',
-  signup: '报名方式',
-  desc:   '活动简介',
-  flow:   '活动流程',    // 多行文本，换行分隔
-  spk:    '带领人',      // 多行文本，换行分隔
-};
-
 export default async function handler(req, res) {
-  // CORS preflight
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { activity, date } = req.body || {};
   if (!activity || !date) {
@@ -39,7 +28,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ── Step 1: 获取 tenant_access_token ──
+    // ── 1. 获取 tenant_access_token ──
     const authRes = await fetch(
       'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
       {
@@ -52,32 +41,38 @@ export default async function handler(req, res) {
     if (authData.code !== 0) throw new Error(`飞书鉴权失败: ${authData.msg}`);
     const token = authData.tenant_access_token;
 
-    // ── Step 2: 组装字段 ──
+    // ── 2. 组装字段 ──
     const fields = {};
 
-    if (FIELD_MAP.title  && activity.title)  fields[FIELD_MAP.title]  = activity.title;
-    if (FIELD_MAP.time   && activity.time)   fields[FIELD_MAP.time]   = activity.time;
-    if (FIELD_MAP.loc    && activity.loc)    fields[FIELD_MAP.loc]    = activity.loc;
-    if (FIELD_MAP.fee    && activity.fee)    fields[FIELD_MAP.fee]    = activity.fee;
-    if (FIELD_MAP.signup && activity.signup) fields[FIELD_MAP.signup] = activity.signup;
-    if (FIELD_MAP.desc   && activity.desc)   fields[FIELD_MAP.desc]   = activity.desc;
+    // 标题
+    if (activity.title) fields['标题'] = activity.title;
 
-    // 日期字段：飞书需要毫秒时间戳
-    if (FIELD_MAP.date && date) {
-      fields[FIELD_MAP.date] = new Date(date + 'T00:00:00+08:00').getTime();
-    }
+    // 意向/确认举办日期（飞书日期字段需要毫秒时间戳）
+    fields['意向/确认举办日期'] = new Date(date + 'T00:00:00+08:00').getTime();
 
-    // 活动流程：数组 → 换行拼接
-    const fl = (activity.flow || []).filter(Boolean);
-    if (FIELD_MAP.flow && fl.length) fields[FIELD_MAP.flow] = fl.join('\n');
+    // 地点
+    if (activity.loc) fields['地点'] = activity.loc;
 
-    // 带领人：数组 → 换行拼接
+    // 发起者（带领人/嘉宾姓名）
     const sp = (activity.spk || []).filter(s => s.name || s.bio);
-    if (FIELD_MAP.spk && sp.length) {
-      fields[FIELD_MAP.spk] = sp.map(s => s.name + (s.bio ? '，' + s.bio : '')).join('\n');
+    if (sp.length) {
+      fields['发起者'] = sp.map(s => s.name + (s.bio ? '，' + s.bio : '')).join('\n');
     }
 
-    // ── Step 3: 写入多维表格 ──
+    // 活动/项目描述（综合字段：汇总时间段、费用、报名、简介、流程）
+    const descParts = [];
+    if (activity.time)   descParts.push(`⏰ 时间：${activity.time}`);
+    if (activity.fee)    descParts.push(`💰 费用：${activity.fee}`);
+    if (activity.signup) descParts.push(`🙋 报名：${activity.signup}`);
+    if (activity.desc)   descParts.push(`\n${activity.desc}`);
+    const fl = (activity.flow || []).filter(Boolean);
+    if (fl.length)       descParts.push(`\n🗓️ 流程：\n${fl.join('\n')}`);
+    if (descParts.length) fields['活动/项目描述'] = descParts.join('\n');
+
+    // 来源标记
+    fields['SourceID'] = 'cyc-tools';
+
+    // ── 3. 写入多维表格 ──
     const recordRes = await fetch(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records`,
       {
