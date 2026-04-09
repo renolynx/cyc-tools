@@ -196,6 +196,24 @@ input:focus,textarea:focus{
 }
 textarea{resize:vertical;min-height:60px;line-height:1.55}
 
+/* ── Sync to Feishu button ── */
+.sync-btn{
+  width:100%;padding:10px;
+  background:linear-gradient(135deg,#1c3d2e 0%,#2a5740 100%);
+  color:#fff;border:none;border-radius:var(--r-sm);
+  font-size:13px;font-weight:600;letter-spacing:-0.01em;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 3px 12px rgba(28,61,46,0.22);
+  transition:opacity 0.15s,transform 0.1s,box-shadow 0.15s;
+}
+.sync-btn:active{transform:scale(0.98);box-shadow:0 1px 6px rgba(28,61,46,0.15)}
+.sync-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none}
+.sync-btn.syncing{opacity:0.7}
+.sync-btn.ok{background:linear-gradient(135deg,#1d9e75 0%,#17855f 100%);box-shadow:0 3px 12px rgba(29,158,117,0.25)}
+.sync-btn.err{background:linear-gradient(135deg,#c0392b 0%,#a93226 100%);box-shadow:0 3px 12px rgba(192,57,43,0.25)}
+.sync-divider{border:none;border-top:0.5px solid var(--stroke);margin:2px 0}
+
 /* ── Add activity button ── */
 .add-act-btn{
   width:100%;padding:10px;
@@ -403,6 +421,11 @@ function makeCard(a,idx){
       +'<div class="spk-list" id="spk-'+a.id+'"></div>'
       +'<button class="add-sub" onclick="addSpk(\''+a.id+'\')">＋ 添加嘉宾</button>'
     +'</div>'
+    +'<hr class="sync-divider">'
+    +'<button class="sync-btn" id="sync-'+a.id+'" onclick="syncToFeishu(\''+a.id+'\')">'
+      +'<span id="sync-icon-'+a.id+'">📥</span>'
+      +'<span id="sync-label-'+a.id+'">录入飞书多维表格</span>'
+    +'</button>'
     +'</div>';
   setTimeout(()=>{renderFlows(a);renderSpks(a);},0);
   return card;
@@ -485,6 +508,66 @@ function doCopy(){
     setTimeout(()=>{b.textContent='复制通告文本';b.classList.remove('ok')},2000);
   });
 }
+
+async function syncToFeishu(id) {
+  const a = find(id);
+  if (!a) return;
+
+  // 找到这个活动对应的日期
+  let date = null;
+  for (const k in data) {
+    if (data[k].find(x => x.id === id)) { date = k; break; }
+  }
+  if (!date) return;
+
+  if (!a.title) {
+    alert('请先填写活动标题再录入');
+    return;
+  }
+
+  const btn   = document.getElementById('sync-' + id);
+  const icon  = document.getElementById('sync-icon-' + id);
+  const label = document.getElementById('sync-label-' + id);
+
+  btn.disabled = true;
+  btn.classList.add('syncing');
+  icon.textContent  = '⏳';
+  label.textContent = '录入中…';
+
+  try {
+    const res = await fetch('/api/add-activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity: a, date }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error || '未知错误');
+
+    btn.classList.remove('syncing');
+    btn.classList.add('ok');
+    icon.textContent  = '✓';
+    label.textContent = '已录入飞书';
+    setTimeout(() => {
+      btn.classList.remove('ok');
+      btn.disabled = false;
+      icon.textContent  = '📥';
+      label.textContent = '录入飞书多维表格';
+    }, 3000);
+
+  } catch (err) {
+    btn.classList.remove('syncing');
+    btn.classList.add('err');
+    icon.textContent  = '✕';
+    label.textContent = err.message;
+    setTimeout(() => {
+      btn.classList.remove('err');
+      btn.disabled = false;
+      icon.textContent  = '📥';
+      label.textContent = '录入飞书多维表格';
+    }, 4000);
+  }
+}
+
 renderWeek();
 </script>
 </body>
