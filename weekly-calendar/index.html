@@ -214,6 +214,41 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .sync-btn.err{background:linear-gradient(135deg,#c0392b 0%,#a93226 100%);box-shadow:0 3px 12px rgba(192,57,43,0.25)}
 .sync-divider{border:none;border-top:0.5px solid var(--stroke);margin:2px 0}
 
+/* ── Status pills ── */
+.status-pills{display:flex;flex-wrap:wrap;gap:6px}
+.status-pill{
+  padding:5px 12px;border-radius:100px;
+  border:1px solid var(--stroke);
+  background:rgba(255,255,255,0.7);
+  font-size:12px;font-weight:500;color:var(--muted);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:all 0.15s;
+}
+.status-pill:active{transform:scale(0.95)}
+.status-pill.sp-active{background:var(--green);color:#fff;border-color:var(--green)}
+.status-pill.sp-orange{background:var(--orange);color:#fff;border-color:var(--orange)}
+.status-pill.sp-done{background:#1d9e75;color:#fff;border-color:#1d9e75}
+
+/* ── Poster upload ── */
+.poster-area{
+  border:1.5px dashed rgba(0,0,0,0.14);border-radius:var(--r-sm);
+  overflow:hidden;cursor:pointer;background:rgba(255,255,255,0.5);
+  min-height:72px;display:flex;align-items:center;justify-content:center;
+  transition:border-color 0.15s;position:relative;
+}
+.poster-area:active{border-color:var(--green)}
+.poster-placeholder{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:14px;color:var(--muted);font-size:12px;pointer-events:none;text-align:center;
+}
+.poster-img{width:100%;display:block;max-height:160px;object-fit:cover}
+.poster-clear{
+  position:absolute;top:6px;right:6px;width:22px;height:22px;
+  background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;
+  font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:2;
+}
+
 /* ── Add activity button ── */
 .add-act-btn{
   width:100%;padding:10px;
@@ -421,13 +456,31 @@ function makeCard(a,idx){
       +'<div class="spk-list" id="spk-'+a.id+'"></div>'
       +'<button class="add-sub" onclick="addSpk(\''+a.id+'\')">＋ 添加嘉宾</button>'
     +'</div>'
+    +'<div class="field"><label>目前状态<span class="opt">选填</span></label>'
+      +'<div class="status-pills" id="pills-'+a.id+'">'
+        +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'筹备酝酿中\',this)">🌱 筹备酝酿中</button>'
+        +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'确认举办\',this)">✅ 确认举办</button>'
+        +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'办完了！\',this)">🎉 办完了！</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="field"><label>活动海报<span class="opt">选填，最大 3MB</span></label>'
+      +'<div class="poster-area" id="poster-area-'+a.id+'" onclick="triggerPoster(\''+a.id+'\')">'
+        +'<div class="poster-placeholder" id="poster-ph-'+a.id+'"><span style="font-size:22px">🖼️</span><span>点击上传活动海报</span></div>'
+        +'<img id="poster-img-'+a.id+'" style="display:none" class="poster-img" alt="海报预览">'
+        +'<button class="poster-clear" id="poster-clear-'+a.id+'" style="display:none" onclick="event.stopPropagation();clearPoster(\''+a.id+'\')">×</button>'
+      +'</div>'
+      +'<input type="file" id="poster-input-'+a.id+'" accept="image/*" style="display:none" onchange="handlePoster(\''+a.id+'\',this)">'
+    +'</div>'
     +'<hr class="sync-divider">'
     +'<button class="sync-btn" id="sync-'+a.id+'" onclick="syncToFeishu(\''+a.id+'\')">'
       +'<span id="sync-icon-'+a.id+'">📥</span>'
       +'<span id="sync-label-'+a.id+'">录入飞书多维表格</span>'
     +'</button>'
     +'</div>';
-  setTimeout(()=>{renderFlows(a);renderSpks(a);},0);
+  setTimeout(()=>{
+    renderFlows(a); renderSpks(a); initStatusPills(a);
+    if (a.poster?.base64) showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
+  },0);
   return card;
 }
 function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
@@ -435,7 +488,7 @@ function toggle(id){const b=document.getElementById('body-'+id);b.style.display=
 function addAct(){
   if(!selDate)return;
   if(!data[selDate])data[selDate]=[];
-  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[]};
+  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[],status:'',poster:null};
   data[selDate].push(a);renderActs();renderWeek();
   setTimeout(()=>{const b=document.getElementById('body-'+a.id);if(b)b.style.display='';},50);
 }
@@ -507,6 +560,63 @@ function doCopy(){
     const b=document.getElementById('copyBtn');b.textContent='✓ 已复制！';b.classList.add('ok');
     setTimeout(()=>{b.textContent='复制通告文本';b.classList.remove('ok')},2000);
   });
+}
+
+// ── Status pills ──
+const STATUS_CLASS = {'筹备酝酿中':'sp-active','确认举办':'sp-orange','办完了！':'sp-done'};
+function updStatus(id, val, btn) {
+  const a = find(id); if (!a) return;
+  if (a.status === val) {
+    a.status = '';
+    btn.classList.remove('sp-active','sp-orange','sp-done');
+  } else {
+    a.status = val;
+    document.querySelectorAll('#pills-'+id+' .status-pill')
+      .forEach(p => p.classList.remove('sp-active','sp-orange','sp-done'));
+    btn.classList.add(STATUS_CLASS[val] || 'sp-active');
+  }
+}
+function initStatusPills(a) {
+  if (!a.status) return;
+  const pills = document.querySelectorAll('#pills-'+a.id+' .status-pill');
+  pills.forEach(p => {
+    if (p.textContent.includes(a.status.replace(/[🌱✅🎉]\s*/,'')))
+      p.classList.add(STATUS_CLASS[a.status] || 'sp-active');
+  });
+}
+
+// ── Poster upload ──
+function triggerPoster(id) { document.getElementById('poster-input-'+id).click(); }
+function handlePoster(id, input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { alert('图片不能超过 3MB'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const a = find(id); if (!a) return;
+    a.poster = { name: file.name, type: file.type, size: file.size, base64: e.target.result.split(',')[1] };
+    showPosterPreview(id, e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+function showPosterPreview(id, src) {
+  const img = document.getElementById('poster-img-'+id);
+  const ph  = document.getElementById('poster-ph-'+id);
+  const clr = document.getElementById('poster-clear-'+id);
+  if (img) { img.src = src; img.style.display = 'block'; }
+  if (ph)  ph.style.display  = 'none';
+  if (clr) clr.style.display = 'flex';
+}
+function clearPoster(id) {
+  const a = find(id); if (!a) return;
+  a.poster = null;
+  const img = document.getElementById('poster-img-'+id);
+  const ph  = document.getElementById('poster-ph-'+id);
+  const clr = document.getElementById('poster-clear-'+id);
+  const inp = document.getElementById('poster-input-'+id);
+  if (img) { img.src=''; img.style.display='none'; }
+  if (ph)  ph.style.display  = 'flex';
+  if (clr) clr.style.display = 'none';
+  if (inp) inp.value = '';
 }
 
 async function syncToFeishu(id) {
