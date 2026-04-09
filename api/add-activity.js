@@ -33,11 +33,16 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  const { activity, date } = req.body || {};
+  const { activity, date, password } = req.body || {};
   if (!activity || !date)
     return res.status(400).json({ error: '缺少 activity 或 date 参数' });
 
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
+  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID, SYNC_PASSWORD } = process.env;
+
+  // 密码校验（设置了环境变量才启用）
+  if (SYNC_PASSWORD && password !== SYNC_PASSWORD)
+    return res.status(401).json({ error: '密码错误' });
+
   if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID)
     return res.status(500).json({ error: '服务端飞书环境变量未配置' });
 
