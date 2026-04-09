@@ -111,31 +111,30 @@ export default async function handler(req, res) {
     const { code: ac, msg: am, tenant_access_token: token } = await authRes.json();
     if (ac !== 0) throw new Error(`鉴权失败: ${am}`);
 
-    // 2. 搜索当周记录（用日期范围过滤）
+    // 2. 拉最近 100 条记录（按日期倒序），服务端筛选当周
     const startTs = new Date(weekStart + 'T00:00:00+08:00').getTime();
     const endTs   = new Date(weekEnd   + 'T23:59:59+08:00').getTime();
 
-    const searchRes  = await fetch(
-      `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/search?page_size=50`,
+    const searchRes = await fetch(
+      `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/search?page_size=100`,
       {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          filter: {
-            conjunction: 'and',
-            conditions: [
-              { field_name: '意向/确认举办日期', operator: 'isGreaterEqual', value: [String(startTs)] },
-              { field_name: '意向/确认举办日期', operator: 'isLessEqual',    value: [String(endTs)]   },
-            ],
-          },
-          sort: [{ field_name: '意向/确认举办日期', desc: false }],
+          sort: [{ field_name: '意向/确认举办日期', desc: true }],
         }),
       }
     );
     const searchData = await searchRes.json();
     if (searchData.code !== 0) throw new Error(`搜索失败: ${searchData.msg}`);
 
-    const activities = (searchData.data?.items || []).map(parseRecord);
+    // 服务端按日期范围筛选
+    const all        = (searchData.data?.items || []).map(parseRecord);
+    const activities = all.filter(a => {
+      if (!a.date) return false;
+      const ts = new Date(a.date + 'T00:00:00+08:00').getTime();
+      return ts >= startTs && ts <= endTs;
+    });
     return res.status(200).json({ success: true, count: activities.length, activities });
 
   } catch (err) {
