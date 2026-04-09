@@ -6,218 +6,313 @@
   <meta name="format-detection" content="telephone=no">
   <title>CYC 工具站 · 链岛青年社区</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --accent: #2563eb;
-      --accent-light: #eff6ff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --radius: 12px;
-      --bg: #f8fafc;
+      --green:   #1c3d2e;
+      --orange:  #d9652a;
+      --sand:    #f2ede6;
+      --card-bg: rgba(255,255,255,0.72);
+      --border:  rgba(255,255,255,0.55);
+      --text:    #1a1a1a;
+      --muted:   #6b6b6b;
+      --radius:  20px;
     }
 
+    /* ── Background canvas ── */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
-                   "Microsoft YaHei", sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                   "Hiragino Sans GB", "SF Pro Display", sans-serif;
       min-height: 100vh;
-      padding: 0 0 env(safe-area-inset-bottom);
+      background: var(--sand);
+      color: var(--text);
+      overflow-x: hidden;
     }
 
-    header {
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      padding: 20px 20px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+    /* decorative blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.38;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, #d9652a, transparent 70%);
+      top: -120px; right: -80px;
+    }
+    .blob-2 {
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, #1c3d2e, transparent 70%);
+      bottom: 80px; left: -100px;
+    }
+    .blob-3 {
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, #c8a96e, transparent 70%);
+      top: 55%; left: 55%;
     }
 
-    .header-inner {
-      max-width: 640px;
+    /* ── Page layout ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
       margin: 0 auto;
+      padding: 0 16px env(safe-area-inset-bottom);
     }
 
-    .logo {
-      display: flex;
+    /* ── Hero ── */
+    .hero {
+      padding: 56px 0 40px;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .logo-badge {
-      width: 36px;
-      height: 36px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 700;
-      font-size: 15px;
-      flex-shrink: 0;
-    }
-
-    .logo-text h1 {
-      font-size: 17px;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
-    .logo-text p {
+      gap: 6px;
+      background: rgba(28,61,46,0.10);
+      border: 1px solid rgba(28,61,46,0.16);
+      border-radius: 100px;
+      padding: 4px 12px 4px 8px;
       font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 1px;
-    }
-
-    main {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 24px 16px;
-    }
-
-    .section-title {
-      font-size: 13px;
       font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 12px;
-      padding-left: 4px;
+      color: var(--green);
+      margin-bottom: 18px;
+      letter-spacing: 0.02em;
     }
 
+    .hero-dot {
+      width: 7px; height: 7px;
+      background: var(--orange);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    .hero h1 {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--orange);
+    }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      padding-left: 2px;
+    }
+
+    /* ── Tool cards ── */
     .tool-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      margin-bottom: 32px;
     }
 
     .tool-card {
-      background: #fff;
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 18px 18px 18px 16px;
       text-decoration: none;
       color: inherit;
       display: flex;
       align-items: center;
-      gap: 14px;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      gap: 16px;
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.06),
+        0 0 0 0.5px rgba(255,255,255,0.6) inset;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
       -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, transparent 60%);
+      pointer-events: none;
     }
 
     .tool-card:active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+      transform: scale(0.975);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
 
+    /* featured card */
+    .tool-card.featured {
+      background: linear-gradient(145deg, #1c3d2e 0%, #2a5740 100%);
+      border-color: rgba(255,255,255,0.15);
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(28,61,46,0.30);
+      padding: 22px 18px 22px 18px;
+    }
+
+    .tool-card.featured::before {
+      background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 55%);
+    }
+
+    .tool-card.featured .tool-desc { color: rgba(255,255,255,0.65); }
+    .tool-card.featured .tool-arrow { color: rgba(255,255,255,0.35); }
+
+    /* icon */
     .tool-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
+      width: 48px; height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 24px;
       flex-shrink: 0;
     }
 
-    .tool-icon.blue   { background: #eff6ff; }
-    .tool-icon.green  { background: #f0fdf4; }
-    .tool-icon.orange { background: #fff7ed; }
-    .tool-icon.purple { background: #faf5ff; }
+    .icon-green  { background: rgba(28,61,46,0.10); }
+    .icon-orange { background: rgba(217,101,42,0.12); }
+    .icon-sand   { background: rgba(200,169,110,0.18); }
+    .icon-white  { background: rgba(255,255,255,0.15); }
 
-    .tool-info {
-      flex: 1;
-      min-width: 0;
-    }
+    /* info */
+    .tool-info { flex: 1; min-width: 0; }
 
     .tool-name {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 3px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
     }
 
     .tool-desc {
       font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.4;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: var(--muted);
+      line-height: 1.45;
     }
 
+    /* arrow */
     .tool-arrow {
-      color: var(--border);
-      font-size: 18px;
+      font-size: 20px;
+      color: #ccc;
       flex-shrink: 0;
+      font-weight: 300;
     }
 
-    .coming-soon {
-      opacity: 0.45;
-      pointer-events: none;
-    }
-
+    /* badge */
     .badge {
       display: inline-block;
       font-size: 10px;
-      font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 100px;
       margin-left: 6px;
       vertical-align: middle;
+      letter-spacing: 0.03em;
     }
-
     .badge-soon {
-      background: #f1f5f9;
-      color: #94a3b8;
+      background: rgba(0,0,0,0.06);
+      color: #aaa;
     }
 
+    .disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* ── Footer ── */
     footer {
+      padding: 8px 0 40px;
       text-align: center;
-      padding: 32px 16px;
+    }
+
+    .footer-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 100px;
+      padding: 8px 18px;
+    }
+
+    .footer-dot {
+      width: 6px; height: 6px;
+      background: var(--orange);
+      border-radius: 50%;
+    }
+
+    .footer-text {
       font-size: 12px;
-      color: #cbd5e1;
+      font-weight: 500;
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="header-inner">
-    <div class="logo">
-      <div class="logo-badge">CYC</div>
-      <div class="logo-text">
-        <h1>活动工具站</h1>
-        <p>链岛青年社区 · 大理</p>
-      </div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <span class="hero-dot"></span>
+      链岛青年社区 · 大理
     </div>
+    <h1>活动<br><em>工具站</em></h1>
+    <p class="hero-sub">社区活动组织者的一站式工具，快速生成通告、查看日历。</p>
   </div>
-</header>
 
-<main>
-  <p class="section-title">活动工具</p>
-
+  <!-- Tools -->
+  <p class="section-label">工具</p>
   <div class="tool-list">
 
-    <a class="tool-card" href="/weekly-calendar/">
-      <div class="tool-icon blue">📅</div>
+    <!-- Featured -->
+    <a class="tool-card featured" href="/weekly-calendar/">
+      <div class="tool-icon icon-white">📋</div>
       <div class="tool-info">
         <div class="tool-name">活动通告生成器</div>
-        <div class="tool-desc">生成微信群用的每周活动公告</div>
+        <div class="tool-desc">填写活动信息，一键生成微信群通告文本</div>
       </div>
       <div class="tool-arrow">›</div>
     </a>
 
     <a class="tool-card" href="https://cyc.homes/activity" target="_blank" rel="noopener">
-      <div class="tool-icon green">🗓️</div>
+      <div class="tool-icon icon-orange">🗓️</div>
       <div class="tool-info">
         <div class="tool-name">社群活动日历</div>
         <div class="tool-desc">查看所有近期活动 · 飞书报名</div>
@@ -225,8 +320,8 @@
       <div class="tool-arrow">›</div>
     </a>
 
-    <a class="tool-card coming-soon" href="/event-card/">
-      <div class="tool-icon orange">✨</div>
+    <a class="tool-card disabled" href="/event-card/">
+      <div class="tool-icon icon-sand">✨</div>
       <div class="tool-info">
         <div class="tool-name">
           活动信息提取
@@ -238,11 +333,15 @@
     </a>
 
   </div>
-</main>
 
-<footer>
-  CYC 链岛青年社区 · cyc.center
-</footer>
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-dot"></span>
+      <span class="footer-text">cyc.center</span>
+    </div>
+  </footer>
 
+</div>
 </body>
 </html>
