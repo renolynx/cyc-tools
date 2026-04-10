@@ -10,13 +10,17 @@
 
     :root {
       --green:   #1c3d2e;
+      --green2:  #2a5740;
       --orange:  #d9652a;
       --sand:    #f2ede6;
       --card-bg: rgba(255,255,255,0.72);
       --border:  rgba(255,255,255,0.55);
+      --stroke:  rgba(0,0,0,0.08);
       --text:    #1a1a1a;
       --muted:   #6b6b6b;
       --radius:  20px;
+      --r:       16px;
+      --r-sm:    10px;
       --danger:  #c0392b;
     }
 
@@ -67,9 +71,7 @@
 
     .login-card p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
 
-    .input-wrap {
-      display: flex; gap: 8px; margin-bottom: 12px;
-    }
+    .input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
 
     .input-wrap input {
       flex: 1; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);
@@ -89,33 +91,19 @@
     }
 
     .btn:active { transform: scale(0.96); }
-
     .btn-primary { background: var(--green); color: #fff; width: 100%; }
-
     .btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
-
-    .btn-outline {
-      background: transparent; border: 1.5px solid rgba(0,0,0,0.1);
-      color: var(--text);
-    }
-
-    .btn-danger {
-      background: rgba(192,57,43,0.08); color: var(--danger);
-      border: 1px solid rgba(192,57,43,0.15);
-    }
-
+    .btn-outline { background: transparent; border: 1.5px solid rgba(0,0,0,0.1); color: var(--text); }
+    .btn-danger { background: rgba(192,57,43,0.08); color: var(--danger); border: 1px solid rgba(192,57,43,0.15); }
     .btn-orange { background: var(--orange); color: #fff; }
 
-    .login-error {
-      font-size: 12px; color: var(--danger); margin-top: 8px;
-      min-height: 18px;
-    }
+    .login-error { font-size: 12px; color: var(--danger); margin-top: 8px; min-height: 18px; }
 
     /* ── Main App ── */
     #app { display: none; }
 
     .header {
-      padding: 48px 0 24px;
+      padding: 48px 0 20px;
       display: flex; align-items: flex-start; justify-content: space-between;
     }
 
@@ -127,19 +115,18 @@
     .header h1 em { font-style: normal; color: var(--orange); }
 
     .header-actions {
-      display: flex; gap: 6px; align-items: center; padding-top: 4px;
-      flex-wrap: wrap; justify-content: flex-end;
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+      justify-content: flex-end; padding-top: 4px;
     }
 
     .back-link {
       display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12px; color: var(--muted); text-decoration: none;
-      font-weight: 500;
+      font-size: 12px; color: var(--muted); text-decoration: none; font-weight: 500;
     }
 
     .back-link:hover { color: var(--green); }
 
-    /* ── Edit mode indicator ── */
+    /* Edit mode badge */
     .edit-badge {
       display: none; align-items: center; gap: 5px;
       padding: 4px 10px; border-radius: 100px;
@@ -150,15 +137,9 @@
 
     .edit-badge.active { display: inline-flex; }
 
-    @keyframes editPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
+    @keyframes editPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-    .edit-badge-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--orange);
-    }
+    .edit-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); }
 
     /* ── Section ── */
     .section { margin-bottom: 28px; }
@@ -186,6 +167,117 @@
     .dot-green { background: var(--green); }
     .dot-orange { background: var(--orange); }
 
+    /* ── Week Nav (from activity calendar) ── */
+    .week-nav {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+
+    .nav-btn {
+      display: flex; align-items: center; justify-content: center;
+      padding: 7px 14px;
+      background: var(--card-bg); backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 100px;
+      font-size: 13px; font-weight: 500; color: var(--green);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-btn:active { background: rgba(28,61,46,0.10); }
+
+    .week-range {
+      flex: 1; text-align: center;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Day Strip ── */
+    .week-strip {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 5px; margin-bottom: 6px;
+    }
+
+    .day-cell {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 6px 2px; gap: 1px;
+      background: var(--card-bg); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .day-cell.is-today { border-color: rgba(28,61,46,0.35); }
+
+    .day-cell .day-name { font-size: 10px; color: var(--muted); font-weight: 500; }
+    .day-cell .day-num { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .day-cell .day-tag { font-size: 9px; color: var(--orange); font-weight: 600; min-height: 13px; }
+
+    .day-cell.is-today .day-name { color: var(--green); font-weight: 700; }
+    .day-cell.is-today .day-num { color: var(--green); }
+
+    /* ── Schedule Grid ── */
+    .sched-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 5px; margin-top: 6px;
+    }
+
+    .sched-col { display: flex; flex-direction: column; gap: 4px; }
+
+    .sched-cell {
+      background: var(--card-bg); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 4px; text-align: center;
+      font-size: 12px; font-weight: 600; min-height: 34px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .sched-cell.is-today { border-color: rgba(28,61,46,0.25); }
+
+    .sched-cell .empty-slot { color: #ccc; font-weight: 400; font-size: 11px; }
+
+    .sched-label-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4px; margin-top: 8px; margin-bottom: 2px;
+    }
+
+    .sched-shift-label {
+      font-size: 10px; font-weight: 700; color: var(--green);
+      text-align: center; padding: 4px 0;
+    }
+
+    /* Two-row layout: shift labels on left */
+    .sched-table { width: 100%; margin-top: 8px; }
+
+    .sched-table-row {
+      display: grid; grid-template-columns: 60px repeat(7, 1fr);
+      gap: 5px; margin-bottom: 5px;
+    }
+
+    .sched-table-label {
+      font-size: 10px; font-weight: 700; color: var(--green);
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; line-height: 1.3;
+      padding: 4px 2px;
+    }
+
+    .schedule-select {
+      width: 100%; padding: 4px 2px; border: 1.5px solid rgba(0,0,0,0.08);
+      border-radius: 6px; font-size: 11px; font-weight: 600;
+      background: rgba(255,255,255,0.6);
+      font-family: inherit; color: var(--text);
+      outline: none; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+      text-align: center; text-align-last: center;
+    }
+
+    .schedule-select:focus { border-color: var(--green); }
+
+    .schedule-hint {
+      font-size: 11px; color: var(--muted); margin-top: 6px;
+      text-align: center;
+    }
+
     /* ── Role Cards ── */
     .role-group { display: flex; flex-direction: column; gap: 10px; }
 
@@ -198,7 +290,12 @@
       padding: 16px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.6) inset;
       position: relative; overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
     }
+
+    .role-card:active { transform: scale(0.98); }
 
     .role-card::before {
       content: ''; position: absolute; inset: 0; border-radius: var(--radius);
@@ -231,27 +328,7 @@
       margin-bottom: 8px;
     }
 
-    .role-title {
-      font-size: 11px; font-weight: 600; color: var(--muted);
-      letter-spacing: 0.03em;
-    }
-
-    /* Edit buttons — hidden by default, shown in edit mode */
-    .role-edit-btn {
-      background: none; border: none; cursor: pointer;
-      font-size: 14px; opacity: 0.4; transition: opacity 0.2s;
-      padding: 2px 4px;
-      display: none;
-    }
-
-    .edit-active .role-edit-btn { display: inline-block; }
-
-    .role-edit-btn:hover { opacity: 1; }
-
-    .role-card.featured .role-edit-btn,
-    .role-card.praxis-featured .role-edit-btn { filter: invert(1); opacity: 0.5; }
-    .role-card.featured .role-edit-btn:hover,
-    .role-card.praxis-featured .role-edit-btn:hover { opacity: 1; }
+    .role-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.03em; }
 
     .person-name {
       font-size: 18px; font-weight: 800; letter-spacing: -0.02em;
@@ -261,6 +338,23 @@
     .person-name .vacant { opacity: 0.4; font-weight: 600; }
 
     .role-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* Inline editable */
+    .inline-edit {
+      background: none; border: none; font: inherit;
+      color: inherit; width: 100%;
+      padding: 0; outline: none; cursor: text;
+    }
+
+    .inline-edit:focus {
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px; padding: 1px 4px; margin: -1px -4px;
+    }
+
+    .role-card.featured .inline-edit:focus,
+    .role-card.praxis-featured .inline-edit:focus {
+      background: rgba(255,255,255,0.15);
+    }
 
     /* Triangle layout */
     .triangle-grid { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -279,7 +373,12 @@
       padding: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.6) inset;
       position: relative; overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
     }
+
+    .volunteer-card:active { transform: scale(0.98); }
 
     .volunteer-card::before {
       content: ''; position: absolute; inset: 0; border-radius: 16px;
@@ -299,75 +398,6 @@
 
     .praxis-keyword { background: rgba(217,101,42,0.08); color: var(--orange); }
 
-    /* ── Schedule Table ── */
-    .schedule-wrap {
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
-      margin: 0 -4px; padding: 0 4px;
-    }
-
-    .schedule-table {
-      width: 100%; min-width: 520px;
-      border-collapse: separate; border-spacing: 4px;
-    }
-
-    .schedule-table th {
-      font-size: 11px; font-weight: 700; color: var(--muted);
-      padding: 6px 4px; text-align: center;
-      letter-spacing: 0.02em;
-    }
-
-    .schedule-table th:first-child {
-      text-align: left; font-size: 10px; width: 72px;
-      color: var(--green);
-    }
-
-    .schedule-table td {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 6px;
-      text-align: center;
-      font-size: 13px; font-weight: 600;
-      min-width: 56px;
-      vertical-align: middle;
-    }
-
-    .schedule-table td:first-child {
-      background: rgba(28,61,46,0.06);
-      border-color: rgba(28,61,46,0.1);
-      font-size: 10px; font-weight: 700;
-      color: var(--green); text-align: left;
-      padding-left: 8px; white-space: nowrap;
-    }
-
-    .schedule-table td .empty-slot {
-      color: #ccc; font-weight: 400;
-    }
-
-    .schedule-select {
-      width: 100%; padding: 4px 2px; border: 1.5px solid rgba(0,0,0,0.08);
-      border-radius: 6px; font-size: 12px; font-weight: 600;
-      background: rgba(255,255,255,0.6);
-      font-family: inherit; color: var(--text);
-      outline: none; cursor: pointer;
-      -webkit-appearance: none;
-      appearance: none;
-      text-align: center;
-    }
-
-    .schedule-select:focus { border-color: var(--green); }
-
-    .schedule-hint {
-      font-size: 11px; color: var(--muted); margin-top: 8px;
-      text-align: center;
-    }
-
-    /* highlight today */
-    .schedule-table th.today { color: var(--orange); }
-    .schedule-table td.today { border-color: rgba(217,101,42,0.3); }
-
     /* ── Rep Cards ── */
     .rep-card {
       background: var(--card-bg);
@@ -378,8 +408,12 @@
       padding: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       display: flex; align-items: center; justify-content: space-between;
-      gap: 12px;
+      gap: 12px; cursor: pointer;
+      transition: transform 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
     }
+
+    .rep-card:active { transform: scale(0.98); }
 
     .rep-info { flex: 1; }
     .rep-type { font-size: 10px; font-weight: 700; color: var(--orange); letter-spacing: 0.05em; text-transform: uppercase; }
@@ -387,7 +421,7 @@
     .rep-desc { font-size: 11px; color: var(--muted); }
     .rep-list { display: flex; flex-direction: column; gap: 8px; }
 
-    /* ── Modal ── */
+    /* ── Detail Sheet (bottom modal) ── */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
@@ -405,10 +439,7 @@
       animation: slideUp 0.3s ease;
     }
 
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
     .modal-handle {
       width: 36px; height: 4px; background: rgba(0,0,0,0.12);
@@ -417,10 +448,42 @@
 
     .modal-title {
       font-size: 18px; font-weight: 800; color: var(--green);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
-    .form-group { margin-bottom: 16px; }
+    /* Detail card content */
+    .detail-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(28,61,46,0.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .detail-avatar img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    .detail-role-badge {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 100px;
+      background: rgba(28,61,46,0.08); color: var(--green);
+      margin-bottom: 8px;
+    }
+
+    .detail-name { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+
+    .detail-field { margin-bottom: 14px; }
+
+    .detail-label {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.05em; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .detail-value { font-size: 14px; line-height: 1.6; color: var(--text); }
+
+    .form-group { margin-bottom: 14px; }
 
     .form-label {
       font-size: 12px; font-weight: 600; color: var(--muted);
@@ -430,26 +493,15 @@
     .form-input {
       width: 100%; padding: 10px 14px; border: 1.5px solid rgba(0,0,0,0.08);
       border-radius: 10px; font-size: 14px; background: rgba(255,255,255,0.6);
-      outline: none; transition: border-color 0.2s;
-      font-family: inherit;
+      outline: none; transition: border-color 0.2s; font-family: inherit;
     }
 
     .form-input:focus { border-color: var(--green); }
-
     textarea.form-input { min-height: 60px; resize: vertical; }
 
     .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
     .modal-actions .btn { flex: 1; }
 
-    /* ── Data actions bar (edit mode only) ── */
-    .data-bar {
-      display: none; gap: 6px; flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
-
-    .edit-active .data-bar { display: flex; }
-
-    /* Edit-only elements */
     .edit-only { display: none; }
     .edit-active .edit-only { display: inline-flex; }
 
@@ -467,7 +519,6 @@
     .footer-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; }
     .footer-text { font-size: 12px; font-weight: 500; color: var(--muted); }
 
-    /* ── Responsive ── */
     @media (max-width: 380px) {
       .volunteer-grid { grid-template-columns: 1fr; }
       .triangle-bottom { grid-template-columns: 1fr; }
@@ -505,8 +556,7 @@
     </div>
     <div class="header-actions">
       <span class="edit-badge" id="edit-badge">
-        <span class="edit-badge-dot"></span>
-        编辑中
+        <span class="edit-badge-dot"></span>编辑中
       </span>
       <button class="btn btn-sm btn-orange" id="btn-enter-edit" onclick="enterEditMode()">编辑</button>
       <button class="btn btn-sm btn-outline" id="btn-exit-edit" style="display:none;" onclick="exitEditMode()">退出编辑</button>
@@ -514,11 +564,23 @@
     </div>
   </div>
 
-  <!-- Data bar (edit mode only) -->
-  <div class="data-bar">
-    <button class="btn btn-sm btn-outline" onclick="exportData()">📤 导出数据</button>
-    <button class="btn btn-sm btn-outline" onclick="document.getElementById('import-file').click()">📥 导入数据</button>
-    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  <!-- ===== 本周驻店轮值 (TOP) ===== -->
+  <div class="section">
+    <div class="section-header">
+      <p class="section-title" style="margin-bottom:0;">驻店轮值</p>
+    </div>
+
+    <div class="week-nav">
+      <button class="nav-btn" onclick="changeWeek(-1)">‹ 上周</button>
+      <span class="week-range" id="wkRange"></span>
+      <button class="nav-btn" onclick="changeWeek(1)">下周 ›</button>
+    </div>
+
+    <div class="week-strip" id="wkStrip"></div>
+
+    <div id="schedule-body"></div>
+
+    <p class="schedule-hint">← 左右滑动查看完整排班</p>
   </div>
 
   <!-- ===== CYC 铁三角 ===== -->
@@ -543,17 +605,6 @@
   <div class="section">
     <p class="section-title">CYC 社区义工</p>
     <div class="volunteer-grid" id="cyc-volunteers"></div>
-  </div>
-
-  <!-- ===== 本周驻店轮值 ===== -->
-  <div class="section">
-    <div class="section-header">
-      <p class="section-title" style="margin-bottom:0;">本周驻店轮值</p>
-    </div>
-    <div class="schedule-wrap">
-      <table class="schedule-table" id="schedule-table"></table>
-    </div>
-    <p class="schedule-hint" id="schedule-hint">← 左右滑动查看完整排班</p>
   </div>
 
   <!-- ===== Praxis Hub ===== -->
@@ -593,19 +644,11 @@
   </footer>
 </div>
 
-<!-- ===== Edit Modal ===== -->
-<div class="modal-overlay" id="edit-modal">
+<!-- ===== Detail / Edit Modal ===== -->
+<div class="modal-overlay" id="detail-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-title">编辑</div>
-    <div id="modal-body"></div>
-    <div class="modal-actions">
-      <button class="btn btn-sm btn-outline" onclick="closeModal()">取消</button>
-      <button class="btn btn-sm btn-primary" id="modal-save" onclick="saveModal()">保存</button>
-    </div>
-    <div id="modal-delete-wrap" style="margin-top: 10px; display: none;">
-      <button class="btn btn-sm btn-danger" style="width: 100%;" id="modal-delete-btn">删除</button>
-    </div>
+    <div id="detail-content"></div>
   </div>
 </div>
 
@@ -629,68 +672,44 @@
 
 <script>
 // ═══════════════════════════════════════════
-// Default team data
+// Constants
+// ═══════════════════════════════════════════
+const CN_DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
+const today = new Date(); today.setHours(0,0,0,0);
+
+// ═══════════════════════════════════════════
+// Default Data
 // ═══════════════════════════════════════════
 const DEFAULT_DATA = {
   cyc: {
     triangle: [
-      { role: '资源与治理层', name: '方荣', desc: '资源整合、战略方向、对外关系' },
-      { role: '物业层', name: '月汐', desc: '空间管理、物业运营、后勤保障' },
-      { role: '社区层', name: '悠洋', desc: '社区运营、活动策划、居民关系' }
+      { role: '资源与治理层', name: '方荣', desc: '资源整合、战略方向、对外关系', jd: '', bio: '', since: '', avatar: '' },
+      { role: '物业层', name: '月汐', desc: '空间管理、物业运营、后勤保障', jd: '', bio: '', since: '', avatar: '' },
+      { role: '社区层', name: '悠洋', desc: '社区运营、活动策划、居民关系', jd: '', bio: '', since: '', avatar: '' }
     ],
     ops: [
-      { role: '物业OTA商业负责人', name: '千帆', desc: '民宿运营、OTA平台管理' },
-      { role: 'CYC社区店长', name: '梁欢', desc: '社区空间日常管理' },
-      { role: '新媒体和协作管理', name: '鸭脖', desc: '新媒体运营、团队协作管理' },
-      { role: '轮值活动主理人', name: '', desc: '当月活动总负责（按月轮换）' }
+      { role: '物业OTA商业负责人', name: '千帆', desc: '民宿运营、OTA平台管理', jd: '', bio: '', since: '', avatar: '' },
+      { role: 'CYC社区店长', name: '梁欢', desc: '社区空间日常管理', jd: '', bio: '', since: '', avatar: '' },
+      { role: '新媒体和协作管理', name: '鸭脖', desc: '新媒体运营、团队协作管理', jd: '', bio: '', since: '', avatar: '' },
+      { role: '轮值活动主理人', name: '', desc: '当月活动总负责（按月轮换）', jd: '', bio: '', since: '', avatar: '' }
     ],
     volunteers: [
-      {
-        emoji: '📱', name: '',
-        title: '多平台运营信息同步',
-        keywords: ['协调', '响应', '润滑'],
-        desc: '各平台信息同步、社群消息协调与响应'
-      },
-      {
-        emoji: '📦', name: '',
-        title: '物业库管数据管理',
-        keywords: ['出入登记', '安全', '资产'],
-        desc: '物品出入登记、安全管理、资产盘点'
-      },
-      {
-        emoji: '🎨', name: '',
-        title: '视觉品牌设计与流程优化',
-        keywords: ['设计', '文案', '开发'],
-        desc: '视觉设计、文案输出、流程工具开发'
-      },
-      {
-        emoji: '📸', name: '',
-        title: '拍摄与自媒体协调',
-        keywords: ['现场', '记录', '连接'],
-        desc: '活动现场拍摄、内容记录与自媒体对接'
-      }
+      { emoji: '📱', name: '', title: '多平台运营信息同步', keywords: ['协调','响应','润滑'], desc: '各平台信息同步、社群消息协调与响应', jd: '', bio: '', since: '', avatar: '' },
+      { emoji: '📦', name: '', title: '物业库管数据管理', keywords: ['出入登记','安全','资产'], desc: '物品出入登记、安全管理、资产盘点', jd: '', bio: '', since: '', avatar: '' },
+      { emoji: '🎨', name: '', title: '视觉品牌设计与流程优化', keywords: ['设计','文案','开发'], desc: '视觉设计、文案输出、流程工具开发', jd: '', bio: '', since: '', avatar: '' },
+      { emoji: '📸', name: '', title: '拍摄与自媒体协调', keywords: ['现场','记录','连接'], desc: '活动现场拍摄、内容记录与自媒体对接', jd: '', bio: '', since: '', avatar: '' }
     ]
   },
   praxis: {
-    lead: { role: '主理人', name: 'Demian', desc: 'Praxis Hub 社区主理' },
+    lead: { role: '主理人', name: 'Demian', desc: 'Praxis Hub 社区主理', jd: '', bio: '', since: '', avatar: '' },
     volunteers: [
-      { emoji: '🔧', name: '', title: '方向一', keywords: [], desc: '待定' },
-      { emoji: '🌐', name: '', title: '方向二', keywords: [], desc: '待定' },
-      { emoji: '💡', name: '', title: '方向三', keywords: [], desc: '待定' }
+      { emoji: '🔧', name: '', title: '方向一', keywords: [], desc: '待定', jd: '', bio: '', since: '', avatar: '' },
+      { emoji: '🌐', name: '', title: '方向二', keywords: [], desc: '待定', jd: '', bio: '', since: '', avatar: '' },
+      { emoji: '💡', name: '', title: '方向三', keywords: [], desc: '待定', jd: '', bio: '', since: '', avatar: '' }
     ]
   },
   reps: [],
-  schedule: {
-    days: [
-      { date: '周一', am: '', pm: '' },
-      { date: '周二', am: '', pm: '' },
-      { date: '周三', am: '', pm: '' },
-      { date: '周四', am: '', pm: '' },
-      { date: '周五', am: '', pm: '' },
-      { date: '周六', am: '', pm: '' },
-      { date: '周日', am: '', pm: '' }
-    ]
-  }
+  schedule: {}
 };
 
 // ═══════════════════════════════════════════
@@ -698,19 +717,29 @@ const DEFAULT_DATA = {
 // ═══════════════════════════════════════════
 let data = {};
 let editMode = false;
-let editCtx = null;
+let wkOffset = 0;
 
 function loadData() {
   const saved = localStorage.getItem('cyc-team-data');
   if (saved) {
-    try { data = JSON.parse(saved); } catch { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+    try { data = JSON.parse(saved); } catch { data = structuredClone(DEFAULT_DATA); }
   } else {
-    data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    data = structuredClone(DEFAULT_DATA);
   }
   if (!data.reps) data.reps = [];
-  if (!data.schedule) data.schedule = JSON.parse(JSON.stringify(DEFAULT_DATA.schedule));
-  if (!data.schedule.days) data.schedule.days = JSON.parse(JSON.stringify(DEFAULT_DATA.schedule.days));
-  // Migrate: add new ops if missing
+  if (!data.schedule) data.schedule = {};
+  // Migrate old array-based schedule
+  if (data.schedule.days && Array.isArray(data.schedule.days)) {
+    data.schedule = {};
+  }
+  // Migrate: ensure detail fields exist
+  const addFields = obj => { if (!obj.jd && obj.jd !== '') obj.jd = ''; if (!obj.bio && obj.bio !== '') obj.bio = ''; if (!obj.since && obj.since !== '') obj.since = ''; if (!obj.avatar && obj.avatar !== '') obj.avatar = ''; };
+  data.cyc.triangle.forEach(addFields);
+  data.cyc.ops.forEach(addFields);
+  data.cyc.volunteers.forEach(addFields);
+  addFields(data.praxis.lead);
+  data.praxis.volunteers.forEach(addFields);
+  // Migrate: add new ops
   if (data.cyc.ops.length < 4) {
     const existingRoles = data.cyc.ops.map(o => o.role);
     DEFAULT_DATA.cyc.ops.forEach(op => {
@@ -719,17 +748,34 @@ function loadData() {
   }
 }
 
-function saveData() {
-  localStorage.setItem('cyc-team-data', JSON.stringify(data));
+function saveData() { localStorage.setItem('cyc-team-data', JSON.stringify(data)); }
+
+// ═══════════════════════════════════════════
+// Date helpers (same pattern as activity calendar)
+// ═══════════════════════════════════════════
+function fmt(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+function getMonStart(off) {
+  const d = new Date(today);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff + off * 7);
+  return d;
+}
+
+function dayLabel(d) {
+  const f = new Date(d); f.setHours(0,0,0,0);
+  const tom = new Date(today); tom.setDate(today.getDate()+1);
+  if (f.getTime() === today.getTime()) return '今天';
+  if (f.getTime() === tom.getTime()) return '明天';
+  return '';
 }
 
 // ═══════════════════════════════════════════
-// Auth (entrance)
+// Auth
 // ═══════════════════════════════════════════
 function checkSession() {
-  if (sessionStorage.getItem('cyc-team-auth') === '1') {
-    showApp();
-  }
+  if (sessionStorage.getItem('cyc-team-auth') === '1') showApp();
 }
 
 async function doLogin() {
@@ -740,18 +786,14 @@ async function doLogin() {
   btn.textContent = '验证中...'; btn.disabled = true;
   try {
     const res = await fetch('/api/team-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: pwd })
     });
     const json = await res.json();
     if (res.ok && json.success) {
       sessionStorage.setItem('cyc-team-auth', '1');
-      errEl.textContent = '';
       showApp();
-    } else {
-      errEl.textContent = json.error || '密码错误';
-    }
+    } else { errEl.textContent = json.error || '密码错误'; }
   } catch { errEl.textContent = '网络错误，请重试'; }
   btn.textContent = '进入'; btn.disabled = false;
 }
@@ -767,21 +809,14 @@ function doLogout() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  // Restore edit mode if session still valid
-  if (sessionStorage.getItem('cyc-team-edit') === '1') {
-    editMode = true;
-    applyEditMode();
-  }
-  loadData();
-  render();
+  if (sessionStorage.getItem('cyc-team-edit') === '1') { editMode = true; applyEditMode(); }
+  loadData(); render();
 }
 
-document.getElementById('pwd-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
+document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 // ═══════════════════════════════════════════
-// Edit Mode Auth
+// Edit Mode
 // ═══════════════════════════════════════════
 function enterEditMode() {
   document.getElementById('edit-pwd-modal').classList.add('active');
@@ -790,9 +825,7 @@ function enterEditMode() {
   setTimeout(() => document.getElementById('edit-pwd-input').focus(), 300);
 }
 
-document.getElementById('edit-pwd-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') verifyEditPwd();
-});
+document.getElementById('edit-pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') verifyEditPwd(); });
 
 async function verifyEditPwd() {
   const pwd = document.getElementById('edit-pwd-input').value.trim();
@@ -802,273 +835,229 @@ async function verifyEditPwd() {
   btn.textContent = '验证中...'; btn.disabled = true;
   try {
     const res = await fetch('/api/team-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: pwd })
     });
     const json = await res.json();
     if (res.ok && json.success) {
-      editMode = true;
-      sessionStorage.setItem('cyc-team-edit', '1');
-      closeEditPwdModal();
-      applyEditMode();
-      render();
-    } else {
-      errEl.textContent = json.error || '密码错误';
-    }
+      editMode = true; sessionStorage.setItem('cyc-team-edit', '1');
+      closeEditPwdModal(); applyEditMode(); render();
+    } else { errEl.textContent = json.error || '密码错误'; }
   } catch { errEl.textContent = '网络错误'; }
   btn.textContent = '验证'; btn.disabled = false;
 }
 
-function closeEditPwdModal() {
-  document.getElementById('edit-pwd-modal').classList.remove('active');
-}
+function closeEditPwdModal() { document.getElementById('edit-pwd-modal').classList.remove('active'); }
+document.getElementById('edit-pwd-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditPwdModal(); });
 
-document.getElementById('edit-pwd-modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeEditPwdModal();
-});
-
-function exitEditMode() {
-  editMode = false;
-  sessionStorage.removeItem('cyc-team-edit');
-  applyEditMode();
-  render();
-}
+function exitEditMode() { editMode = false; sessionStorage.removeItem('cyc-team-edit'); applyEditMode(); render(); }
 
 function applyEditMode() {
   const app = document.getElementById('app');
   const badge = document.getElementById('edit-badge');
   const btnEnter = document.getElementById('btn-enter-edit');
   const btnExit = document.getElementById('btn-exit-edit');
-
   if (editMode) {
-    app.classList.add('edit-active');
-    badge.classList.add('active');
-    btnEnter.style.display = 'none';
-    btnExit.style.display = 'inline-flex';
+    app.classList.add('edit-active'); badge.classList.add('active');
+    btnEnter.style.display = 'none'; btnExit.style.display = 'inline-flex';
   } else {
-    app.classList.remove('edit-active');
-    badge.classList.remove('active');
-    btnEnter.style.display = 'inline-flex';
-    btnExit.style.display = 'none';
+    app.classList.remove('edit-active'); badge.classList.remove('active');
+    btnEnter.style.display = 'inline-flex'; btnExit.style.display = 'none';
   }
 }
 
 // ═══════════════════════════════════════════
-// Schedule helpers
+// Schedule
 // ═══════════════════════════════════════════
 function getScheduleOptions() {
   const names = [];
-  // CYC volunteers
   data.cyc.volunteers.forEach(v => { if (v.name) names.push(v.name); });
-  // CYC ops
   data.cyc.ops.forEach(o => { if (o.name) names.push(o.name); });
-  // CYC triangle
-  data.cyc.triangle.forEach(t => { if (t.name) names.push(t.name); });
-  // deduplicate
   return [...new Set(names)];
 }
 
-function getTodayIndex() {
-  const d = new Date().getDay(); // 0=Sun
-  return d === 0 ? 6 : d - 1; // convert to 0=Mon
+function getSchedKey(dateStr, shift) { return dateStr + '_' + shift; }
+
+function changeWeek(d) { wkOffset += d; renderWeekStrip(); renderSchedule(); }
+
+function renderWeekStrip() {
+  const s = getMonStart(wkOffset), e = new Date(s); e.setDate(s.getDate() + 6);
+  document.getElementById('wkRange').textContent =
+    (s.getMonth()+1) + '月' + s.getDate() + '日 — ' + (e.getMonth()+1) + '月' + e.getDate() + '日';
+
+  const strip = document.getElementById('wkStrip');
+  strip.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(s); d.setDate(s.getDate() + i);
+    const isToday = d.getTime() === today.getTime();
+    const tag = dayLabel(d);
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (isToday ? ' is-today' : '');
+    cell.innerHTML =
+      '<span class="day-name">' + CN_DAYS[d.getDay()] + '</span>' +
+      '<span class="day-num">' + d.getDate() + '</span>' +
+      '<span class="day-tag">' + (tag || '') + '</span>';
+    strip.appendChild(cell);
+  }
+}
+
+function renderSchedule() {
+  const s = getMonStart(wkOffset);
+  const options = getScheduleOptions();
+  const body = document.getElementById('schedule-body');
+
+  let html = '<div class="sched-table">';
+
+  // AM row
+  html += '<div class="sched-table-row">';
+  html += '<div class="sched-table-label">☀️<br>10–16</div>';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(s); d.setDate(s.getDate() + i);
+    const key = getSchedKey(fmt(d), 'am');
+    const val = data.schedule[key] || '';
+    const isToday = d.getTime() === today.getTime();
+    html += '<div class="sched-cell' + (isToday ? ' is-today' : '') + '">';
+    if (editMode) {
+      html += buildSelect(key, val, options);
+    } else {
+      html += val || '<span class="empty-slot">—</span>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // PM row
+  html += '<div class="sched-table-row">';
+  html += '<div class="sched-table-label">🌙<br>16–22</div>';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(s); d.setDate(s.getDate() + i);
+    const key = getSchedKey(fmt(d), 'pm');
+    const val = data.schedule[key] || '';
+    const isToday = d.getTime() === today.getTime();
+    html += '<div class="sched-cell' + (isToday ? ' is-today' : '') + '">';
+    if (editMode) {
+      html += buildSelect(key, val, options);
+    } else {
+      html += val || '<span class="empty-slot">—</span>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  body.innerHTML = html;
+}
+
+function buildSelect(key, val, options) {
+  let opts = '<option value="">—</option>';
+  options.forEach(n => { opts += `<option value="${n}" ${n===val?'selected':''}>${n}</option>`; });
+  if (val && !options.includes(val)) opts += `<option value="${val}" selected>${val}</option>`;
+  return `<select class="schedule-select" onchange="setSchedule('${key}', this.value)">${opts}</select>`;
+}
+
+function setSchedule(key, value) {
+  if (value) { data.schedule[key] = value; } else { delete data.schedule[key]; }
+  saveData();
 }
 
 // ═══════════════════════════════════════════
 // Render
 // ═══════════════════════════════════════════
 function render() {
+  renderWeekStrip();
+  renderSchedule();
   renderTriangle();
   renderOps();
   renderCycVolunteers();
-  renderSchedule();
   renderPraxisLead();
   renderPraxisVolunteers();
   renderReps();
 }
 
-function editBtn(onclick) {
-  return `<button class="role-edit-btn" onclick="${onclick}">✏️</button>`;
-}
-
-function nameOrVacant(name) {
-  return name ? name : `<span class="vacant">空缺</span>`;
-}
+function nameOrVacant(name) { return name || '<span class="vacant">空缺</span>'; }
 
 function renderTriangle() {
   const t = data.cyc.triangle;
   document.getElementById('cyc-triangle').innerHTML = `
     <div class="triangle-top">
-      <div class="role-card featured">
-        <div class="role-top">
-          <span class="role-title">${t[0].role}</span>
-          ${editBtn("openEdit('cyc.triangle', 0)")}
-        </div>
+      <div class="role-card featured" onclick="openDetail('cyc.triangle', 0)">
+        <div class="role-top"><span class="role-title">${t[0].role}</span></div>
         <div class="person-name">${nameOrVacant(t[0].name)}</div>
         <div class="role-desc">${t[0].desc}</div>
       </div>
     </div>
     <div class="triangle-bottom">
       ${t.slice(1).map((p, i) => `
-        <div class="role-card featured">
-          <div class="role-top">
-            <span class="role-title">${p.role}</span>
-            ${editBtn(`openEdit('cyc.triangle', ${i + 1})`)}
-          </div>
+        <div class="role-card featured" onclick="openDetail('cyc.triangle', ${i+1})">
+          <div class="role-top"><span class="role-title">${p.role}</span></div>
           <div class="person-name">${nameOrVacant(p.name)}</div>
           <div class="role-desc">${p.desc}</div>
         </div>
       `).join('')}
-    </div>
-  `;
+    </div>`;
 }
 
 function renderOps() {
-  const ops = data.cyc.ops;
-  document.getElementById('cyc-ops').innerHTML = ops.map((o, i) => `
-    <div class="role-card">
-      <div class="role-top">
-        <span class="role-title">${o.role}</span>
-        ${editBtn(`openEdit('cyc.ops', ${i})`)}
-      </div>
+  document.getElementById('cyc-ops').innerHTML = data.cyc.ops.map((o, i) => `
+    <div class="role-card" onclick="openDetail('cyc.ops', ${i})">
+      <div class="role-top"><span class="role-title">${o.role}</span></div>
       <div class="person-name">${nameOrVacant(o.name)}</div>
       <div class="role-desc">${o.desc}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function renderCycVolunteers() {
-  const vs = data.cyc.volunteers;
-  document.getElementById('cyc-volunteers').innerHTML = vs.map((v, i) => `
-    <div class="volunteer-card">
-      <div class="role-top">
-        <span class="volunteer-emoji">${v.emoji}</span>
-        ${editBtn(`openEdit('cyc.volunteers', ${i})`)}
-      </div>
+  document.getElementById('cyc-volunteers').innerHTML = data.cyc.volunteers.map((v, i) => `
+    <div class="volunteer-card" onclick="openDetail('cyc.volunteers', ${i})">
+      <div class="volunteer-emoji">${v.emoji}</div>
       <div class="person-name">${nameOrVacant(v.name)}</div>
       <div class="role-desc">${v.title}</div>
       <div class="role-keywords">
         ${v.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
       </div>
-    </div>
-  `).join('');
-}
-
-function renderSchedule() {
-  const days = data.schedule.days;
-  const todayIdx = getTodayIndex();
-  const options = getScheduleOptions();
-
-  const dayHeaders = days.map((d, i) =>
-    `<th class="${i === todayIdx ? 'today' : ''}">${d.date}</th>`
-  ).join('');
-
-  function cell(dayIdx, shift) {
-    const val = days[dayIdx][shift] || '';
-    const isToday = dayIdx === todayIdx;
-
-    if (editMode) {
-      const opts = ['<option value="">—</option>']
-        .concat(options.map(n =>
-          `<option value="${n}" ${n === val ? 'selected' : ''}>${n}</option>`
-        ));
-      // If current value isn't in options (maybe removed), still show it
-      if (val && !options.includes(val)) {
-        opts.push(`<option value="${val}" selected>${val}</option>`);
-      }
-      return `<td class="${isToday ? 'today' : ''}">
-        <select class="schedule-select" onchange="updateSchedule(${dayIdx}, '${shift}', this.value)">
-          ${opts.join('')}
-        </select>
-      </td>`;
-    }
-
-    return `<td class="${isToday ? 'today' : ''}">
-      ${val || '<span class="empty-slot">—</span>'}
-    </td>`;
-  }
-
-  const amRow = days.map((_, i) => cell(i, 'am')).join('');
-  const pmRow = days.map((_, i) => cell(i, 'pm')).join('');
-
-  document.getElementById('schedule-table').innerHTML = `
-    <tr>
-      <th></th>
-      ${dayHeaders}
-    </tr>
-    <tr>
-      <td>☀️ 10:00–16:00</td>
-      ${amRow}
-    </tr>
-    <tr>
-      <td>🌙 16:00–22:00</td>
-      ${pmRow}
-    </tr>
-  `;
-}
-
-function updateSchedule(dayIdx, shift, value) {
-  data.schedule.days[dayIdx][shift] = value;
-  saveData();
+    </div>`).join('');
 }
 
 function renderPraxisLead() {
   const l = data.praxis.lead;
   document.getElementById('praxis-lead').innerHTML = `
-    <div class="role-card praxis-featured">
-      <div class="role-top">
-        <span class="role-title">${l.role}</span>
-        ${editBtn("openEdit('praxis.lead', null)")}
-      </div>
+    <div class="role-card praxis-featured" onclick="openDetail('praxis.lead', null)">
+      <div class="role-top"><span class="role-title">${l.role}</span></div>
       <div class="person-name">${nameOrVacant(l.name)}</div>
       <div class="role-desc">${l.desc}</div>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderPraxisVolunteers() {
-  const vs = data.praxis.volunteers;
-  document.getElementById('praxis-volunteers').innerHTML = vs.map((v, i) => `
-    <div class="volunteer-card">
-      <div class="role-top">
-        <span class="volunteer-emoji">${v.emoji}</span>
-        ${editBtn(`openEdit('praxis.volunteers', ${i})`)}
-      </div>
+  document.getElementById('praxis-volunteers').innerHTML = data.praxis.volunteers.map((v, i) => `
+    <div class="volunteer-card" onclick="openDetail('praxis.volunteers', ${i})">
+      <div class="volunteer-emoji">${v.emoji}</div>
       <div class="person-name">${nameOrVacant(v.name)}</div>
       <div class="role-desc">${v.title}</div>
       <div class="role-keywords">
         ${v.keywords.map(k => `<span class="keyword-tag praxis-keyword">${k}</span>`).join('')}
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function renderReps() {
   const rs = data.reps;
   const listEl = document.getElementById('reps-list');
   const emptyEl = document.getElementById('reps-empty');
-
-  if (rs.length === 0) {
-    listEl.innerHTML = '';
-    emptyEl.style.display = 'block';
-    return;
-  }
-
+  if (rs.length === 0) { listEl.innerHTML = ''; emptyEl.style.display = 'block'; return; }
   emptyEl.style.display = 'none';
   listEl.innerHTML = rs.map((r, i) => `
-    <div class="rep-card">
+    <div class="rep-card" onclick="openDetail('reps', ${i})">
       <div class="rep-info">
         <div class="rep-type">${r.type || '代表'}</div>
         <div class="rep-name">${r.name}</div>
         <div class="rep-desc">${r.desc || ''}</div>
       </div>
-      ${editBtn(`openEdit('reps', ${i})`)}
-    </div>
-  `).join('');
+      <div style="font-size:16px;color:#ccc;">›</div>
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════════
-// Modal / Edit
+// Detail Modal
 // ═══════════════════════════════════════════
 function getItem(path, idx) {
   const parts = path.split('.');
@@ -1077,187 +1066,157 @@ function getItem(path, idx) {
   return idx !== null && idx !== undefined ? obj[idx] : obj;
 }
 
-function openEdit(path, idx) {
-  if (!editMode) return;
-  editCtx = { path, idx };
+function openDetail(path, idx) {
   const item = getItem(path, idx);
-  const modal = document.getElementById('edit-modal');
-  const title = document.getElementById('modal-title');
-  const body = document.getElementById('modal-body');
-  const delWrap = document.getElementById('modal-delete-wrap');
+  const modal = document.getElementById('detail-modal');
+  const content = document.getElementById('detail-content');
+  const isVolunteer = path.includes('volunteers');
+  const isRep = path === 'reps';
+  const emoji = item.emoji || (isRep ? '🏷️' : '👤');
 
-  delWrap.style.display = 'none';
+  if (editMode) {
+    // EDIT mode: show form
+    let fields = '';
 
-  if (path === 'reps') {
-    title.textContent = '编辑代表';
-    body.innerHTML = `
-      <div class="form-group">
-        <label class="form-label">类型（如：众筹人代表、活动代表）</label>
-        <input class="form-input" id="f-type" value="${item.type || ''}">
+    if (isRep) {
+      fields = `
+        <div class="form-group"><label class="form-label">类型</label><input class="form-input" id="df-type" value="${item.type || ''}"></div>
+        <div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="df-name" value="${item.name || ''}"></div>
+        <div class="form-group"><label class="form-label">说明</label><input class="form-input" id="df-desc" value="${item.desc || ''}"></div>
+      `;
+    } else if (isVolunteer) {
+      fields = `
+        <div class="form-group"><label class="form-label">图标 Emoji</label><input class="form-input" id="df-emoji" value="${item.emoji || ''}"></div>
+        <div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="df-name" value="${item.name || ''}"></div>
+        <div class="form-group"><label class="form-label">职责方向</label><input class="form-input" id="df-title" value="${item.title || ''}"></div>
+        <div class="form-group"><label class="form-label">关键词（逗号分隔）</label><input class="form-input" id="df-keywords" value="${(item.keywords||[]).join('、')}"></div>
+        <div class="form-group"><label class="form-label">描述</label><textarea class="form-input" id="df-desc">${item.desc || ''}</textarea></div>
+      `;
+    } else {
+      fields = `
+        <div class="form-group"><label class="form-label">角色名称</label><input class="form-input" id="df-role" value="${item.role || ''}"></div>
+        <div class="form-group"><label class="form-label">姓名</label><input class="form-input" id="df-name" value="${item.name || ''}"></div>
+        <div class="form-group"><label class="form-label">描述</label><textarea class="form-input" id="df-desc">${item.desc || ''}</textarea></div>
+      `;
+    }
+
+    // Common detail fields (not for reps)
+    if (!isRep) {
+      fields += `
+        <div style="border-top: 1px solid var(--stroke); margin: 16px 0; padding-top: 16px;">
+          <p class="section-title" style="margin-bottom: 12px;">详细资料</p>
+        </div>
+        <div class="form-group"><label class="form-label">头像 URL</label><input class="form-input" id="df-avatar" value="${item.avatar || ''}"></div>
+        <div class="form-group"><label class="form-label">岗位职责 (JD)</label><textarea class="form-input" id="df-jd">${item.jd || ''}</textarea></div>
+        <div class="form-group"><label class="form-label">个人简介</label><textarea class="form-input" id="df-bio">${item.bio || ''}</textarea></div>
+        <div class="form-group"><label class="form-label">任职时间</label><input class="form-input" id="df-since" value="${item.since || ''}" placeholder="如：2025年3月"></div>
+      `;
+    }
+
+    content.innerHTML = `
+      <div class="modal-title">编辑</div>
+      ${fields}
+      <div class="modal-actions">
+        <button class="btn btn-sm btn-outline" onclick="closeDetail()">取消</button>
+        <button class="btn btn-sm btn-primary" onclick="saveDetail('${path}', ${idx})">保存</button>
       </div>
-      <div class="form-group">
-        <label class="form-label">姓名</label>
-        <input class="form-input" id="f-name" value="${item.name || ''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">说明</label>
-        <input class="form-input" id="f-desc" value="${item.desc || ''}">
-      </div>
-    `;
-    delWrap.style.display = 'block';
-    document.getElementById('modal-delete-btn').onclick = () => {
-      data.reps.splice(idx, 1);
-      saveData(); render(); closeModal();
-    };
-  } else if (path.includes('volunteers')) {
-    title.textContent = '编辑义工';
-    body.innerHTML = `
-      <div class="form-group">
-        <label class="form-label">图标 Emoji</label>
-        <input class="form-input" id="f-emoji" value="${item.emoji || ''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">姓名</label>
-        <input class="form-input" id="f-name" value="${item.name || ''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">职责方向</label>
-        <input class="form-input" id="f-title" value="${item.title || ''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">关键词（逗号分隔）</label>
-        <input class="form-input" id="f-keywords" value="${(item.keywords || []).join('、')}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">描述</label>
-        <textarea class="form-input" id="f-desc">${item.desc || ''}</textarea>
-      </div>
+      ${isRep ? `<div style="margin-top: 10px;"><button class="btn btn-sm btn-danger" style="width:100%;" onclick="deleteRep(${idx})">删除</button></div>` : ''}
     `;
   } else {
-    title.textContent = '编辑角色';
-    body.innerHTML = `
-      <div class="form-group">
-        <label class="form-label">角色名称</label>
-        <input class="form-input" id="f-role" value="${item.role || ''}">
+    // VIEW mode: show detail card
+    const name = item.name || '空缺';
+    const role = item.role || item.title || '';
+    const desc = item.desc || '';
+    const jd = item.jd || '';
+    const bio = item.bio || '';
+    const since = item.since || '';
+    const avatarContent = item.avatar
+      ? `<img src="${item.avatar}" alt="">`
+      : emoji;
+
+    let detailFields = '';
+    if (desc) detailFields += `<div class="detail-field"><div class="detail-label">职责描述</div><div class="detail-value">${desc}</div></div>`;
+    if (isVolunteer && item.keywords && item.keywords.length) {
+      detailFields += `<div class="detail-field"><div class="detail-label">关键词</div><div class="detail-value">${item.keywords.map(k => `<span class="keyword-tag" style="font-size:12px;padding:3px 8px;">${k}</span>`).join(' ')}</div></div>`;
+    }
+    if (jd) detailFields += `<div class="detail-field"><div class="detail-label">岗位职责</div><div class="detail-value">${jd.replace(/\n/g,'<br>')}</div></div>`;
+    if (bio) detailFields += `<div class="detail-field"><div class="detail-label">个人简介</div><div class="detail-value">${bio.replace(/\n/g,'<br>')}</div></div>`;
+    if (since) detailFields += `<div class="detail-field"><div class="detail-label">任职时间</div><div class="detail-value">${since}</div></div>`;
+
+    if (isRep) {
+      detailFields = '';
+      if (item.type) detailFields += `<div class="detail-field"><div class="detail-label">代表类型</div><div class="detail-value">${item.type}</div></div>`;
+      if (desc) detailFields += `<div class="detail-field"><div class="detail-label">说明</div><div class="detail-value">${desc}</div></div>`;
+    }
+
+    content.innerHTML = `
+      <div style="text-align: center; padding-top: 8px;">
+        <div class="detail-avatar" style="margin: 0 auto 12px;">${avatarContent}</div>
+        <div class="detail-role-badge">${role}</div>
+        <div class="detail-name">${name}</div>
       </div>
-      <div class="form-group">
-        <label class="form-label">姓名</label>
-        <input class="form-input" id="f-name" value="${item.name || ''}">
+      <div style="margin-top: 20px;">
+        ${detailFields || '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0;">暂无详细信息</div>'}
       </div>
-      <div class="form-group">
-        <label class="form-label">描述</label>
-        <textarea class="form-input" id="f-desc">${item.desc || ''}</textarea>
+      <div class="modal-actions" style="margin-top:24px;">
+        <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
       </div>
     `;
   }
 
   modal.classList.add('active');
+}
+
+function saveDetail(path, idx) {
+  const item = getItem(path, idx);
+  const isVolunteer = path.includes('volunteers');
+  const isRep = path === 'reps';
+
+  if (isRep) {
+    item.type = document.getElementById('df-type').value.trim();
+    item.name = document.getElementById('df-name').value.trim();
+    item.desc = document.getElementById('df-desc').value.trim();
+    if (!item.name) { alert('请填写姓名'); return; }
+  } else if (isVolunteer) {
+    item.emoji = document.getElementById('df-emoji').value.trim();
+    item.name = document.getElementById('df-name').value.trim();
+    item.title = document.getElementById('df-title').value.trim();
+    const kwStr = document.getElementById('df-keywords').value.trim();
+    item.keywords = kwStr ? kwStr.split(/[,，、]/).map(s => s.trim()).filter(Boolean) : [];
+    item.desc = document.getElementById('df-desc').value.trim();
+  } else {
+    if (document.getElementById('df-role')) item.role = document.getElementById('df-role').value.trim();
+    item.name = document.getElementById('df-name').value.trim();
+    item.desc = document.getElementById('df-desc').value.trim();
+  }
+
+  if (!isRep) {
+    item.avatar = document.getElementById('df-avatar').value.trim();
+    item.jd = document.getElementById('df-jd').value.trim();
+    item.bio = document.getElementById('df-bio').value.trim();
+    item.since = document.getElementById('df-since').value.trim();
+  }
+
+  saveData(); render(); closeDetail();
+}
+
+function deleteRep(idx) {
+  data.reps.splice(idx, 1);
+  saveData(); render(); closeDetail();
 }
 
 function openAddRep() {
   if (!editMode) return;
-  editCtx = { path: 'reps', idx: -1 };
-  const modal = document.getElementById('edit-modal');
-  document.getElementById('modal-title').textContent = '添加社区代表';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="form-group">
-      <label class="form-label">类型（如：众筹人代表、活动代表）</label>
-      <input class="form-input" id="f-type" value="">
-    </div>
-    <div class="form-group">
-      <label class="form-label">姓名</label>
-      <input class="form-input" id="f-name" value="">
-    </div>
-    <div class="form-group">
-      <label class="form-label">说明</label>
-      <input class="form-input" id="f-desc" value="">
-    </div>
-  `;
-  document.getElementById('modal-delete-wrap').style.display = 'none';
-  modal.classList.add('active');
+  data.reps.push({ type: '', name: '新代表', desc: '' });
+  saveData(); render();
+  openDetail('reps', data.reps.length - 1);
 }
 
-function saveModal() {
-  const { path, idx } = editCtx;
+function closeDetail() { document.getElementById('detail-modal').classList.remove('active'); }
 
-  if (path === 'reps') {
-    const newItem = {
-      type: document.getElementById('f-type').value.trim(),
-      name: document.getElementById('f-name').value.trim(),
-      desc: document.getElementById('f-desc').value.trim()
-    };
-    if (!newItem.name) { alert('请填写姓名'); return; }
-    if (idx === -1) {
-      data.reps.push(newItem);
-    } else {
-      data.reps[idx] = newItem;
-    }
-  } else if (path.includes('volunteers')) {
-    const item = getItem(path, idx);
-    item.emoji = document.getElementById('f-emoji').value.trim();
-    item.name = document.getElementById('f-name').value.trim();
-    item.title = document.getElementById('f-title').value.trim();
-    const kwStr = document.getElementById('f-keywords').value.trim();
-    item.keywords = kwStr ? kwStr.split(/[,，、]/).map(s => s.trim()).filter(Boolean) : [];
-    item.desc = document.getElementById('f-desc').value.trim();
-  } else {
-    const item = getItem(path, idx);
-    if (document.getElementById('f-role')) item.role = document.getElementById('f-role').value.trim();
-    item.name = document.getElementById('f-name').value.trim();
-    item.desc = document.getElementById('f-desc').value.trim();
-  }
-
-  saveData();
-  render();
-  closeModal();
-}
-
-function closeModal() {
-  document.getElementById('edit-modal').classList.remove('active');
-  editCtx = null;
-}
-
-document.getElementById('edit-modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal();
+document.getElementById('detail-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeDetail();
 });
-
-// ═══════════════════════════════════════════
-// Export / Import
-// ═══════════════════════════════════════════
-function exportData() {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `cyc-team-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importData(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const imported = JSON.parse(e.target.result);
-      if (imported.cyc && imported.praxis) {
-        data = imported;
-        if (!data.reps) data.reps = [];
-        if (!data.schedule) data.schedule = JSON.parse(JSON.stringify(DEFAULT_DATA.schedule));
-        saveData();
-        render();
-        alert('导入成功！');
-      } else {
-        alert('文件格式不正确');
-      }
-    } catch {
-      alert('文件解析失败');
-    }
-  };
-  reader.readAsText(file);
-  event.target.value = '';
-}
 
 // ═══════════════════════════════════════════
 // Init
