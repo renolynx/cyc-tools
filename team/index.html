@@ -90,13 +90,9 @@
 
     .btn:active { transform: scale(0.96); }
 
-    .btn-primary {
-      background: var(--green); color: #fff; width: 100%;
-    }
+    .btn-primary { background: var(--green); color: #fff; width: 100%; }
 
-    .btn-sm {
-      padding: 7px 14px; font-size: 12px; border-radius: 8px;
-    }
+    .btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
 
     .btn-outline {
       background: transparent; border: 1.5px solid rgba(0,0,0,0.1);
@@ -108,9 +104,7 @@
       border: 1px solid rgba(192,57,43,0.15);
     }
 
-    .btn-orange {
-      background: var(--orange); color: #fff;
-    }
+    .btn-orange { background: var(--orange); color: #fff; }
 
     .login-error {
       font-size: 12px; color: var(--danger); margin-top: 8px;
@@ -134,6 +128,7 @@
 
     .header-actions {
       display: flex; gap: 6px; align-items: center; padding-top: 4px;
+      flex-wrap: wrap; justify-content: flex-end;
     }
 
     .back-link {
@@ -144,10 +139,29 @@
 
     .back-link:hover { color: var(--green); }
 
-    /* ── Section ── */
-    .section {
-      margin-bottom: 28px;
+    /* ── Edit mode indicator ── */
+    .edit-badge {
+      display: none; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 700;
+      background: rgba(217,101,42,0.12); color: var(--orange);
+      animation: editPulse 2s ease-in-out infinite;
     }
+
+    .edit-badge.active { display: inline-flex; }
+
+    @keyframes editPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .edit-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--orange);
+    }
+
+    /* ── Section ── */
+    .section { margin-bottom: 28px; }
 
     .section-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -168,17 +182,12 @@
     .badge-cyc { background: rgba(28,61,46,0.1); color: var(--green); }
     .badge-praxis { background: rgba(217,101,42,0.1); color: var(--orange); }
 
-    .community-dot {
-      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-    }
-
+    .community-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot-green { background: var(--green); }
     .dot-orange { background: var(--orange); }
 
     /* ── Role Cards ── */
-    .role-group {
-      display: flex; flex-direction: column; gap: 10px;
-    }
+    .role-group { display: flex; flex-direction: column; gap: 10px; }
 
     .role-card {
       background: var(--card-bg);
@@ -227,11 +236,15 @@
       letter-spacing: 0.03em;
     }
 
+    /* Edit buttons — hidden by default, shown in edit mode */
     .role-edit-btn {
       background: none; border: none; cursor: pointer;
       font-size: 14px; opacity: 0.4; transition: opacity 0.2s;
       padding: 2px 4px;
+      display: none;
     }
+
+    .edit-active .role-edit-btn { display: inline-block; }
 
     .role-edit-btn:hover { opacity: 1; }
 
@@ -245,26 +258,17 @@
       margin-bottom: 2px;
     }
 
-    .role-desc {
-      font-size: 12px; color: var(--muted); line-height: 1.5;
-    }
+    .person-name .vacant { opacity: 0.4; font-weight: 600; }
+
+    .role-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
     /* Triangle layout */
-    .triangle-grid {
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-    }
-
+    .triangle-grid { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .triangle-top { width: 100%; max-width: 320px; }
-
-    .triangle-bottom {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-      width: 100%;
-    }
+    .triangle-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
 
     /* Volunteer grid */
-    .volunteer-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
+    .volunteer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
     .volunteer-card {
       background: var(--card-bg);
@@ -284,29 +288,87 @@
     }
 
     .volunteer-emoji { font-size: 20px; margin-bottom: 6px; }
-
     .volunteer-card .person-name { font-size: 15px; margin-bottom: 3px; }
-
     .volunteer-card .role-desc { font-size: 11px; line-height: 1.45; }
-
-    .volunteer-card .role-keywords {
-      display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px;
-    }
+    .volunteer-card .role-keywords { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
 
     .keyword-tag {
       font-size: 10px; padding: 2px 6px; border-radius: 6px;
       background: rgba(28,61,46,0.06); color: var(--green); font-weight: 600;
     }
 
-    .praxis-keyword {
-      background: rgba(217,101,42,0.08); color: var(--orange);
+    .praxis-keyword { background: rgba(217,101,42,0.08); color: var(--orange); }
+
+    /* ── Schedule Table ── */
+    .schedule-wrap {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      margin: 0 -4px; padding: 0 4px;
     }
 
-    /* ── Add Rep Section ── */
-    .add-section {
-      margin-top: 16px;
+    .schedule-table {
+      width: 100%; min-width: 520px;
+      border-collapse: separate; border-spacing: 4px;
     }
 
+    .schedule-table th {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      padding: 6px 4px; text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .schedule-table th:first-child {
+      text-align: left; font-size: 10px; width: 72px;
+      color: var(--green);
+    }
+
+    .schedule-table td {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 13px; font-weight: 600;
+      min-width: 56px;
+      vertical-align: middle;
+    }
+
+    .schedule-table td:first-child {
+      background: rgba(28,61,46,0.06);
+      border-color: rgba(28,61,46,0.1);
+      font-size: 10px; font-weight: 700;
+      color: var(--green); text-align: left;
+      padding-left: 8px; white-space: nowrap;
+    }
+
+    .schedule-table td .empty-slot {
+      color: #ccc; font-weight: 400;
+    }
+
+    .schedule-select {
+      width: 100%; padding: 4px 2px; border: 1.5px solid rgba(0,0,0,0.08);
+      border-radius: 6px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,0.6);
+      font-family: inherit; color: var(--text);
+      outline: none; cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: center;
+    }
+
+    .schedule-select:focus { border-color: var(--green); }
+
+    .schedule-hint {
+      font-size: 11px; color: var(--muted); margin-top: 8px;
+      text-align: center;
+    }
+
+    /* highlight today */
+    .schedule-table th.today { color: var(--orange); }
+    .schedule-table td.today { border-color: rgba(217,101,42,0.3); }
+
+    /* ── Rep Cards ── */
     .rep-card {
       background: var(--card-bg);
       backdrop-filter: blur(24px) saturate(1.8);
@@ -320,13 +382,9 @@
     }
 
     .rep-info { flex: 1; }
-    .rep-type {
-      font-size: 10px; font-weight: 700; color: var(--orange);
-      letter-spacing: 0.05em; text-transform: uppercase;
-    }
+    .rep-type { font-size: 10px; font-weight: 700; color: var(--orange); letter-spacing: 0.05em; text-transform: uppercase; }
     .rep-name { font-size: 15px; font-weight: 700; }
     .rep-desc { font-size: 11px; color: var(--muted); }
-
     .rep-list { display: flex; flex-direction: column; gap: 8px; }
 
     /* ── Modal ── */
@@ -380,16 +438,23 @@
 
     textarea.form-input { min-height: 60px; resize: vertical; }
 
-    .modal-actions {
-      display: flex; gap: 8px; margin-top: 20px;
-    }
-
+    .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
     .modal-actions .btn { flex: 1; }
 
-    /* ── Footer ── */
-    footer {
-      padding: 8px 0 40px; text-align: center;
+    /* ── Data actions bar (edit mode only) ── */
+    .data-bar {
+      display: none; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 24px;
     }
+
+    .edit-active .data-bar { display: flex; }
+
+    /* Edit-only elements */
+    .edit-only { display: none; }
+    .edit-active .edit-only { display: inline-flex; }
+
+    /* ── Footer ── */
+    footer { padding: 8px 0 40px; text-align: center; }
 
     .footer-inner {
       display: inline-flex; align-items: center; gap: 8px;
@@ -401,12 +466,6 @@
 
     .footer-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; }
     .footer-text { font-size: 12px; font-weight: 500; color: var(--muted); }
-
-    /* ── Data actions bar ── */
-    .data-bar {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
 
     /* ── Responsive ── */
     @media (max-width: 380px) {
@@ -445,11 +504,17 @@
       <a href="/" class="back-link">← 返回工具站</a>
     </div>
     <div class="header-actions">
+      <span class="edit-badge" id="edit-badge">
+        <span class="edit-badge-dot"></span>
+        编辑中
+      </span>
+      <button class="btn btn-sm btn-orange" id="btn-enter-edit" onclick="enterEditMode()">编辑</button>
+      <button class="btn btn-sm btn-outline" id="btn-exit-edit" style="display:none;" onclick="exitEditMode()">退出编辑</button>
       <button class="btn btn-sm btn-outline" onclick="doLogout()">退出</button>
     </div>
   </div>
 
-  <!-- Data bar -->
+  <!-- Data bar (edit mode only) -->
   <div class="data-bar">
     <button class="btn btn-sm btn-outline" onclick="exportData()">📤 导出数据</button>
     <button class="btn btn-sm btn-outline" onclick="document.getElementById('import-file').click()">📥 导入数据</button>
@@ -480,6 +545,17 @@
     <div class="volunteer-grid" id="cyc-volunteers"></div>
   </div>
 
+  <!-- ===== 本周驻店轮值 ===== -->
+  <div class="section">
+    <div class="section-header">
+      <p class="section-title" style="margin-bottom:0;">本周驻店轮值</p>
+    </div>
+    <div class="schedule-wrap">
+      <table class="schedule-table" id="schedule-table"></table>
+    </div>
+    <p class="schedule-hint" id="schedule-hint">← 左右滑动查看完整排班</p>
+  </div>
+
   <!-- ===== Praxis Hub ===== -->
   <div class="section" style="margin-top: 36px;">
     <div class="section-header">
@@ -501,11 +577,11 @@
   <div class="section" style="margin-top: 36px;">
     <div class="section-header">
       <span class="section-title" style="margin-bottom: 0;">社区代表</span>
-      <button class="btn btn-sm btn-orange" onclick="openAddRep()">+ 添加</button>
+      <button class="btn btn-sm btn-orange edit-only" onclick="openAddRep()">+ 添加</button>
     </div>
     <div class="rep-list" id="reps-list"></div>
     <div id="reps-empty" style="font-size: 13px; color: var(--muted); padding: 16px 0; text-align: center;">
-      暂无社区代表，点击上方"添加"按钮
+      暂无社区代表
     </div>
   </div>
 
@@ -533,6 +609,24 @@
   </div>
 </div>
 
+<!-- ===== Edit Password Modal ===== -->
+<div class="modal-overlay" id="edit-pwd-modal">
+  <div class="modal-sheet" style="max-width: 360px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">输入编辑密码</div>
+    <div class="form-group">
+      <input type="password" class="form-input" id="edit-pwd-input"
+             placeholder="请输入管理密码" style="text-align:center; letter-spacing:0.2em; font-weight:600;"
+             autocomplete="off">
+    </div>
+    <div class="login-error" id="edit-pwd-error" style="text-align:center;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="closeEditPwdModal()">取消</button>
+      <button class="btn btn-sm btn-primary" id="edit-pwd-btn" onclick="verifyEditPwd()">验证</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // Default team data
@@ -546,33 +640,31 @@ const DEFAULT_DATA = {
     ],
     ops: [
       { role: '物业OTA商业负责人', name: '千帆', desc: '民宿运营、OTA平台管理' },
-      { role: 'CYC社区店长', name: '梁欢', desc: '社区空间日常管理' }
+      { role: 'CYC社区店长', name: '梁欢', desc: '社区空间日常管理' },
+      { role: '新媒体和协作管理', name: '鸭脖', desc: '新媒体运营、团队协作管理' },
+      { role: '轮值活动主理人', name: '', desc: '当月活动总负责（按月轮换）' }
     ],
     volunteers: [
       {
-        emoji: '📱',
-        name: '',
+        emoji: '📱', name: '',
         title: '多平台运营信息同步',
         keywords: ['协调', '响应', '润滑'],
         desc: '各平台信息同步、社群消息协调与响应'
       },
       {
-        emoji: '📦',
-        name: '',
+        emoji: '📦', name: '',
         title: '物业库管数据管理',
         keywords: ['出入登记', '安全', '资产'],
         desc: '物品出入登记、安全管理、资产盘点'
       },
       {
-        emoji: '🎨',
-        name: '',
+        emoji: '🎨', name: '',
         title: '视觉品牌设计与流程优化',
         keywords: ['设计', '文案', '开发'],
         desc: '视觉设计、文案输出、流程工具开发'
       },
       {
-        emoji: '📸',
-        name: '',
+        emoji: '📸', name: '',
         title: '拍摄与自媒体协调',
         keywords: ['现场', '记录', '连接'],
         desc: '活动现场拍摄、内容记录与自媒体对接'
@@ -587,14 +679,26 @@ const DEFAULT_DATA = {
       { emoji: '💡', name: '', title: '方向三', keywords: [], desc: '待定' }
     ]
   },
-  reps: []
+  reps: [],
+  schedule: {
+    days: [
+      { date: '周一', am: '', pm: '' },
+      { date: '周二', am: '', pm: '' },
+      { date: '周三', am: '', pm: '' },
+      { date: '周四', am: '', pm: '' },
+      { date: '周五', am: '', pm: '' },
+      { date: '周六', am: '', pm: '' },
+      { date: '周日', am: '', pm: '' }
+    ]
+  }
 };
 
 // ═══════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════
 let data = {};
-let editCtx = null;  // { path, idx }
+let editMode = false;
+let editCtx = null;
 
 function loadData() {
   const saved = localStorage.getItem('cyc-team-data');
@@ -603,8 +707,16 @@ function loadData() {
   } else {
     data = JSON.parse(JSON.stringify(DEFAULT_DATA));
   }
-  // ensure reps array exists
   if (!data.reps) data.reps = [];
+  if (!data.schedule) data.schedule = JSON.parse(JSON.stringify(DEFAULT_DATA.schedule));
+  if (!data.schedule.days) data.schedule.days = JSON.parse(JSON.stringify(DEFAULT_DATA.schedule.days));
+  // Migrate: add new ops if missing
+  if (data.cyc.ops.length < 4) {
+    const existingRoles = data.cyc.ops.map(o => o.role);
+    DEFAULT_DATA.cyc.ops.forEach(op => {
+      if (!existingRoles.includes(op.role)) data.cyc.ops.push({ ...op });
+    });
+  }
 }
 
 function saveData() {
@@ -612,7 +724,7 @@ function saveData() {
 }
 
 // ═══════════════════════════════════════════
-// Auth
+// Auth (entrance)
 // ═══════════════════════════════════════════
 function checkSession() {
   if (sessionStorage.getItem('cyc-team-auth') === '1') {
@@ -624,12 +736,8 @@ async function doLogin() {
   const pwd = document.getElementById('pwd-input').value.trim();
   const errEl = document.getElementById('login-error');
   const btn = document.getElementById('login-btn');
-
   if (!pwd) { errEl.textContent = '请输入密码'; return; }
-
-  btn.textContent = '验证中...';
-  btn.disabled = true;
-
+  btn.textContent = '验证中...'; btn.disabled = true;
   try {
     const res = await fetch('/api/team-auth', {
       method: 'POST',
@@ -637,7 +745,6 @@ async function doLogin() {
       body: JSON.stringify({ password: pwd })
     });
     const json = await res.json();
-
     if (res.ok && json.success) {
       sessionStorage.setItem('cyc-team-auth', '1');
       errEl.textContent = '';
@@ -645,16 +752,14 @@ async function doLogin() {
     } else {
       errEl.textContent = json.error || '密码错误';
     }
-  } catch (e) {
-    errEl.textContent = '网络错误，请重试';
-  }
-
-  btn.textContent = '进入';
-  btn.disabled = false;
+  } catch { errEl.textContent = '网络错误，请重试'; }
+  btn.textContent = '进入'; btn.disabled = false;
 }
 
 function doLogout() {
   sessionStorage.removeItem('cyc-team-auth');
+  sessionStorage.removeItem('cyc-team-edit');
+  editMode = false;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
@@ -662,14 +767,112 @@ function doLogout() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  // Restore edit mode if session still valid
+  if (sessionStorage.getItem('cyc-team-edit') === '1') {
+    editMode = true;
+    applyEditMode();
+  }
   loadData();
   render();
 }
 
-// Enter key on password field
 document.getElementById('pwd-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
+
+// ═══════════════════════════════════════════
+// Edit Mode Auth
+// ═══════════════════════════════════════════
+function enterEditMode() {
+  document.getElementById('edit-pwd-modal').classList.add('active');
+  document.getElementById('edit-pwd-input').value = '';
+  document.getElementById('edit-pwd-error').textContent = '';
+  setTimeout(() => document.getElementById('edit-pwd-input').focus(), 300);
+}
+
+document.getElementById('edit-pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') verifyEditPwd();
+});
+
+async function verifyEditPwd() {
+  const pwd = document.getElementById('edit-pwd-input').value.trim();
+  const errEl = document.getElementById('edit-pwd-error');
+  const btn = document.getElementById('edit-pwd-btn');
+  if (!pwd) { errEl.textContent = '请输入密码'; return; }
+  btn.textContent = '验证中...'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/team-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const json = await res.json();
+    if (res.ok && json.success) {
+      editMode = true;
+      sessionStorage.setItem('cyc-team-edit', '1');
+      closeEditPwdModal();
+      applyEditMode();
+      render();
+    } else {
+      errEl.textContent = json.error || '密码错误';
+    }
+  } catch { errEl.textContent = '网络错误'; }
+  btn.textContent = '验证'; btn.disabled = false;
+}
+
+function closeEditPwdModal() {
+  document.getElementById('edit-pwd-modal').classList.remove('active');
+}
+
+document.getElementById('edit-pwd-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeEditPwdModal();
+});
+
+function exitEditMode() {
+  editMode = false;
+  sessionStorage.removeItem('cyc-team-edit');
+  applyEditMode();
+  render();
+}
+
+function applyEditMode() {
+  const app = document.getElementById('app');
+  const badge = document.getElementById('edit-badge');
+  const btnEnter = document.getElementById('btn-enter-edit');
+  const btnExit = document.getElementById('btn-exit-edit');
+
+  if (editMode) {
+    app.classList.add('edit-active');
+    badge.classList.add('active');
+    btnEnter.style.display = 'none';
+    btnExit.style.display = 'inline-flex';
+  } else {
+    app.classList.remove('edit-active');
+    badge.classList.remove('active');
+    btnEnter.style.display = 'inline-flex';
+    btnExit.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════
+// Schedule helpers
+// ═══════════════════════════════════════════
+function getScheduleOptions() {
+  const names = [];
+  // CYC volunteers
+  data.cyc.volunteers.forEach(v => { if (v.name) names.push(v.name); });
+  // CYC ops
+  data.cyc.ops.forEach(o => { if (o.name) names.push(o.name); });
+  // CYC triangle
+  data.cyc.triangle.forEach(t => { if (t.name) names.push(t.name); });
+  // deduplicate
+  return [...new Set(names)];
+}
+
+function getTodayIndex() {
+  const d = new Date().getDay(); // 0=Sun
+  return d === 0 ? 6 : d - 1; // convert to 0=Mon
+}
 
 // ═══════════════════════════════════════════
 // Render
@@ -678,6 +881,7 @@ function render() {
   renderTriangle();
   renderOps();
   renderCycVolunteers();
+  renderSchedule();
   renderPraxisLead();
   renderPraxisVolunteers();
   renderReps();
@@ -685,6 +889,10 @@ function render() {
 
 function editBtn(onclick) {
   return `<button class="role-edit-btn" onclick="${onclick}">✏️</button>`;
+}
+
+function nameOrVacant(name) {
+  return name ? name : `<span class="vacant">空缺</span>`;
 }
 
 function renderTriangle() {
@@ -696,7 +904,7 @@ function renderTriangle() {
           <span class="role-title">${t[0].role}</span>
           ${editBtn("openEdit('cyc.triangle', 0)")}
         </div>
-        <div class="person-name">${t[0].name || '待定'}</div>
+        <div class="person-name">${nameOrVacant(t[0].name)}</div>
         <div class="role-desc">${t[0].desc}</div>
       </div>
     </div>
@@ -707,7 +915,7 @@ function renderTriangle() {
             <span class="role-title">${p.role}</span>
             ${editBtn(`openEdit('cyc.triangle', ${i + 1})`)}
           </div>
-          <div class="person-name">${p.name || '待定'}</div>
+          <div class="person-name">${nameOrVacant(p.name)}</div>
           <div class="role-desc">${p.desc}</div>
         </div>
       `).join('')}
@@ -723,7 +931,7 @@ function renderOps() {
         <span class="role-title">${o.role}</span>
         ${editBtn(`openEdit('cyc.ops', ${i})`)}
       </div>
-      <div class="person-name">${o.name || '待定'}</div>
+      <div class="person-name">${nameOrVacant(o.name)}</div>
       <div class="role-desc">${o.desc}</div>
     </div>
   `).join('');
@@ -737,13 +945,71 @@ function renderCycVolunteers() {
         <span class="volunteer-emoji">${v.emoji}</span>
         ${editBtn(`openEdit('cyc.volunteers', ${i})`)}
       </div>
-      <div class="person-name">${v.name || '空缺'}</div>
+      <div class="person-name">${nameOrVacant(v.name)}</div>
       <div class="role-desc">${v.title}</div>
       <div class="role-keywords">
         ${v.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
       </div>
     </div>
   `).join('');
+}
+
+function renderSchedule() {
+  const days = data.schedule.days;
+  const todayIdx = getTodayIndex();
+  const options = getScheduleOptions();
+
+  const dayHeaders = days.map((d, i) =>
+    `<th class="${i === todayIdx ? 'today' : ''}">${d.date}</th>`
+  ).join('');
+
+  function cell(dayIdx, shift) {
+    const val = days[dayIdx][shift] || '';
+    const isToday = dayIdx === todayIdx;
+
+    if (editMode) {
+      const opts = ['<option value="">—</option>']
+        .concat(options.map(n =>
+          `<option value="${n}" ${n === val ? 'selected' : ''}>${n}</option>`
+        ));
+      // If current value isn't in options (maybe removed), still show it
+      if (val && !options.includes(val)) {
+        opts.push(`<option value="${val}" selected>${val}</option>`);
+      }
+      return `<td class="${isToday ? 'today' : ''}">
+        <select class="schedule-select" onchange="updateSchedule(${dayIdx}, '${shift}', this.value)">
+          ${opts.join('')}
+        </select>
+      </td>`;
+    }
+
+    return `<td class="${isToday ? 'today' : ''}">
+      ${val || '<span class="empty-slot">—</span>'}
+    </td>`;
+  }
+
+  const amRow = days.map((_, i) => cell(i, 'am')).join('');
+  const pmRow = days.map((_, i) => cell(i, 'pm')).join('');
+
+  document.getElementById('schedule-table').innerHTML = `
+    <tr>
+      <th></th>
+      ${dayHeaders}
+    </tr>
+    <tr>
+      <td>☀️ 10:00–16:00</td>
+      ${amRow}
+    </tr>
+    <tr>
+      <td>🌙 16:00–22:00</td>
+      ${pmRow}
+    </tr>
+  `;
+}
+
+function updateSchedule(dayIdx, shift, value) {
+  data.schedule.days[dayIdx][shift] = value;
+  saveData();
 }
 
 function renderPraxisLead() {
@@ -754,7 +1020,7 @@ function renderPraxisLead() {
         <span class="role-title">${l.role}</span>
         ${editBtn("openEdit('praxis.lead', null)")}
       </div>
-      <div class="person-name">${l.name || '待定'}</div>
+      <div class="person-name">${nameOrVacant(l.name)}</div>
       <div class="role-desc">${l.desc}</div>
     </div>
   `;
@@ -768,7 +1034,7 @@ function renderPraxisVolunteers() {
         <span class="volunteer-emoji">${v.emoji}</span>
         ${editBtn(`openEdit('praxis.volunteers', ${i})`)}
       </div>
-      <div class="person-name">${v.name || '空缺'}</div>
+      <div class="person-name">${nameOrVacant(v.name)}</div>
       <div class="role-desc">${v.title}</div>
       <div class="role-keywords">
         ${v.keywords.map(k => `<span class="keyword-tag praxis-keyword">${k}</span>`).join('')}
@@ -811,23 +1077,8 @@ function getItem(path, idx) {
   return idx !== null && idx !== undefined ? obj[idx] : obj;
 }
 
-function setItem(path, idx, value) {
-  const parts = path.split('.');
-  let obj = data;
-  for (const p of parts) obj = obj[p];
-  if (idx !== null && idx !== undefined) {
-    obj[idx] = value;
-  } else {
-    // replace entire object at path
-    const parent = data;
-    const lastParts = path.split('.');
-    let target = parent;
-    for (let i = 0; i < lastParts.length - 1; i++) target = target[lastParts[i]];
-    target[lastParts[lastParts.length - 1]] = value;
-  }
-}
-
 function openEdit(path, idx) {
+  if (!editMode) return;
   editCtx = { path, idx };
   const item = getItem(path, idx);
   const modal = document.getElementById('edit-modal');
@@ -904,7 +1155,8 @@ function openEdit(path, idx) {
 }
 
 function openAddRep() {
-  editCtx = { path: 'reps', idx: -1 };  // -1 means new
+  if (!editMode) return;
+  editCtx = { path: 'reps', idx: -1 };
   const modal = document.getElementById('edit-modal');
   document.getElementById('modal-title').textContent = '添加社区代表';
   document.getElementById('modal-body').innerHTML = `
@@ -965,7 +1217,6 @@ function closeModal() {
   editCtx = null;
 }
 
-// Click overlay to close
 document.getElementById('edit-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
@@ -993,6 +1244,7 @@ function importData(event) {
       if (imported.cyc && imported.praxis) {
         data = imported;
         if (!data.reps) data.reps = [];
+        if (!data.schedule) data.schedule = JSON.parse(JSON.stringify(DEFAULT_DATA.schedule));
         saveData();
         render();
         alert('导入成功！');
