@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="format-detection" content="telephone=no">
+  <title>团队架构 · CYC 工具站</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:   #1c3d2e;
+      --orange:  #d9652a;
+      --sand:    #f2ede6;
+      --card-bg: rgba(255,255,255,0.72);
+      --border:  rgba(255,255,255,0.55);
+      --text:    #1a1a1a;
+      --muted:   #6b6b6b;
+      --radius:  20px;
+      --danger:  #c0392b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                   "Hiragino Sans GB", "SF Pro Display", sans-serif;
+      min-height: 100vh;
+      background: var(--sand);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.38; pointer-events: none; z-index: 0; }
+    .blob-1 { width: 420px; height: 420px; background: radial-gradient(circle, #d9652a, transparent 70%); top: -120px; right: -80px; }
+    .blob-2 { width: 360px; height: 360px; background: radial-gradient(circle, #1c3d2e, transparent 70%); bottom: 80px; left: -100px; }
+    .blob-3 { width: 260px; height: 260px; background: radial-gradient(circle, #c8a96e, transparent 70%); top: 55%; left: 55%; }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 520px; margin: 0 auto;
+      padding: 0 16px env(safe-area-inset-bottom);
+    }
+
+    /* ── Login Screen ── */
+    #login-screen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 40px 16px;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      width: 100%; max-width: 360px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.6) inset;
+      text-align: center;
+    }
+
+    .login-icon { font-size: 48px; margin-bottom: 16px; }
+
+    .login-card h2 {
+      font-size: 22px; font-weight: 800; color: var(--green);
+      letter-spacing: -0.02em; margin-bottom: 6px;
+    }
+
+    .login-card p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+    .input-wrap {
+      display: flex; gap: 8px; margin-bottom: 12px;
+    }
+
+    .input-wrap input {
+      flex: 1; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);
+      border-radius: 12px; font-size: 16px; background: rgba(255,255,255,0.6);
+      outline: none; transition: border-color 0.2s;
+      text-align: center; letter-spacing: 0.3em; font-weight: 600;
+    }
+
+    .input-wrap input:focus { border-color: var(--green); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 11px 24px; border: none; border-radius: 12px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    .btn-primary {
+      background: var(--green); color: #fff; width: 100%;
+    }
+
+    .btn-sm {
+      padding: 7px 14px; font-size: 12px; border-radius: 8px;
+    }
+
+    .btn-outline {
+      background: transparent; border: 1.5px solid rgba(0,0,0,0.1);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: rgba(192,57,43,0.08); color: var(--danger);
+      border: 1px solid rgba(192,57,43,0.15);
+    }
+
+    .btn-orange {
+      background: var(--orange); color: #fff;
+    }
+
+    .login-error {
+      font-size: 12px; color: var(--danger); margin-top: 8px;
+      min-height: 18px;
+    }
+
+    /* ── Main App ── */
+    #app { display: none; }
+
+    .header {
+      padding: 48px 0 24px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 28px; font-weight: 800; color: var(--green);
+      letter-spacing: -0.03em; line-height: 1.2;
+    }
+
+    .header h1 em { font-style: normal; color: var(--orange); }
+
+    .header-actions {
+      display: flex; gap: 6px; align-items: center; padding-top: 4px;
+    }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; color: var(--muted); text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-link:hover { color: var(--green); }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 28px;
+    }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted); padding-left: 2px;
+    }
+
+    .community-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px 3px 7px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+    }
+
+    .badge-cyc { background: rgba(28,61,46,0.1); color: var(--green); }
+    .badge-praxis { background: rgba(217,101,42,0.1); color: var(--orange); }
+
+    .community-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    .dot-green { background: var(--green); }
+    .dot-orange { background: var(--orange); }
+
+    /* ── Role Cards ── */
+    .role-group {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .role-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.6) inset;
+      position: relative; overflow: hidden;
+    }
+
+    .role-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .role-card.featured {
+      background: linear-gradient(145deg, #1c3d2e 0%, #2a5740 100%);
+      border-color: rgba(255,255,255,0.15); color: #fff;
+      box-shadow: 0 8px 32px rgba(28,61,46,0.30);
+    }
+
+    .role-card.featured .role-title { color: rgba(255,255,255,0.6); }
+    .role-card.featured .person-name { color: #fff; }
+    .role-card.featured .role-desc { color: rgba(255,255,255,0.5); }
+
+    .role-card.praxis-featured {
+      background: linear-gradient(145deg, #8b3a12 0%, #b5512a 100%);
+      border-color: rgba(255,255,255,0.15); color: #fff;
+      box-shadow: 0 8px 32px rgba(217,101,42,0.30);
+    }
+
+    .role-card.praxis-featured .role-title { color: rgba(255,255,255,0.6); }
+    .role-card.praxis-featured .person-name { color: #fff; }
+    .role-card.praxis-featured .role-desc { color: rgba(255,255,255,0.5); }
+
+    .role-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .role-title {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    .role-edit-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; opacity: 0.4; transition: opacity 0.2s;
+      padding: 2px 4px;
+    }
+
+    .role-edit-btn:hover { opacity: 1; }
+
+    .role-card.featured .role-edit-btn,
+    .role-card.praxis-featured .role-edit-btn { filter: invert(1); opacity: 0.5; }
+    .role-card.featured .role-edit-btn:hover,
+    .role-card.praxis-featured .role-edit-btn:hover { opacity: 1; }
+
+    .person-name {
+      font-size: 18px; font-weight: 800; letter-spacing: -0.02em;
+      margin-bottom: 2px;
+    }
+
+    .role-desc {
+      font-size: 12px; color: var(--muted); line-height: 1.5;
+    }
+
+    /* Triangle layout */
+    .triangle-grid {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+
+    .triangle-top { width: 100%; max-width: 320px; }
+
+    .triangle-bottom {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      width: 100%;
+    }
+
+    /* Volunteer grid */
+    .volunteer-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+
+    .volunteer-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.6) inset;
+      position: relative; overflow: hidden;
+    }
+
+    .volunteer-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .volunteer-emoji { font-size: 20px; margin-bottom: 6px; }
+
+    .volunteer-card .person-name { font-size: 15px; margin-bottom: 3px; }
+
+    .volunteer-card .role-desc { font-size: 11px; line-height: 1.45; }
+
+    .volunteer-card .role-keywords {
+      display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px;
+    }
+
+    .keyword-tag {
+      font-size: 10px; padding: 2px 6px; border-radius: 6px;
+      background: rgba(28,61,46,0.06); color: var(--green); font-weight: 600;
+    }
+
+    .praxis-keyword {
+      background: rgba(217,101,42,0.08); color: var(--orange);
+    }
+
+    /* ── Add Rep Section ── */
+    .add-section {
+      margin-top: 16px;
+    }
+
+    .rep-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+
+    .rep-info { flex: 1; }
+    .rep-type {
+      font-size: 10px; font-weight: 700; color: var(--orange);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .rep-name { font-size: 15px; font-weight: 700; }
+    .rep-desc { font-size: 11px; color: var(--muted); }
+
+    .rep-list { display: flex; flex-direction: column; gap: 8px; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: flex-end; justify-content: center;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-sheet {
+      background: var(--sand); border-radius: 24px 24px 0 0;
+      width: 100%; max-width: 520px;
+      max-height: 85vh; overflow-y: auto;
+      padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-handle {
+      width: 36px; height: 4px; background: rgba(0,0,0,0.12);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+
+    .modal-title {
+      font-size: 18px; font-weight: 800; color: var(--green);
+      margin-bottom: 20px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      margin-bottom: 6px; display: block;
+    }
+
+    .form-input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid rgba(0,0,0,0.08);
+      border-radius: 10px; font-size: 14px; background: rgba(255,255,255,0.6);
+      outline: none; transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .form-input:focus { border-color: var(--green); }
+
+    textarea.form-input { min-height: 60px; resize: vertical; }
+
+    .modal-actions {
+      display: flex; gap: 8px; margin-top: 20px;
+    }
+
+    .modal-actions .btn { flex: 1; }
+
+    /* ── Footer ── */
+    footer {
+      padding: 8px 0 40px; text-align: center;
+    }
+
+    .footer-inner {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 100px; padding: 8px 18px;
+    }
+
+    .footer-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; }
+    .footer-text { font-size: 12px; font-weight: 500; color: var(--muted); }
+
+    /* ── Data actions bar ── */
+    .data-bar {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 380px) {
+      .volunteer-grid { grid-template-columns: 1fr; }
+      .triangle-bottom { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- ===== Login Screen ===== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <h2>团队架构管理</h2>
+    <p>请输入管理密码以访问</p>
+    <div class="input-wrap">
+      <input type="password" id="pwd-input" placeholder="••••" maxlength="20"
+             inputmode="numeric" autocomplete="off">
+    </div>
+    <button class="btn btn-primary" id="login-btn" onclick="doLogin()">进入</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ===== Main App ===== -->
+<div id="app" class="page">
+
+  <div class="header">
+    <div>
+      <h1>团队<em>架构</em></h1>
+      <a href="/" class="back-link">← 返回工具站</a>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm btn-outline" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <!-- Data bar -->
+  <div class="data-bar">
+    <button class="btn btn-sm btn-outline" onclick="exportData()">📤 导出数据</button>
+    <button class="btn btn-sm btn-outline" onclick="document.getElementById('import-file').click()">📥 导入数据</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+
+  <!-- ===== CYC 铁三角 ===== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="community-badge badge-cyc">
+        <span class="community-dot dot-green"></span>
+        CYC 链岛青年社区
+      </span>
+    </div>
+    <p class="section-title">铁三角 · 核心治理</p>
+    <div class="triangle-grid" id="cyc-triangle"></div>
+  </div>
+
+  <!-- CYC 运营层 -->
+  <div class="section">
+    <p class="section-title">运营层</p>
+    <div class="role-group" id="cyc-ops"></div>
+  </div>
+
+  <!-- CYC 义工 -->
+  <div class="section">
+    <p class="section-title">CYC 社区义工</p>
+    <div class="volunteer-grid" id="cyc-volunteers"></div>
+  </div>
+
+  <!-- ===== Praxis Hub ===== -->
+  <div class="section" style="margin-top: 36px;">
+    <div class="section-header">
+      <span class="community-badge badge-praxis">
+        <span class="community-dot dot-orange"></span>
+        Praxis Hub · P社
+      </span>
+    </div>
+    <p class="section-title">主理人</p>
+    <div class="role-group" id="praxis-lead"></div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">P社义工</p>
+    <div class="volunteer-grid" id="praxis-volunteers"></div>
+  </div>
+
+  <!-- ===== 社区代表 ===== -->
+  <div class="section" style="margin-top: 36px;">
+    <div class="section-header">
+      <span class="section-title" style="margin-bottom: 0;">社区代表</span>
+      <button class="btn btn-sm btn-orange" onclick="openAddRep()">+ 添加</button>
+    </div>
+    <div class="rep-list" id="reps-list"></div>
+    <div id="reps-empty" style="font-size: 13px; color: var(--muted); padding: 16px 0; text-align: center;">
+      暂无社区代表，点击上方"添加"按钮
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-dot"></span>
+      <span class="footer-text">cyc.center · 团队架构</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ===== Edit Modal ===== -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">编辑</div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-sm btn-primary" id="modal-save" onclick="saveModal()">保存</button>
+    </div>
+    <div id="modal-delete-wrap" style="margin-top: 10px; display: none;">
+      <button class="btn btn-sm btn-danger" style="width: 100%;" id="modal-delete-btn">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// Default team data
+// ═══════════════════════════════════════════
+const DEFAULT_DATA = {
+  cyc: {
+    triangle: [
+      { role: '资源与治理层', name: '方荣', desc: '资源整合、战略方向、对外关系' },
+      { role: '物业层', name: '月汐', desc: '空间管理、物业运营、后勤保障' },
+      { role: '社区层', name: '悠洋', desc: '社区运营、活动策划、居民关系' }
+    ],
+    ops: [
+      { role: '物业OTA商业负责人', name: '千帆', desc: '民宿运营、OTA平台管理' },
+      { role: 'CYC社区店长', name: '梁欢', desc: '社区空间日常管理' }
+    ],
+    volunteers: [
+      {
+        emoji: '📱',
+        name: '',
+        title: '多平台运营信息同步',
+        keywords: ['协调', '响应', '润滑'],
+        desc: '各平台信息同步、社群消息协调与响应'
+      },
+      {
+        emoji: '📦',
+        name: '',
+        title: '物业库管数据管理',
+        keywords: ['出入登记', '安全', '资产'],
+        desc: '物品出入登记、安全管理、资产盘点'
+      },
+      {
+        emoji: '🎨',
+        name: '',
+        title: '视觉品牌设计与流程优化',
+        keywords: ['设计', '文案', '开发'],
+        desc: '视觉设计、文案输出、流程工具开发'
+      },
+      {
+        emoji: '📸',
+        name: '',
+        title: '拍摄与自媒体协调',
+        keywords: ['现场', '记录', '连接'],
+        desc: '活动现场拍摄、内容记录与自媒体对接'
+      }
+    ]
+  },
+  praxis: {
+    lead: { role: '主理人', name: 'Demian', desc: 'Praxis Hub 社区主理' },
+    volunteers: [
+      { emoji: '🔧', name: '', title: '方向一', keywords: [], desc: '待定' },
+      { emoji: '🌐', name: '', title: '方向二', keywords: [], desc: '待定' },
+      { emoji: '💡', name: '', title: '方向三', keywords: [], desc: '待定' }
+    ]
+  },
+  reps: []
+};
+
+// ═══════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════
+let data = {};
+let editCtx = null;  // { path, idx }
+
+function loadData() {
+  const saved = localStorage.getItem('cyc-team-data');
+  if (saved) {
+    try { data = JSON.parse(saved); } catch { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  } else {
+    data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }
+  // ensure reps array exists
+  if (!data.reps) data.reps = [];
+}
+
+function saveData() {
+  localStorage.setItem('cyc-team-data', JSON.stringify(data));
+}
+
+// ═══════════════════════════════════════════
+// Auth
+// ═══════════════════════════════════════════
+function checkSession() {
+  if (sessionStorage.getItem('cyc-team-auth') === '1') {
+    showApp();
+  }
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('pwd-input').value.trim();
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  if (!pwd) { errEl.textContent = '请输入密码'; return; }
+
+  btn.textContent = '验证中...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/team-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const json = await res.json();
+
+    if (res.ok && json.success) {
+      sessionStorage.setItem('cyc-team-auth', '1');
+      errEl.textContent = '';
+      showApp();
+    } else {
+      errEl.textContent = json.error || '密码错误';
+    }
+  } catch (e) {
+    errEl.textContent = '网络错误，请重试';
+  }
+
+  btn.textContent = '进入';
+  btn.disabled = false;
+}
+
+function doLogout() {
+  sessionStorage.removeItem('cyc-team-auth');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadData();
+  render();
+}
+
+// Enter key on password field
+document.getElementById('pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ═══════════════════════════════════════════
+// Render
+// ═══════════════════════════════════════════
+function render() {
+  renderTriangle();
+  renderOps();
+  renderCycVolunteers();
+  renderPraxisLead();
+  renderPraxisVolunteers();
+  renderReps();
+}
+
+function editBtn(onclick) {
+  return `<button class="role-edit-btn" onclick="${onclick}">✏️</button>`;
+}
+
+function renderTriangle() {
+  const t = data.cyc.triangle;
+  document.getElementById('cyc-triangle').innerHTML = `
+    <div class="triangle-top">
+      <div class="role-card featured">
+        <div class="role-top">
+          <span class="role-title">${t[0].role}</span>
+          ${editBtn("openEdit('cyc.triangle', 0)")}
+        </div>
+        <div class="person-name">${t[0].name || '待定'}</div>
+        <div class="role-desc">${t[0].desc}</div>
+      </div>
+    </div>
+    <div class="triangle-bottom">
+      ${t.slice(1).map((p, i) => `
+        <div class="role-card featured">
+          <div class="role-top">
+            <span class="role-title">${p.role}</span>
+            ${editBtn(`openEdit('cyc.triangle', ${i + 1})`)}
+          </div>
+          <div class="person-name">${p.name || '待定'}</div>
+          <div class="role-desc">${p.desc}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderOps() {
+  const ops = data.cyc.ops;
+  document.getElementById('cyc-ops').innerHTML = ops.map((o, i) => `
+    <div class="role-card">
+      <div class="role-top">
+        <span class="role-title">${o.role}</span>
+        ${editBtn(`openEdit('cyc.ops', ${i})`)}
+      </div>
+      <div class="person-name">${o.name || '待定'}</div>
+      <div class="role-desc">${o.desc}</div>
+    </div>
+  `).join('');
+}
+
+function renderCycVolunteers() {
+  const vs = data.cyc.volunteers;
+  document.getElementById('cyc-volunteers').innerHTML = vs.map((v, i) => `
+    <div class="volunteer-card">
+      <div class="role-top">
+        <span class="volunteer-emoji">${v.emoji}</span>
+        ${editBtn(`openEdit('cyc.volunteers', ${i})`)}
+      </div>
+      <div class="person-name">${v.name || '空缺'}</div>
+      <div class="role-desc">${v.title}</div>
+      <div class="role-keywords">
+        ${v.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPraxisLead() {
+  const l = data.praxis.lead;
+  document.getElementById('praxis-lead').innerHTML = `
+    <div class="role-card praxis-featured">
+      <div class="role-top">
+        <span class="role-title">${l.role}</span>
+        ${editBtn("openEdit('praxis.lead', null)")}
+      </div>
+      <div class="person-name">${l.name || '待定'}</div>
+      <div class="role-desc">${l.desc}</div>
+    </div>
+  `;
+}
+
+function renderPraxisVolunteers() {
+  const vs = data.praxis.volunteers;
+  document.getElementById('praxis-volunteers').innerHTML = vs.map((v, i) => `
+    <div class="volunteer-card">
+      <div class="role-top">
+        <span class="volunteer-emoji">${v.emoji}</span>
+        ${editBtn(`openEdit('praxis.volunteers', ${i})`)}
+      </div>
+      <div class="person-name">${v.name || '空缺'}</div>
+      <div class="role-desc">${v.title}</div>
+      <div class="role-keywords">
+        ${v.keywords.map(k => `<span class="keyword-tag praxis-keyword">${k}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderReps() {
+  const rs = data.reps;
+  const listEl = document.getElementById('reps-list');
+  const emptyEl = document.getElementById('reps-empty');
+
+  if (rs.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = rs.map((r, i) => `
+    <div class="rep-card">
+      <div class="rep-info">
+        <div class="rep-type">${r.type || '代表'}</div>
+        <div class="rep-name">${r.name}</div>
+        <div class="rep-desc">${r.desc || ''}</div>
+      </div>
+      ${editBtn(`openEdit('reps', ${i})`)}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+// Modal / Edit
+// ═══════════════════════════════════════════
+function getItem(path, idx) {
+  const parts = path.split('.');
+  let obj = data;
+  for (const p of parts) obj = obj[p];
+  return idx !== null && idx !== undefined ? obj[idx] : obj;
+}
+
+function setItem(path, idx, value) {
+  const parts = path.split('.');
+  let obj = data;
+  for (const p of parts) obj = obj[p];
+  if (idx !== null && idx !== undefined) {
+    obj[idx] = value;
+  } else {
+    // replace entire object at path
+    const parent = data;
+    const lastParts = path.split('.');
+    let target = parent;
+    for (let i = 0; i < lastParts.length - 1; i++) target = target[lastParts[i]];
+    target[lastParts[lastParts.length - 1]] = value;
+  }
+}
+
+function openEdit(path, idx) {
+  editCtx = { path, idx };
+  const item = getItem(path, idx);
+  const modal = document.getElementById('edit-modal');
+  const title = document.getElementById('modal-title');
+  const body = document.getElementById('modal-body');
+  const delWrap = document.getElementById('modal-delete-wrap');
+
+  delWrap.style.display = 'none';
+
+  if (path === 'reps') {
+    title.textContent = '编辑代表';
+    body.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">类型（如：众筹人代表、活动代表）</label>
+        <input class="form-input" id="f-type" value="${item.type || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">姓名</label>
+        <input class="form-input" id="f-name" value="${item.name || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">说明</label>
+        <input class="form-input" id="f-desc" value="${item.desc || ''}">
+      </div>
+    `;
+    delWrap.style.display = 'block';
+    document.getElementById('modal-delete-btn').onclick = () => {
+      data.reps.splice(idx, 1);
+      saveData(); render(); closeModal();
+    };
+  } else if (path.includes('volunteers')) {
+    title.textContent = '编辑义工';
+    body.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">图标 Emoji</label>
+        <input class="form-input" id="f-emoji" value="${item.emoji || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">姓名</label>
+        <input class="form-input" id="f-name" value="${item.name || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">职责方向</label>
+        <input class="form-input" id="f-title" value="${item.title || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">关键词（逗号分隔）</label>
+        <input class="form-input" id="f-keywords" value="${(item.keywords || []).join('、')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea class="form-input" id="f-desc">${item.desc || ''}</textarea>
+      </div>
+    `;
+  } else {
+    title.textContent = '编辑角色';
+    body.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">角色名称</label>
+        <input class="form-input" id="f-role" value="${item.role || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">姓名</label>
+        <input class="form-input" id="f-name" value="${item.name || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">描述</label>
+        <textarea class="form-input" id="f-desc">${item.desc || ''}</textarea>
+      </div>
+    `;
+  }
+
+  modal.classList.add('active');
+}
+
+function openAddRep() {
+  editCtx = { path: 'reps', idx: -1 };  // -1 means new
+  const modal = document.getElementById('edit-modal');
+  document.getElementById('modal-title').textContent = '添加社区代表';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">类型（如：众筹人代表、活动代表）</label>
+      <input class="form-input" id="f-type" value="">
+    </div>
+    <div class="form-group">
+      <label class="form-label">姓名</label>
+      <input class="form-input" id="f-name" value="">
+    </div>
+    <div class="form-group">
+      <label class="form-label">说明</label>
+      <input class="form-input" id="f-desc" value="">
+    </div>
+  `;
+  document.getElementById('modal-delete-wrap').style.display = 'none';
+  modal.classList.add('active');
+}
+
+function saveModal() {
+  const { path, idx } = editCtx;
+
+  if (path === 'reps') {
+    const newItem = {
+      type: document.getElementById('f-type').value.trim(),
+      name: document.getElementById('f-name').value.trim(),
+      desc: document.getElementById('f-desc').value.trim()
+    };
+    if (!newItem.name) { alert('请填写姓名'); return; }
+    if (idx === -1) {
+      data.reps.push(newItem);
+    } else {
+      data.reps[idx] = newItem;
+    }
+  } else if (path.includes('volunteers')) {
+    const item = getItem(path, idx);
+    item.emoji = document.getElementById('f-emoji').value.trim();
+    item.name = document.getElementById('f-name').value.trim();
+    item.title = document.getElementById('f-title').value.trim();
+    const kwStr = document.getElementById('f-keywords').value.trim();
+    item.keywords = kwStr ? kwStr.split(/[,，、]/).map(s => s.trim()).filter(Boolean) : [];
+    item.desc = document.getElementById('f-desc').value.trim();
+  } else {
+    const item = getItem(path, idx);
+    if (document.getElementById('f-role')) item.role = document.getElementById('f-role').value.trim();
+    item.name = document.getElementById('f-name').value.trim();
+    item.desc = document.getElementById('f-desc').value.trim();
+  }
+
+  saveData();
+  render();
+  closeModal();
+}
+
+function closeModal() {
+  document.getElementById('edit-modal').classList.remove('active');
+  editCtx = null;
+}
+
+// Click overlay to close
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ═══════════════════════════════════════════
+// Export / Import
+// ═══════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cyc-team-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.cyc && imported.praxis) {
+        data = imported;
+        if (!data.reps) data.reps = [];
+        saveData();
+        render();
+        alert('导入成功！');
+      } else {
+        alert('文件格式不正确');
+      }
+    } catch {
+      alert('文件解析失败');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ═══════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════
+checkSession();
+</script>
+
+</body>
+</html>
