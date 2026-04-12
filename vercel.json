@@ -22,6 +22,7 @@
   "rewrites": [
     { "source": "/weekly-calendar", "destination": "/weekly-calendar/index.html" },
     { "source": "/event-card", "destination": "/event-card/index.html" },
-    { "source": "/team", "destination": "/team/index.html" }
+    { "source": "/team", "destination": "/team/index.html" },
+    { "source": "/food", "destination": "/food/index.html" }
   ]
 }

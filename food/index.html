@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>今天吃什么 · CYC 工具站</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1c3d2e;--green2:#2a5740;--orange:#d9652a;
+  --sand:#f2ede6;--card:rgba(255,255,255,0.75);
+  --border:rgba(255,255,255,0.6);--stroke:rgba(0,0,0,0.08);
+  --text:#1a1a1a;--muted:#6b6b6b;--danger:#c0392b;
+  --r:16px;--r-sm:10px;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+  background:var(--sand);color:var(--text);min-height:100vh;overflow-x:hidden;
+}
+
+.blob{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0}
+.b1{width:380px;height:380px;background:radial-gradient(circle,#d9652a,transparent 70%);opacity:.22;top:-100px;right:-60px}
+.b2{width:320px;height:320px;background:radial-gradient(circle,#1c3d2e,transparent 70%);opacity:.20;bottom:60px;left:-80px}
+.b3{width:220px;height:220px;background:radial-gradient(circle,#c8a96e,transparent 70%);opacity:.18;top:50%;left:50%}
+
+/* Topbar */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;
+  padding:0 16px;height:52px;
+  background:rgba(242,237,230,0.82);
+  backdrop-filter:blur(20px) saturate(1.6);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  border-bottom:0.5px solid rgba(0,0,0,0.08);
+}
+.topbar-back{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:14px;font-weight:500;color:var(--green);
+  text-decoration:none;padding:6px 10px 6px 4px;border-radius:8px;
+  -webkit-tap-highlight-color:transparent;
+}
+.topbar-back:active{background:rgba(28,61,46,0.08)}
+.topbar-title{
+  flex:1;text-align:center;
+  font-size:15px;font-weight:600;letter-spacing:-0.01em;
+  color:var(--text);padding:0 8px;
+}
+.topbar-spacer{width:80px}
+
+.page{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:20px 16px env(safe-area-inset-bottom)}
+
+/* ── Section ── */
+.section{margin-bottom:28px}
+.section-title{
+  font-size:11px;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-left:2px;
+}
+
+/* ── Spin Wheel ── */
+.spin-area{
+  display:flex;flex-direction:column;align-items:center;
+  padding:24px 0 16px;
+}
+
+.spin-btn{
+  width:160px;height:160px;border-radius:50%;
+  background:linear-gradient(145deg,#1c3d2e 0%,#2a5740 100%);
+  border:4px solid rgba(255,255,255,0.2);
+  box-shadow:0 8px 40px rgba(28,61,46,0.35),0 0 0 8px rgba(28,61,46,0.08);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:transform 0.2s,box-shadow 0.2s;
+  color:#fff;gap:4px;
+  position:relative;overflow:hidden;
+}
+
+.spin-btn::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15) 0%,transparent 50%);
+  pointer-events:none;
+}
+
+.spin-btn:active{transform:scale(0.95);box-shadow:0 4px 20px rgba(28,61,46,0.3)}
+
+.spin-btn.spinning{
+  animation:spinAnim 0.6s cubic-bezier(0.4,0,0.2,1);
+  pointer-events:none;
+}
+
+@keyframes spinAnim{
+  0%{transform:rotate(0deg) scale(1)}
+  30%{transform:rotate(180deg) scale(0.95)}
+  100%{transform:rotate(720deg) scale(1)}
+}
+
+.spin-emoji{font-size:42px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))}
+.spin-text{font-size:14px;font-weight:700;letter-spacing:0.05em;opacity:0.9}
+.spin-sub{font-size:10px;opacity:0.5;font-weight:500}
+
+/* Result card */
+.result-card{
+  display:none;
+  background:var(--card);
+  backdrop-filter:blur(24px) saturate(1.8);
+  -webkit-backdrop-filter:blur(24px) saturate(1.8);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:20px;margin-top:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.08);
+  text-align:center;width:100%;max-width:320px;
+  animation:popIn 0.3s ease;
+}
+
+.result-card.show{display:block}
+
+@keyframes popIn{
+  from{opacity:0;transform:scale(0.9) translateY(10px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+
+.result-emoji{font-size:48px;margin-bottom:8px}
+.result-name{font-size:22px;font-weight:800;color:var(--green);margin-bottom:4px}
+.result-type{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+.result-actions{display:flex;gap:8px;justify-content:center}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 20px;border:none;border-radius:12px;
+  font-size:14px;font-weight:700;cursor:pointer;
+  transition:transform 0.15s,opacity 0.15s;
+  -webkit-tap-highlight-color:transparent;font-family:inherit;
+}
+.btn:active{transform:scale(0.96)}
+.btn-green{background:var(--green);color:#fff}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-outline{background:transparent;border:1.5px solid rgba(0,0,0,0.1);color:var(--text)}
+.btn-sm{padding:8px 14px;font-size:12px;border-radius:8px}
+.btn-full{width:100%}
+.btn-danger{background:rgba(192,57,43,0.08);color:var(--danger);border:1px solid rgba(192,57,43,0.15)}
+
+/* ── Meal Cards ── */
+.meal-list{display:flex;flex-direction:column;gap:12px}
+
+.meal-card{
+  background:var(--card);
+  backdrop-filter:blur(24px) saturate(1.8);
+  -webkit-backdrop-filter:blur(24px) saturate(1.8);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06),0 0 0 0.5px rgba(255,255,255,0.6) inset;
+  position:relative;overflow:hidden;
+}
+
+.meal-card::before{
+  content:'';position:absolute;inset:0;border-radius:var(--r);
+  background:linear-gradient(135deg,rgba(255,255,255,0.28) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+.meal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+
+.meal-type-tag{
+  font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;
+}
+.tag-cook{background:rgba(28,61,46,0.1);color:var(--green)}
+.tag-out{background:rgba(217,101,42,0.1);color:var(--orange)}
+
+.meal-status{
+  font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;
+}
+.status-open{background:rgba(46,204,113,0.12);color:#27ae60}
+.status-full{background:rgba(241,196,15,0.15);color:#d4a20a}
+.status-done{background:rgba(0,0,0,0.06);color:#999}
+
+.meal-title{font-size:18px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+
+.meal-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.meal-meta-item{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px}
+
+.meal-people{margin-bottom:12px}
+.meal-people-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.meal-people-list{display:flex;flex-wrap:wrap;gap:4px}
+
+.person-chip{
+  font-size:12px;font-weight:600;padding:3px 10px;border-radius:100px;
+  background:rgba(28,61,46,0.06);color:var(--green);
+}
+
+.person-chip.initiator{
+  background:var(--green);color:#fff;
+}
+
+.meal-actions{display:flex;gap:8px}
+
+.meal-empty{
+  text-align:center;padding:40px 20px;color:var(--muted);
+  font-size:14px;
+}
+
+.meal-empty-emoji{font-size:48px;margin-bottom:12px;opacity:0.5}
+
+/* ── AA Section ── */
+.aa-card{
+  background:var(--card);
+  backdrop-filter:blur(24px) saturate(1.8);
+  -webkit-backdrop-filter:blur(24px) saturate(1.8);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+
+.aa-select,.aa-input{
+  width:100%;padding:10px 14px;border:1.5px solid rgba(0,0,0,0.08);
+  border-radius:10px;font-size:14px;background:rgba(255,255,255,0.6);
+  outline:none;font-family:inherit;transition:border-color 0.2s;
+  -webkit-appearance:none;
+}
+.aa-select:focus,.aa-input:focus{border-color:var(--green)}
+
+.aa-result{
+  margin-top:16px;padding:16px;
+  background:rgba(28,61,46,0.04);border-radius:12px;
+  text-align:center;
+}
+.aa-per-person{font-size:32px;font-weight:800;color:var(--green)}
+.aa-per-label{font-size:12px;color:var(--muted);margin-top:2px}
+
+.aa-people-check{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.check-chip{
+  font-size:12px;font-weight:600;padding:5px 12px;border-radius:100px;
+  border:1.5px solid rgba(0,0,0,0.08);cursor:pointer;
+  transition:all 0.15s;-webkit-tap-highlight-color:transparent;
+  background:rgba(255,255,255,0.5);
+}
+.check-chip.checked{background:var(--green);color:#fff;border-color:var(--green)}
+
+.aa-bill-box{
+  margin-top:12px;padding:12px;
+  background:rgba(255,255,255,0.5);border-radius:10px;
+  font-size:12px;line-height:1.8;color:var(--text);
+  white-space:pre-line;font-family:inherit;
+}
+
+.field{margin-bottom:12px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px}
+
+/* ── Modal ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,0.4);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  align-items:flex-end;justify-content:center;
+}
+.modal-overlay.active{display:flex}
+.modal-sheet{
+  background:var(--sand);border-radius:24px 24px 0 0;
+  width:100%;max-width:520px;
+  max-height:85vh;overflow-y:auto;
+  padding:24px 20px calc(20px + env(safe-area-inset-bottom));
+  animation:slideUp 0.3s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:rgba(0,0,0,0.12);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:18px;font-weight:800;color:var(--green);margin-bottom:20px}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.modal-actions .btn{flex:1}
+
+/* Footer */
+footer{padding:8px 0 40px;text-align:center}
+.footer-inner{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.5);backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.6);
+  border-radius:100px;padding:8px 18px;
+}
+.footer-dot{width:6px;height:6px;background:var(--orange);border-radius:50%}
+.footer-text{font-size:12px;font-weight:500;color:var(--muted)}
+
+/* Radio group */
+.radio-group{display:flex;gap:6px;flex-wrap:wrap}
+.radio-pill{
+  font-size:12px;font-weight:600;padding:6px 14px;border-radius:100px;
+  border:1.5px solid rgba(0,0,0,0.08);cursor:pointer;
+  transition:all 0.15s;-webkit-tap-highlight-color:transparent;
+  background:rgba(255,255,255,0.5);
+}
+.radio-pill.active{background:var(--green);color:#fff;border-color:var(--green)}
+.radio-pill:active{transform:scale(0.96)}
+</style>
+</head>
+<body>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="topbar">
+  <a class="topbar-back" href="/">‹ 返回</a>
+  <span class="topbar-title">今天吃什么</span>
+  <span class="topbar-spacer"></span>
+</div>
+
+<div class="page">
+
+  <!-- ═══════ Module 1: Spin ═══════ -->
+  <div class="section">
+    <div class="spin-area">
+      <button class="spin-btn" id="spinBtn" onclick="spin()">
+        <span class="spin-emoji">🎲</span>
+        <span class="spin-text">吃什么？</span>
+        <span class="spin-sub">点我随机</span>
+      </button>
+
+      <div class="result-card" id="resultCard">
+        <div class="result-emoji" id="resultEmoji"></div>
+        <div class="result-name" id="resultName"></div>
+        <div class="result-type" id="resultType"></div>
+        <div class="result-actions">
+          <button class="btn btn-sm btn-orange" onclick="initMealFromResult()">就这个！发起约饭</button>
+          <button class="btn btn-sm btn-outline" onclick="spin()">再来一个</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Module 2: Meals ═══════ -->
+  <div class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <p class="section-title" style="margin-bottom:0">今日饭局</p>
+      <button class="btn btn-sm btn-green" onclick="openNewMeal()">+ 发起约饭</button>
+    </div>
+    <div class="meal-list" id="mealList"></div>
+    <div class="meal-empty" id="mealEmpty">
+      <div class="meal-empty-emoji">🍽️</div>
+      今天还没人发起约饭<br>做第一个吧！
+    </div>
+  </div>
+
+  <!-- ═══════ Module 3: AA ═══════ -->
+  <div class="section">
+    <p class="section-title">AA 算账</p>
+    <div class="aa-card">
+      <div class="field">
+        <label>选择饭局</label>
+        <select class="aa-select" id="aaMeal" onchange="aaSelectMeal()">
+          <option value="">-- 选择一个饭局 --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>实际总费用 (¥)</label>
+        <input class="aa-input" id="aaCost" type="number" placeholder="输入总费用" oninput="aaCalc()">
+      </div>
+      <div class="field">
+        <label>参与人（点击选择）</label>
+        <div class="aa-people-check" id="aaPeople"></div>
+      </div>
+      <div class="aa-result" id="aaResult" style="display:none">
+        <div class="aa-per-person" id="aaPerPerson">¥0</div>
+        <div class="aa-per-label">每人应付</div>
+      </div>
+      <div id="aaBillWrap" style="display:none">
+        <div class="aa-bill-box" id="aaBill"></div>
+        <button class="btn btn-sm btn-green btn-full" style="margin-top:8px" onclick="copyBill()">📋 复制账单到微信</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-dot"></span>
+      <span class="footer-text">cyc.center · 今天吃什么</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════ New Meal Modal ═══════ -->
+<div class="modal-overlay" id="newMealModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="newMealTitle">发起约饭</div>
+
+    <div class="field">
+      <label>吃什么</label>
+      <input class="aa-input" id="nm-title" placeholder="酸菜鱼、烧烤、火锅...">
+    </div>
+
+    <div class="field">
+      <label>类型</label>
+      <div class="radio-group">
+        <span class="radio-pill active" onclick="setType('cook',this)">🏠 社区做饭</span>
+        <span class="radio-pill" onclick="setType('out',this)">🍜 外出聚餐</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>餐次</label>
+      <div class="radio-group">
+        <span class="radio-pill" onclick="setMealTime('lunch',this)">☀️ 午饭</span>
+        <span class="radio-pill active" onclick="setMealTime('dinner',this)">🌙 晚饭</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>时间</label>
+      <input class="aa-input" id="nm-time" type="time" value="18:30">
+    </div>
+
+    <div class="field">
+      <label>地点</label>
+      <input class="aa-input" id="nm-location" placeholder="社区厨房 / 餐厅名">
+    </div>
+
+    <div class="field">
+      <label>预估费用/人 (¥)</label>
+      <input class="aa-input" id="nm-cost" type="number" placeholder="25">
+    </div>
+
+    <div class="field">
+      <label>上限人数</label>
+      <input class="aa-input" id="nm-max" type="number" value="8" min="2" max="30">
+    </div>
+
+    <div class="field">
+      <label>你的名字（发起人）</label>
+      <input class="aa-input" id="nm-initiator" placeholder="输入你的名字">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="closeNewMeal()">取消</button>
+      <button class="btn btn-sm btn-green" onclick="createMeal()">发起！</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ Join Modal ═══════ -->
+<div class="modal-overlay" id="joinModal">
+  <div class="modal-sheet" style="max-width:360px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">加入约饭</div>
+    <div class="field">
+      <label>你的名字</label>
+      <input class="aa-input" id="join-name" placeholder="输入你的名字">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-outline" onclick="closeJoin()">取消</button>
+      <button class="btn btn-sm btn-green" onclick="confirmJoin()">我要来！</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// Food Options Pool
+// ═══════════════════════════════════════════
+const FOOD_OPTIONS = [
+  // 社区做饭
+  { emoji:'🍲', name:'酸菜鱼', type:'cook', desc:'酸辣开胃，大锅一起涮' },
+  { emoji:'🥘', name:'火锅', type:'cook', desc:'社区厨房涮起来' },
+  { emoji:'🍳', name:'家常炒菜', type:'cook', desc:'几个硬菜配米饭' },
+  { emoji:'🥟', name:'饺子/馄饨', type:'cook', desc:'一起包饺子超有趣' },
+  { emoji:'🍝', name:'意面/西餐', type:'cook', desc:'换个口味做西餐' },
+  { emoji:'🫕', name:'麻辣烫', type:'cook', desc:'自选食材煮一锅' },
+  { emoji:'🥩', name:'烧烤/BBQ', type:'cook', desc:'院子里支个烤架' },
+  { emoji:'🍛', name:'咖喱饭', type:'cook', desc:'简单好做一锅出' },
+  { emoji:'🥗', name:'轻食沙拉', type:'cook', desc:'健康低卡好选择' },
+  { emoji:'🍜', name:'手工面条', type:'cook', desc:'擀面条配卤子' },
+  // 外出
+  { emoji:'🐔', name:'白族菜', type:'out', desc:'大理本地风味' },
+  { emoji:'🍄', name:'云南菌子火锅', type:'out', desc:'时令鲜菌一锅端' },
+  { emoji:'🌶️', name:'川菜馆', type:'out', desc:'麻辣鲜香下饭王' },
+  { emoji:'🍣', name:'日料', type:'out', desc:'寿司刺身清酒' },
+  { emoji:'☕', name:'西餐厅', type:'out', desc:'牛排意面红酒' },
+  { emoji:'🍢', name:'烧烤摊', type:'out', desc:'路边撸串配啤酒' },
+  { emoji:'🫖', name:'茶餐厅', type:'out', desc:'港式茶点下午茶' },
+  { emoji:'🍕', name:'披萨店', type:'out', desc:'芝士拉丝超满足' },
+  { emoji:'🥘', name:'东南亚菜', type:'out', desc:'泰餐越南粉' },
+  { emoji:'🌮', name:'小吃街扫街', type:'out', desc:'什么都来一点' },
+];
+
+// ═══════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════
+let data = { meals: [] };
+let currentResult = null;
+let joinMealId = null;
+let newMealType = 'cook';
+let newMealTime = 'dinner';
+
+function loadData() {
+  const saved = localStorage.getItem('cyc-food-data');
+  if (saved) { try { data = JSON.parse(saved); } catch { data = { meals: [] }; } }
+  if (!data.meals) data.meals = [];
+  // Auto-archive old meals (keep 3 days)
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 3);
+  const cutoffStr = fmt(cutoff);
+  data.meals = data.meals.filter(m => m.date >= cutoffStr);
+  saveData();
+}
+
+function saveData() { localStorage.setItem('cyc-food-data', JSON.stringify(data)); }
+
+function fmt(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function todayStr() { return fmt(new Date()); }
+
+// Remember user name
+function getUser() { return localStorage.getItem('cyc-food-user') || ''; }
+function setUser(n) { if (n) localStorage.setItem('cyc-food-user', n); }
+
+// ═══════════════════════════════════════════
+// Module 1: Spin
+// ═══════════════════════════════════════════
+function spin() {
+  const btn = document.getElementById('spinBtn');
+  const card = document.getElementById('resultCard');
+  card.classList.remove('show');
+  btn.classList.add('spinning');
+
+  setTimeout(() => {
+    btn.classList.remove('spinning');
+    const pick = FOOD_OPTIONS[Math.floor(Math.random() * FOOD_OPTIONS.length)];
+    currentResult = pick;
+    document.getElementById('resultEmoji').textContent = pick.emoji;
+    document.getElementById('resultName').textContent = pick.name;
+    document.getElementById('resultType').textContent =
+      (pick.type === 'cook' ? '🏠 社区做饭' : '🍜 外出聚餐') + ' · ' + pick.desc;
+    card.classList.add('show');
+  }, 650);
+}
+
+function initMealFromResult() {
+  if (!currentResult) return;
+  openNewMeal();
+  document.getElementById('nm-title').value = currentResult.name;
+  if (currentResult.type === 'cook') {
+    setType('cook', document.querySelectorAll('.radio-group')[0].children[0]);
+    document.getElementById('nm-location').value = '社区厨房';
+  } else {
+    setType('out', document.querySelectorAll('.radio-group')[0].children[1]);
+    document.getElementById('nm-location').value = '';
+  }
+}
+
+// ═══════════════════════════════════════════
+// Module 2: Meals
+// ═══════════════════════════════════════════
+function renderMeals() {
+  const todayMeals = data.meals.filter(m => m.date === todayStr());
+  const list = document.getElementById('mealList');
+  const empty = document.getElementById('mealEmpty');
+
+  if (todayMeals.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  list.innerHTML = todayMeals.map(m => {
+    const isFull = m.participants.length >= m.maxPeople;
+    const status = m.status === 'done' ? 'done' : (isFull ? 'full' : 'open');
+    const statusLabel = status === 'done' ? '⚫ 已结束' : (status === 'full' ? '🟡 满员' : '🟢 招募中');
+    const statusCls = 'status-' + status;
+    const typeCls = m.type === 'cook' ? 'tag-cook' : 'tag-out';
+    const typeLabel = m.type === 'cook' ? '🏠 做饭' : '🍜 外出';
+
+    return `
+      <div class="meal-card">
+        <div class="meal-header">
+          <span class="meal-type-tag ${typeCls}">${typeLabel}</span>
+          <span class="meal-status ${statusCls}">${statusLabel}</span>
+        </div>
+        <div class="meal-title">${m.title}</div>
+        <div class="meal-meta">
+          <span class="meal-meta-item">👤 ${m.initiator}</span>
+          <span class="meal-meta-item">🕐 ${m.mealTime === 'lunch' ? '午' : '晚'} ${m.time}</span>
+          <span class="meal-meta-item">📍 ${m.location || '待定'}</span>
+          ${m.estimatedCost ? `<span class="meal-meta-item">💰 ~¥${m.estimatedCost}/人</span>` : ''}
+        </div>
+        <div class="meal-people">
+          <div class="meal-people-label">已报名 ${m.participants.length}/${m.maxPeople} 人</div>
+          <div class="meal-people-list">
+            ${m.participants.map((p, i) =>
+              `<span class="person-chip ${i === 0 ? 'initiator' : ''}">${p}</span>`
+            ).join('')}
+          </div>
+        </div>
+        <div class="meal-actions">
+          ${status === 'open' ? `<button class="btn btn-sm btn-green" onclick="openJoin('${m.id}')">🙋 我要来！</button>` : ''}
+          ${status !== 'done' ? `<button class="btn btn-sm btn-outline" onclick="endMeal('${m.id}')">结束</button>` : ''}
+          <button class="btn btn-sm btn-outline" onclick="shareMeal('${m.id}')">分享</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openNewMeal() {
+  document.getElementById('newMealModal').classList.add('active');
+  document.getElementById('nm-initiator').value = getUser();
+  document.getElementById('nm-title').value = '';
+  document.getElementById('nm-location').value = '';
+  document.getElementById('nm-cost').value = '';
+}
+
+function closeNewMeal() { document.getElementById('newMealModal').classList.remove('active'); }
+document.getElementById('newMealModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeNewMeal(); });
+
+function setType(t, el) {
+  newMealType = t;
+  el.parentElement.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setMealTime(t, el) {
+  newMealTime = t;
+  el.parentElement.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function createMeal() {
+  const title = document.getElementById('nm-title').value.trim();
+  const initiator = document.getElementById('nm-initiator').value.trim();
+  const time = document.getElementById('nm-time').value;
+  const location = document.getElementById('nm-location').value.trim();
+  const cost = parseInt(document.getElementById('nm-cost').value) || 0;
+  const max = parseInt(document.getElementById('nm-max').value) || 8;
+
+  if (!title) { alert('请填写吃什么'); return; }
+  if (!initiator) { alert('请填写你的名字'); return; }
+
+  setUser(initiator);
+
+  data.meals.push({
+    id: 'meal_' + Date.now(),
+    title, type: newMealType, initiator,
+    time, mealTime: newMealTime,
+    date: todayStr(), location,
+    estimatedCost: cost, maxPeople: max,
+    participants: [initiator],
+    status: 'open', totalCost: null
+  });
+
+  saveData(); renderMeals(); renderAA(); closeNewMeal();
+}
+
+function openJoin(id) {
+  joinMealId = id;
+  document.getElementById('joinModal').classList.add('active');
+  document.getElementById('join-name').value = getUser();
+  setTimeout(() => document.getElementById('join-name').focus(), 300);
+}
+
+function closeJoin() { document.getElementById('joinModal').classList.remove('active'); joinMealId = null; }
+document.getElementById('joinModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeJoin(); });
+
+document.getElementById('join-name').addEventListener('keydown', e => { if (e.key === 'Enter') confirmJoin(); });
+
+function confirmJoin() {
+  const name = document.getElementById('join-name').value.trim();
+  if (!name) { alert('请输入你的名字'); return; }
+  setUser(name);
+
+  const meal = data.meals.find(m => m.id === joinMealId);
+  if (!meal) return;
+  if (meal.participants.includes(name)) { alert('你已经报名了'); closeJoin(); return; }
+  if (meal.participants.length >= meal.maxPeople) { alert('已经满员了'); closeJoin(); return; }
+
+  meal.participants.push(name);
+  saveData(); renderMeals(); renderAA(); closeJoin();
+}
+
+function endMeal(id) {
+  const meal = data.meals.find(m => m.id === id);
+  if (meal) { meal.status = 'done'; saveData(); renderMeals(); renderAA(); }
+}
+
+function shareMeal(id) {
+  const meal = data.meals.find(m => m.id === id);
+  if (!meal) return;
+  const text = `🍽️ 约饭！${meal.title}\n` +
+    `${meal.type === 'cook' ? '🏠 社区做饭' : '🍜 外出聚餐'}\n` +
+    `🕐 ${meal.mealTime === 'lunch' ? '午饭' : '晚饭'} ${meal.time}\n` +
+    `📍 ${meal.location || '待定'}\n` +
+    (meal.estimatedCost ? `💰 ~¥${meal.estimatedCost}/人\n` : '') +
+    `👥 已有${meal.participants.length}人：${meal.participants.join('、')}\n` +
+    `\n👉 报名加入：${location.href}`;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => alert('已复制到剪贴板，去微信群粘贴吧！'));
+  } else {
+    prompt('复制以下文字发到微信群：', text);
+  }
+}
+
+// ═══════════════════════════════════════════
+// Module 3: AA
+// ═══════════════════════════════════════════
+let aaChecked = new Set();
+
+function renderAA() {
+  const select = document.getElementById('aaMeal');
+  const todayMeals = data.meals.filter(m => m.date === todayStr());
+  const prevVal = select.value;
+  select.innerHTML = '<option value="">-- 选择一个饭局 --</option>' +
+    todayMeals.map(m => `<option value="${m.id}">${m.title}（${m.participants.length}人）</option>`).join('');
+  select.value = prevVal;
+  aaSelectMeal();
+}
+
+function aaSelectMeal() {
+  const id = document.getElementById('aaMeal').value;
+  const pDiv = document.getElementById('aaPeople');
+  aaChecked.clear();
+
+  if (!id) { pDiv.innerHTML = '<span style="font-size:12px;color:var(--muted)">请先选择饭局</span>'; aaCalc(); return; }
+
+  const meal = data.meals.find(m => m.id === id);
+  if (!meal) return;
+
+  meal.participants.forEach(p => aaChecked.add(p));
+
+  pDiv.innerHTML = meal.participants.map(p =>
+    `<span class="check-chip checked" onclick="toggleAA(this, '${p}')">${p}</span>`
+  ).join('');
+
+  if (meal.totalCost) document.getElementById('aaCost').value = meal.totalCost;
+  aaCalc();
+}
+
+function toggleAA(el, name) {
+  if (aaChecked.has(name)) { aaChecked.delete(name); el.classList.remove('checked'); }
+  else { aaChecked.add(name); el.classList.add('checked'); }
+  aaCalc();
+}
+
+function aaCalc() {
+  const cost = parseFloat(document.getElementById('aaCost').value) || 0;
+  const count = aaChecked.size;
+  const resultDiv = document.getElementById('aaResult');
+  const billWrap = document.getElementById('aaBillWrap');
+
+  if (!cost || !count) {
+    resultDiv.style.display = 'none';
+    billWrap.style.display = 'none';
+    return;
+  }
+
+  const per = Math.ceil(cost / count * 100) / 100;
+  document.getElementById('aaPerPerson').textContent = '¥' + per.toFixed(2);
+  resultDiv.style.display = 'block';
+
+  // Save totalCost to meal
+  const mealId = document.getElementById('aaMeal').value;
+  if (mealId) {
+    const meal = data.meals.find(m => m.id === mealId);
+    if (meal) { meal.totalCost = cost; saveData(); }
+  }
+
+  // Generate bill
+  const names = [...aaChecked];
+  const mealName = document.getElementById('aaMeal').selectedOptions[0]?.text?.split('（')[0] || '约饭';
+  const bill = `🍽️ ${mealName} AA账单\n` +
+    `💰 总计：¥${cost}\n` +
+    `👥 ${count}人参与：${names.join('、')}\n` +
+    `━━━━━━━━━━━━\n` +
+    `每人应付：¥${per.toFixed(2)}\n` +
+    `━━━━━━━━━━━━\n` +
+    `by cyc.center`;
+
+  document.getElementById('aaBill').textContent = bill;
+  billWrap.style.display = 'block';
+}
+
+function copyBill() {
+  const bill = document.getElementById('aaBill').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(bill).then(() => alert('账单已复制，去微信群粘贴吧！'));
+  } else {
+    prompt('复制以下内容：', bill);
+  }
+}
+
+// ═══════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════
+loadData();
+renderMeals();
+renderAA();
+</script>
+</body>
+</html>
