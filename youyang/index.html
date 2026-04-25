@@ -306,21 +306,22 @@
     border: 1.5px solid var(--accent);
   }
   .portfolio-actions a:hover { opacity: 0.85; }
-  .pdf-frame {
+  .portfolio-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     width: 100%;
-    height: 1100px;
-    border: 1px solid var(--line);
     border-radius: 6px;
-    overflow: hidden;
-    background: #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    background: transparent;
   }
-  .pdf-frame object,
-  .pdf-frame iframe {
+  .portfolio-gallery img {
     width: 100%;
-    height: 100%;
-    border: none;
+    height: auto;
     display: block;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #f5f1e8;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
   .pdf-fallback {
     padding: 40px 24px;
@@ -346,7 +347,7 @@
     section { page-break-inside: avoid; }
     a { color: var(--ink); border-bottom-color: #ccc; }
     /* hide embedded PDF in print — it won't render well anyway */
-    .pdf-frame, .portfolio-actions { display: none; }
+    .portfolio-gallery, .portfolio-actions { display: none; }
     .portfolio-intro::after {
       content: " （完整作品集见 PDF 附件）";
       color: var(--muted);
@@ -599,20 +600,28 @@
     <a class="primary" href="/youyang/portfolio.pdf" target="_blank" rel="noopener">↗ 在新标签页打开</a>
     <a class="secondary" href="/youyang/portfolio.pdf" download="Youyang_Yu_Portfolio_2026.pdf">↓ 下载 PDF</a>
   </div>
-  <div class="pdf-frame">
-    <iframe
-      src="/youyang/portfolio.pdf#view=FitH&amp;toolbar=1"
-      title="Youyang Yu — Full Portfolio"
-      loading="lazy">
-    </iframe>
-    <noscript>
-      <p class="pdf-fallback">
-        当前浏览器不支持内嵌 PDF，请
-        <a href="/youyang/portfolio.pdf" target="_blank" rel="noopener">在新标签页打开</a>
-        或
-        <a href="/youyang/portfolio.pdf" download="Youyang_Yu_Portfolio_2026.pdf">下载 PDF</a>。
-      </p>
-    </noscript>
+  <div class="portfolio-gallery" role="group" aria-label="作品集 21 页预览">
+    <img src="/youyang/portfolio/page-01.jpg" alt="作品集 第 1 页" loading="eager" decoding="async">
+    <img src="/youyang/portfolio/page-02.jpg" alt="作品集 第 2 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-03.jpg" alt="作品集 第 3 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-04.jpg" alt="作品集 第 4 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-05.jpg" alt="作品集 第 5 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-06.jpg" alt="作品集 第 6 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-07.jpg" alt="作品集 第 7 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-08.jpg" alt="作品集 第 8 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-09.jpg" alt="作品集 第 9 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-10.jpg" alt="作品集 第 10 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-11.jpg" alt="作品集 第 11 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-12.jpg" alt="作品集 第 12 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-13.jpg" alt="作品集 第 13 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-14.jpg" alt="作品集 第 14 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-15.jpg" alt="作品集 第 15 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-16.jpg" alt="作品集 第 16 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-17.jpg" alt="作品集 第 17 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-18.jpg" alt="作品集 第 18 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-19.jpg" alt="作品集 第 19 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-20.jpg" alt="作品集 第 20 页" loading="lazy" decoding="async">
+    <img src="/youyang/portfolio/page-21.jpg" alt="作品集 第 21 页" loading="lazy" decoding="async">
   </div>
 </section>
 
