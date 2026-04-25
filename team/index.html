@@ -1149,6 +1149,17 @@ function openDetail(path, idx) {
       if (desc) detailFields += `<div class="detail-field"><div class="detail-label">说明</div><div class="detail-value">${desc}</div></div>`;
     }
 
+    const cvBtn = (item.name === '悠洋')
+      ? `<a href="https://cyc.center/youyang" target="_blank" rel="noopener"
+            style="display:flex;align-items:center;justify-content:center;gap:6px;
+                   width:100%;padding:11px;border-radius:12px;margin-bottom:10px;
+                   background:linear-gradient(135deg,#1c3d2e,#2a5740);
+                   color:#fff;font-size:14px;font-weight:700;text-decoration:none;
+                   box-shadow:0 3px 12px rgba(28,61,46,0.22);">
+           📄 查看简历与作品集 ↗
+         </a>`
+      : '';
+
     content.innerHTML = `
       <div style="text-align: center; padding-top: 8px;">
         <div class="detail-avatar" style="margin: 0 auto 12px;">${avatarContent}</div>
@@ -1158,7 +1169,8 @@ function openDetail(path, idx) {
       <div style="margin-top: 20px;">
         ${detailFields || '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0;">暂无详细信息</div>'}
       </div>
-      <div class="modal-actions" style="margin-top:24px;">
+      <div style="margin-top:24px;">
+        ${cvBtn}
         <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
       </div>
     `;
