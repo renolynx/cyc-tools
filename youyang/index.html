@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俞悠洋 Youyang Yu — CV 2026</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #666;
+    --line: #e5e1d8;
+    --accent: #b4531c;
+    --bg: #fdfcf9;
+    --card: #f5f1e8;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 56px 48px 72px;
+  }
+
+  /* ===== HEADER ===== */
+  header { margin-bottom: 36px; }
+  h1.name {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .name .en { color: var(--muted); font-weight: 500; margin-left: 8px; font-size: 22px; }
+  .roles {
+    font-size: 15px;
+    color: var(--accent);
+    font-weight: 600;
+    margin: 0 0 10px;
+    letter-spacing: 0.02em;
+  }
+  .contact {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+  .contact a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .contact a:hover { color: var(--accent); border-color: var(--accent); }
+  .contact .sep { margin: 0 10px; color: var(--line); }
+
+  .summary {
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: #333;
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 16px;
+    margin: 0;
+  }
+
+  /* ===== SECTIONS ===== */
+  section { margin-top: 36px; }
+  h2 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  h2 .cn { color: var(--ink); margin-right: 8px; letter-spacing: 0.05em; }
+
+  /* ===== CURRENT PROJECT (HERO) ===== */
+  .current {
+    background: var(--card);
+    border-radius: 6px;
+    padding: 22px 24px;
+  }
+  .current h3 {
+    font-size: 17px;
+    margin: 0 0 6px;
+    font-weight: 700;
+  }
+  .current .sub {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .current p {
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .current .metric {
+    display: inline-block;
+    background: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .current .quote {
+    font-style: italic;
+    color: #555;
+    border-left: 2px solid var(--accent);
+    padding-left: 12px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+
+  /* ===== SIGNATURE PROJECTS ===== */
+  .project {
+    margin-bottom: 22px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .project:last-child { border-bottom: none; }
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .project h3 {
+    font-size: 15.5px;
+    margin: 0;
+    font-weight: 700;
+  }
+  .project h3 .num {
+    color: var(--accent);
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .project .meta {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .project .tag {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--card);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .project ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+  }
+  .project li {
+    margin: 4px 0;
+    font-size: 13.5px;
+  }
+  .project a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .project a:hover { border-color: var(--accent); }
+
+  /* ===== CAPABILITIES GRID ===== */
+  .caps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+  }
+  .cap {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .cap .n {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .cap .body { font-size: 13.5px; line-height: 1.55; }
+  .cap .body strong { display: block; margin-bottom: 1px; font-weight: 700; }
+  .cap .body span { color: var(--muted); font-size: 12.5px; }
+
+  /* ===== COMPACT LISTS ===== */
+  .edu-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 16px;
+    padding: 6px 0;
+    font-size: 13.5px;
+  }
+  .edu-row .year { color: var(--accent); font-weight: 600; }
+  .edu-row .detail strong { font-weight: 700; }
+  .edu-row .detail span { color: var(--muted); }
+
+  .festivals {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #333;
+  }
+  .festivals .label {
+    display: inline-block;
+    min-width: 90px;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    vertical-align: top;
+  }
+  .festivals .row { margin-bottom: 6px; }
+
+  .media-list {
+    font-size: 13px;
+    color: #333;
+    padding-left: 0;
+    list-style: none;
+    margin: 0;
+  }
+  .media-list li {
+    padding: 4px 0;
+    border-bottom: 1px dotted var(--line);
+  }
+  .media-list li:last-child { border: none; }
+  .media-list .y { color: var(--accent); font-weight: 600; margin-right: 8px; }
+
+  /* ===== LINKS BAR ===== */
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 14px;
+  }
+  .links a {
+    font-size: 12.5px;
+    padding: 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--ink);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .links a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ===== PORTFOLIO EMBED ===== */
+  .portfolio-intro {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 14px;
+    line-height: 1.7;
+  }
+  .portfolio-intro a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+  }
+  .portfolio-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .portfolio-actions a {
+    font-size: 12.5px;
+    padding: 6px 14px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 14px;
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+  .portfolio-actions a.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .portfolio-actions a:hover { opacity: 0.85; }
+  .pdf-frame {
+    width: 100%;
+    height: 1100px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .pdf-frame iframe,
+  .pdf-frame embed {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+  .pdf-fallback {
+    padding: 40px 24px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    html, body { background: #fff; font-size: 11pt; }
+    .page { padding: 0; max-width: 100%; }
+    .current { background: #f5f1e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cap .n, .project .tag, .current .metric {
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    section { page-break-inside: avoid; }
+    a { color: var(--ink); border-bottom-color: #ccc; }
+    /* hide embedded PDF in print — it won't render well anyway */
+    .pdf-frame, .portfolio-actions { display: none; }
+    .portfolio-intro::after {
+      content: " （完整作品集见 PDF 附件）";
+      color: var(--muted);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 32px 20px; }
+    h1.name { font-size: 26px; }
+    .caps { grid-template-columns: 1fr; }
+    .edu-row { grid-template-columns: 90px 1fr; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ================= HEADER ================= -->
+<header>
+  <h1 class="name">俞悠洋<span class="en">Youyang Yu</span></h1>
+  <p class="roles">Community Organizer · Animation Filmmaker · Art Educator · AI Creator</p>
+  <p class="contact">
+    <a href="https://youyang.art">youyang.art</a>
+    <span class="sep">·</span>
+    <a href="mailto:qingdaoyyy@gmail.com">qingdaoyyy@gmail.com</a>
+    <span class="sep">·</span>
+    现居大理 · 中美两地旅居
+  </p>
+  <p class="summary">
+    俞悠洋是一名社区组织者、动画导演、艺术教育者和 AI 创作者。毕业于英国皇家艺术学院，影片作品入选 <strong>20+ 国际电影节</strong>，被 <strong>BFI 英国电影协会</strong>及<strong>栗宪庭电影基金</strong>收藏。过去 8 年，他一边从事艺术教育，一边从 0 建起一个国际动画社区——<strong>费那奇北京动画周</strong>。他在中美两地旅居，主持过 <strong>50+ 场青年线下活动</strong>。当前正在大理设计一套可推广的"社区操作系统"。
+  </p>
+</header>
+
+<!-- ================= CURRENT PROJECT ================= -->
+<section>
+  <h2><span class="cn">当前项目</span><span>Current Project</span></h2>
+  <div class="current">
+    <h3>CYC 社区主理人 · 孵化可推广的"社区操作系统"</h3>
+    <div class="sub">代表 706 驻地大理 · 2026 年 1 月至今</div>
+
+    <p>
+      <span class="metric">180 → 500 人满员</span>
+      <span class="metric">新开 2 群增长中</span>
+      <span class="metric">每周高频社交活动</span>
+    </p>
+
+    <p>
+      作为 CYC 社区主理人，在社区中持续组织丰富的线下社交活动。在地群从 180 人涨至 500 人满员，并已开启高速增长的二群。
+    </p>
+
+    <div class="quote">
+      "一个典型的游客来到 CYC，可能会觉得挺有意思，多住了两天，然后觉得不够，又住了几天，然后再续一周——离开了又再回来，发现自己爱上了社区，爱上了这个地方。"
+    </div>
+
+    <p>
+      作为一个跨国游牧生活的人，带着"<strong>在远方回家</strong>"的愿望（看见需求），我正在创作一套社区操作系统，让社群成员能够更好地连接，形成<strong>能轻易"断点续联"的网络纽带与社会支持系统</strong>（搭建产品）。
+    </p>
+
+    <div class="links">
+      <a href="https://cyc.center">cyc.center</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SIGNATURE PROJECTS ================= -->
+<section>
+  <h2><span class="cn">代表项目</span><span>Signature Projects</span></h2>
+
+  <div class="project">
+    <div class="project-header">
+      <h3><span class="num">01</span>费那奇北京动画周 Feinaki Beijing Animation Week</h3>
+      <span class="meta">共同创始人 · 2019 至今 · 北京</span>
+    </div>
+    <span class="tag">社区 0→1</span>
+    <span class="tag">跨国创作者网络</span>
+    <span class="tag">内容策划</span>
+    <ul>
+      <li>从 0 搭建的国际独立动画社区，持续运营 6 年。一年一届线下动画周 + 全年度线上/线下策展。</li>
+      <li>负责节展策划、创作者关系、艺术市集、国际放映合作。被 Cartoon Brew、CGTN 专题报道为"将世界独立动画带入中国观众视野"的活动。</li>
+      <li>代表策展：2020 费那奇独立动画全球特别放映（abC艺术书展 × 时代美术馆）、2019 RCA 30 周年回顾展、费那奇 × 世界动画导演线上特别策展系列。</li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="project-header">
+      <h3><span class="num">02</span>WhoUP App · 国际 Hackathon 亚军</h3>
+      <span class="meta">Edge City Lana Hackathon · 泰国清迈 · 2024</span>
+    </div>
+    <span class="tag">0→1 产品设计</span>
+    <span class="tag">视觉与创意方向</span>
+    <span class="tag">国际团队协作</span>
+    <ul>
+      <li>一款"数字花园"应用：用于注意力管理与好友轻连接——太空岩石代表朋友，外星植物代表每一次注意力的留痕。</li>
+      <li>与开发者 Jmill & Lucy 组队，我负责 <strong>Visuals & Creative Direction</strong>——从概念草图、icon 资产、3D 禅意花园场景到完整 pitch deck 全链路交付。</li>
+      <li>在国际 hackathon 现场路演后获<strong>第二名</strong>。Demo: <a href="https://www.youtube.com/watch?v=Um4ATBRGDqQ">youtube.com/watch?v=Um4ATBRGDqQ</a></li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="project-header">
+      <h3><span class="num">03</span>跨地域艺术教育 & 公共活动策划</h3>
+      <span class="meta">美国 / 中国 · 2018 – 2024</span>
+    </div>
+    <span class="tag">线下活动主理</span>
+    <span class="tag">跨文化沟通</span>
+    <span class="tag">双语教学</span>
+    <ul>
+      <li><strong>沃克艺术中心 Walker Art Center</strong>（明尼阿波利斯）— "Free First Saturday" 定格动画儿童工作坊</li>
+      <li><strong>怀斯曼艺术博物馆 Weisman Art Museum</strong>— "The World Inside You" 心理健康艺术项目联合创作</li>
+      <li><strong>MCAD 明尼阿波利斯艺术设计学院</strong>— Jerome Fellowship 驻地研究员与展览</li>
+      <li><strong>IOMA 艺术中心（北京）</strong>— "光影之前" 动画脚本与分镜创作工作坊（2020–2021）</li>
+      <li>另策划/参与 SooVAC、abC 艺术书展、后山艺术空间、虞社空间、罗切斯特艺术中心 等多场放映与对谈。</li>
+    </ul>
+  </div>
+
+  <div class="project">
+    <div class="project-header">
+      <h3><span class="num">04</span>动画短片与艺术作品</h3>
+      <span class="meta">2015 – 2024</span>
+    </div>
+    <span class="tag">叙事 + 视觉</span>
+    <span class="tag">AI 落地创作</span>
+    <span class="tag">跨媒介装置</span>
+    <ul>
+      <li><strong>For the Best</strong> (2015, 3′)— BFI 英国电影协会永久收藏；入选 BFI Flare、Raindance、Fantoche、旧金山短片节、深圳独立动画双年展。<a href="https://vimeo.com/149027385">vimeo.com/149027385</a></li>
+      <li><strong>I Love You Forever Now</strong> (2016, 8′)— 栗宪庭电影基金收藏；温哥华、斯图加特、北京独立影展。<a href="https://vimeo.com/166716772">vimeo.com/166716772</a></li>
+      <li><strong>Inside My Eyes</strong> (2022)— AI 数字水彩实验片，改编自诗人谷口优子诗作，怀斯曼艺术博物馆展出。<a href="https://vimeo.com/794750233">vimeo.com/794750233</a></li>
+      <li><strong>Begin with Pieces</strong> (2023)— AI 动画生成 × 诗歌 × 心理健康项目（Creativity Camp Study）。<a href="https://vimeo.com/815918697">vimeo.com/815918697</a></li>
+      <li><strong>在万湖之州继承一座山</strong> (2024)— 陶瓷装置 + AI 影像，Jerome Fellowship 展出于 MCAD。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= CORE CAPABILITIES ================= -->
+<section>
+  <h2><span class="cn">核心能力</span><span>Core Capabilities</span></h2>
+  <div class="caps">
+    <div class="cap">
+      <div class="n">1</div>
+      <div class="body">
+        <strong>叙事、视觉、交互设计</strong>
+        <span>获奖短片 · 博物馆级作品</span>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="n">2</div>
+      <div class="body">
+        <strong>电影级复杂项目管理</strong>
+        <span>参与剧组 · 主办国际电影节</span>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="n">3</div>
+      <div class="body">
+        <strong>0→1 产品设计</strong>
+        <span>WhoUP · Hackathon 亚军</span>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="n">4</div>
+      <div class="body">
+        <strong>线下活动 & 跨文化沟通</strong>
+        <span>英中美三地双语 · 费那奇 · 706 北美</span>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="n">5</div>
+      <div class="body">
+        <strong>共情式需求挖掘</strong>
+        <span>艺术教练 · 创作者社区 · 心理健康项目</span>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="n">6</div>
+      <div class="body">
+        <strong>AI 工具落地使用</strong>
+        <span>cyc.center · 已入博物馆展的 AI 动画作品</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EDUCATION ================= -->
+<section>
+  <h2><span class="cn">教育背景</span><span>Education</span></h2>
+  <div class="edu-row">
+    <div class="year">2014–2016</div>
+    <div class="detail"><strong>动画艺术硕士 MA Animation</strong><br><span>英国皇家艺术学院 Royal College of Art · 伦敦</span></div>
+  </div>
+  <div class="edu-row">
+    <div class="year">2011–2014</div>
+    <div class="detail"><strong>插画与动画荣誉文学士 BA (Hons) Illustration & Animation</strong><br><span>金斯顿大学 Kingston University · 伦敦</span></div>
+  </div>
+  <div class="edu-row">
+    <div class="year">2010–2011</div>
+    <div class="detail"><strong>艺术与设计预科 Foundation Diploma</strong><br><span>伦敦艺术大学 University of the Arts · 伦敦</span></div>
+  </div>
+</section>
+
+<!-- ================= FESTIVALS & COLLECTIONS ================= -->
+<section>
+  <h2><span class="cn">精选电影节与馆藏</span><span>Selected Festivals & Collections</span></h2>
+  <div class="festivals">
+    <div class="row">
+      <span class="label">Collections</span>
+      BFI 英国电影协会 · 栗宪庭电影基金档案
+    </div>
+    <div class="row">
+      <span class="label">Festivals</span>
+      Vancouver IFF · Raindance · Fantoche · Stuttgart International Festival of Animated Film · BFI Flare · San Francisco International Festival of Short Films · 新千岁机场国际动画节 · 深圳独立动画双年展 · 第七届中国独立动画电影论坛 CIAFF · 敦煌国际动画周 · 阿那亚戏剧节
+    </div>
+    <div class="row">
+      <span class="label">Exhibitions</span>
+      Walker Art Center · Weisman Art Museum · Rochester Art Center · SooVAC · MCAD · IOMA Art Center · 时代美术馆 · 后山艺术空间
+    </div>
+  </div>
+</section>
+
+<!-- ================= PUBLICATIONS ================= -->
+<section>
+  <h2><span class="cn">文章与媒体报道</span><span>Publications & Media</span></h2>
+  <ul class="media-list">
+    <li><span class="y">2023</span>《代号706：新集体主义、乌托邦、社会生活实验室与全球游牧的可能性》· 自撰稿件 · <em>P_PAL ISSUE 2</em></li>
+    <li><span class="y">2021</span><em>A Queer Thing, Indeed: Queering Experimental Animation</em> · 作者 Lilly Husbands · Fantasy Animation</li>
+    <li><span class="y">2020</span><em>Fringes of (Chinese) Animation</em> · 自撰稿件 · Talking Shorts（国际动画评论平台）</li>
+    <li><span class="y">2020</span>《把动画节还给动画人：后疫情时代的东布洲国际动画周》· 动画学术趴 × 搜狐</li>
+    <li><span class="y">2019</span><em>Feinaki Beijing Animation Week: An Event Bringing Indie Animation to Chinese Audiences</em> · Cartoon Brew</li>
+    <li><span class="y">2019</span><em>Feinaki Animation Week brings global animated works to Beijing</em> · CGTN</li>
+  </ul>
+</section>
+
+<!-- ================= LINKS ================= -->
+<section>
+  <h2><span class="cn">相关链接</span><span>Links</span></h2>
+  <div class="links">
+    <a href="https://youyang.art">youyang.art</a>
+    <a href="https://cyc.center">CYC 社区 cyc.center</a>
+    <a href="https://vimeo.com/user/youyang">Vimeo — Films</a>
+    <a href="https://www.youtube.com/watch?v=Um4ATBRGDqQ">WhoUP Demo</a>
+  </div>
+</section>
+
+<!-- ================= FULL PORTFOLIO (EMBEDDED PDF) ================= -->
+<section>
+  <h2><span class="cn">完整作品集</span><span>Full Portfolio</span></h2>
+  <p class="portfolio-intro">
+    以下为完整作品集 PDF，涵盖动画短片、插画与绘画、WhoUP 产品设计、费那奇动画周与 CIAFF 现场策展、教育工作坊、AI 装置作品等。若预览窗口未能加载，请使用下方按钮打开或下载。
+  </p>
+  <div class="portfolio-actions">
+    <a href="portfolio.pdf" target="_blank" rel="noopener">在新标签页打开 ↗</a>
+    <a href="portfolio.pdf" download class="secondary">下载 PDF</a>
+  </div>
+  <div class="pdf-frame">
+    <object data="portfolio.pdf#view=FitH&toolbar=1" type="application/pdf" width="100%" height="100%">
+      <iframe src="portfolio.pdf#view=FitH" title="Youyang Yu — Full Portfolio"></iframe>
+      <div class="pdf-fallback">
+        当前浏览器未能嵌入 PDF，请
+        <a href="portfolio.pdf" target="_blank" rel="noopener">点此打开作品集</a>
+        或
+        <a href="portfolio.pdf" download>下载 PDF</a>。
+      </div>
+    </object>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
