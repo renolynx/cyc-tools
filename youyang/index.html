@@ -269,63 +269,64 @@
     color: var(--accent);
   }
 
-  /* ===== PORTFOLIO EMBED ===== */
+  /* ===== PORTFOLIO BUTTONS ===== */
   .portfolio-intro {
+    font-size: 14px;
+    color: #444;
+    margin: 0 0 20px;
+    line-height: 1.75;
+  }
+  .portfolio-card {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .portfolio-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0;
+  }
+  .portfolio-card-meta {
     font-size: 13px;
     color: var(--muted);
-    margin: 0 0 14px;
-    line-height: 1.7;
+    line-height: 1.6;
+    margin: 0;
   }
-  .portfolio-intro a {
-    color: var(--accent);
-    text-decoration: none;
-    border-bottom: 1px solid var(--accent);
-  }
-  .portfolio-actions {
+  .portfolio-btns {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 14px;
+    margin-top: 4px;
   }
-  .portfolio-actions a {
-    font-size: 12.5px;
-    padding: 6px 14px;
+  .portfolio-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, transform 0.1s;
+    cursor: pointer;
+  }
+  .portfolio-btn:active { transform: scale(0.97); }
+  .portfolio-btn.primary {
     background: var(--accent);
     color: #fff;
-    border-radius: 14px;
-    text-decoration: none;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    transition: opacity 0.15s;
+    box-shadow: 0 2px 10px rgba(180,83,28,0.22);
   }
-  .portfolio-actions a.secondary {
+  .portfolio-btn.secondary {
     background: transparent;
     color: var(--accent);
-    border: 1px solid var(--accent);
+    border: 1.5px solid var(--accent);
   }
-  .portfolio-actions a:hover { opacity: 0.85; }
-  .pdf-frame {
-    width: 100%;
-    height: 1100px;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    overflow: hidden;
-    background: #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-  }
-  .pdf-frame iframe,
-  .pdf-frame embed {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-  }
-  .pdf-fallback {
-    padding: 40px 24px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
-  }
+  .portfolio-btn:hover { opacity: 0.85; }
 
   /* ===== PRINT ===== */
   @media print {
@@ -581,26 +582,23 @@
   </div>
 </section>
 
-<!-- ================= FULL PORTFOLIO (EMBEDDED PDF) ================= -->
+<!-- ================= FULL PORTFOLIO ================= -->
 <section>
   <h2><span class="cn">完整作品集</span><span>Full Portfolio</span></h2>
   <p class="portfolio-intro">
-    以下为完整作品集 PDF，涵盖动画短片、插画与绘画、WhoUP 产品设计、费那奇动画周与 CIAFF 现场策展、教育工作坊、AI 装置作品等。若预览窗口未能加载，请使用下方按钮打开或下载。
+    完整作品集 PDF 涵盖动画短片、插画与绘画、WhoUP 产品设计、费那奇动画周与 CIAFF 现场策展、教育工作坊、AI 装置作品等（约 12MB）。
   </p>
-  <div class="portfolio-actions">
-    <a href="portfolio.pdf" target="_blank" rel="noopener">在新标签页打开 ↗</a>
-    <a href="portfolio.pdf" download class="secondary">下载 PDF</a>
-  </div>
-  <div class="pdf-frame">
-    <object data="portfolio.pdf#view=FitH&toolbar=1" type="application/pdf" width="100%" height="100%">
-      <iframe src="portfolio.pdf#view=FitH" title="Youyang Yu — Full Portfolio"></iframe>
-      <div class="pdf-fallback">
-        当前浏览器未能嵌入 PDF，请
-        <a href="portfolio.pdf" target="_blank" rel="noopener">点此打开作品集</a>
-        或
-        <a href="portfolio.pdf" download>下载 PDF</a>。
-      </div>
-    </object>
+  <div class="portfolio-card">
+    <p class="portfolio-card-title">📁 Youyang Yu — Full Portfolio 2026</p>
+    <p class="portfolio-card-meta">PDF · 12.6 MB · 动画 · 策展 · 产品 · AI 创作 · 艺术教育</p>
+    <div class="portfolio-btns">
+      <a class="portfolio-btn primary" href="portfolio.pdf" target="_blank" rel="noopener">
+        ↗ 在新标签页打开
+      </a>
+      <a class="portfolio-btn secondary" href="portfolio.pdf" download="Youyang_Yu_Portfolio_2026.pdf">
+        ↓ 下载 PDF
+      </a>
+    </div>
   </div>
 </section>
 
