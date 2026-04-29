@@ -3,6 +3,8 @@
  * 将活动信息写入飞书多维表格「📅活动日历」
  */
 
+import { verifyPassword, getCurrentPassword } from './_password.js';
+
 /** 上传海报到飞书云文档，返回 file_token */
 async function uploadPoster(poster, token, appToken) {
   const buffer   = Buffer.from(poster.base64, 'base64');
@@ -37,10 +39,11 @@ export default async function handler(req, res) {
   if (!activity || !date)
     return res.status(400).json({ error: '缺少 activity 或 date 参数' });
 
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID, SYNC_PASSWORD } = process.env;
+  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
 
-  // 密码校验（设置了环境变量才启用）
-  if (SYNC_PASSWORD && password !== SYNC_PASSWORD)
+  // 密码校验（KV 优先，fallback 到 SYNC_PASSWORD env var）
+  const currentPwd = await getCurrentPassword();
+  if (currentPwd && password !== currentPwd)
     return res.status(401).json({ error: '密码错误' });
 
   if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID)

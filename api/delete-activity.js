@@ -4,6 +4,8 @@
  * Body: { record_id: string, password: string }
  */
 
+import { getCurrentPassword } from './_password.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -15,10 +17,11 @@ export default async function handler(req, res) {
   if (!record_id)
     return res.status(400).json({ error: '缺少 record_id 参数' });
 
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID, SYNC_PASSWORD } = process.env;
+  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
 
-  // 密码校验（与 add-activity 共用同一个环境变量）
-  if (SYNC_PASSWORD && password !== SYNC_PASSWORD)
+  // 密码校验（与 add-activity 共用，KV 优先 fallback 到 SYNC_PASSWORD env var）
+  const currentPwd = await getCurrentPassword();
+  if (currentPwd && password !== currentPwd)
     return res.status(401).json({ error: '密码错误' });
 
   if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID)
