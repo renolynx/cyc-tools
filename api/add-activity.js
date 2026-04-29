@@ -5,6 +5,7 @@
 
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
+import { kvDel, isKvConfigured } from './_kv.js';
 
 /** 上传海报到飞书云文档，返回 file_token */
 async function uploadPoster(poster, token, appToken) {
@@ -103,10 +104,21 @@ export default async function handler(req, res) {
     if (recordData.code !== 0)
       throw new Error(`${hasRecord ? '更新' : '写入'}失败 (${recordData.code}): ${recordData.msg}`);
 
+    const newRecordId = recordData.data.record.record_id;
+
+    // 失效相关 KV 缓存（让 /events 立刻反映新数据）
+    if (isKvConfigured()) {
+      await Promise.all([
+        kvDel('event:' + newRecordId),
+        kvDel('events:upcoming'),
+        kvDel('sitemap:acts'),
+      ]).catch(e => console.error('[add-activity] cache invalidate failed:', e));
+    }
+
     return res.status(200).json({
       success:   true,
       is_update: hasRecord,
-      record_id: recordData.data.record.record_id,
+      record_id: newRecordId,
     });
 
   } catch (err) {

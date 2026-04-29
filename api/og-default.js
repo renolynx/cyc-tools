@@ -49,10 +49,13 @@ const SVG = `<?xml version="1.0" encoding="UTF-8"?>
   </g>
 
   <!-- 副标 -->
-  <g transform="translate(80, 470)">
+  <g transform="translate(80, 460)">
     <text x="0" y="0" font-family="-apple-system, 'PingFang SC', sans-serif"
           font-size="28" font-weight="500" letter-spacing="1"
           fill="rgba(255,255,255,0.78)">CYC · Connected Youth Community</text>
+    <text x="0" y="34" font-family="-apple-system, 'PingFang SC', sans-serif"
+          font-size="22" font-weight="400" letter-spacing="1.5"
+          fill="rgba(255,255,255,0.62)">A coliving community in Dali, Yunnan · 大理</text>
   </g>
 
   <!-- 底栏 -->

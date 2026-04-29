@@ -34,15 +34,58 @@ function posterUrl(act) {
   return null;
 }
 
+function buildJsonLd(act, ogImage, url, isPast) {
+  // 把活动地点拆成结构化地址（飞书里 a.loc 是自由文本，只能粗略归到大理）
+  const ld = {
+    '@context':            'https://schema.org',
+    '@type':               'Event',
+    'name':                act.title,
+    'startDate':           act.date,
+    'eventStatus':         isPast ? 'https://schema.org/EventCompleted' : 'https://schema.org/EventScheduled',
+    'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode',
+    'location': {
+      '@type': 'Place',
+      'name':  act.loc || 'CYC 链岛青年社区',
+      'address': {
+        '@type':           'PostalAddress',
+        'addressLocality': 'Dali',
+        'addressRegion':   'Yunnan',
+        'addressCountry':  'CN',
+      },
+    },
+    'image':       ogImage,
+    'description': act.desc || act.title,
+    'url':         url,
+    'organizer': {
+      '@type':         'Organization',
+      'name':          'CYC 链岛青年社区',
+      'alternateName': 'Connected Youth Community',
+      'url':           SITE_URL,
+    },
+  };
+  if (act.fee) {
+    ld.offers = {
+      '@type':         'Offer',
+      'priceCurrency': 'CNY',
+      'price':         /^[0-9]+$/.test(act.fee.trim()) ? act.fee.trim() : '0',
+      'description':   act.fee,
+      'url':           url,
+    };
+  }
+  return JSON.stringify(ld);
+}
+
 function renderEventDetail(act) {
   const title    = escapeHtml(act.title || '未命名活动');
   const descRaw  = act.desc || '';
   const descShort = escapeHtml(descRaw.replace(/\n/g, ' ').slice(0, 100));
+  // 双语 description 给 Google：中文 主体 + 英文 context tail
+  const descBilingual = descShort + ' · CYC Connected Youth Community event in Dali, Yunnan';
   const ogImage  = posterUrl(act) || OG_DEFAULT;
   const url      = `${SITE_URL}/events/${act.record_id}`;
   const isPast   = act.date && act.date < todayBJ();
-
   const dateStr = formatCnDate(act.date);
+  const jsonLd   = buildJsonLd(act, ogImage, url, isPast);
 
   return `<!DOCTYPE html>
 <html lang="zh">
@@ -50,15 +93,20 @@ function renderEventDetail(act) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="format-detection" content="telephone=no">
-<title>${title} · ${SITE_NAME}</title>
-<meta name="description" content="${descShort}">
+<title>${title} · CYC 链岛青年社区 · Dali</title>
+<meta name="description" content="${descBilingual}">
+<meta name="keywords" content="CYC, 链岛青年社区, Connected Youth Community, Dali, 大理, digital nomad, coliving, 数字游民, ${escapeHtml(act.title || '')}">
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${descShort}">
 <meta property="og:image" content="${ogImage}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:url" content="${url}">
 <meta property="og:site_name" content="${SITE_NAME}">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
@@ -67,6 +115,10 @@ function renderEventDetail(act) {
 
 <link rel="canonical" href="${url}">
 <link rel="stylesheet" href="/styles.css">
+
+<script type="application/ld+json">
+${jsonLd}
+</script>
 </head>
 <body class="event-page">
 
@@ -122,25 +174,49 @@ function renderEventDetail(act) {
 </html>`;
 }
 
-function render404() {
+function renderErrorPage(opts) {
+  const { icon, title, titleEn, msg, msgEn } = opts;
   return `<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>活动不存在 · ${SITE_NAME}</title>
+<title>${title} · ${SITE_NAME}</title>
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="event-page">
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 <main class="event-detail event-404">
-  <div class="event-404-icon">🌿</div>
-  <h1>活动不存在</h1>
-  <p>这条活动可能已被删除，或者链接不对。</p>
-  <a href="/events" class="event-404-link">查看全部活动 →</a>
+  <div class="event-404-icon">${icon}</div>
+  <h1>${title}</h1>
+  <p class="event-404-en">${titleEn}</p>
+  <p>${msg}</p>
+  <p class="event-404-en-sub">${msgEn}</p>
+  <a href="/events" class="event-404-link">查看全部活动 → All Events</a>
 </main>
 </body>
 </html>`;
+}
+
+function render404() {
+  return renderErrorPage({
+    icon: '🌿',
+    title: '活动不存在',
+    titleEn: 'Event not found',
+    msg: '这条活动可能已被删除，或者链接不对。',
+    msgEn: 'This event may have been removed, or the link is broken.',
+  });
+}
+
+function render500() {
+  return renderErrorPage({
+    icon: '⚠️',
+    title: '服务暂时出了点问题',
+    titleEn: 'Something went wrong',
+    msg: '稍后再试，或返回看看其他活动。',
+    msgEn: 'Please try again later, or browse other events.',
+  });
 }
 
 // ─────────── Handler ───────────
@@ -177,7 +253,7 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error('[event-page]', err.message);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(500).send(render404());
+      return res.status(500).send(render500());
     }
     if (act && isKvConfigured()) {
       try {

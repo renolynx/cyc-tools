@@ -27,6 +27,21 @@ export async function kvGet(key) {
   }
 }
 
+/** 删 key；KV 没配置 / 不存在都视为成功（幂等） */
+export async function kvDel(key) {
+  if (!isKvConfigured()) return false;
+  try {
+    const res = await fetch(`${KV_URL}/del/${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${KV_TOKEN}` },
+    });
+    if (!res.ok) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * 写 key
  * @param {string} key

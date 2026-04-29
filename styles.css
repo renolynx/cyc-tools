@@ -1116,3 +1116,59 @@ body.event-page {
   content: ''; flex: 1; height: 0.5px;
   background: var(--stroke);
 }
+
+/* 错误页双语副标 */
+.event-404-en {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  margin-top: -4px;
+  margin-bottom: 14px;
+  font-style: italic;
+}
+.event-404-en-sub {
+  color: #b8b8b8;
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 2px;
+  margin-bottom: 18px;
+}
+
+/* /events 底部双语 about block（SEO + 给老外看） */
+.el-about {
+  margin-top: 48px;
+  padding: 22px 24px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.el-about h2 {
+  font-size: 13px; font-weight: 700;
+  color: var(--green); letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.el-about p {
+  font-size: 14px; line-height: 1.75;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.el-about p:last-child { margin-bottom: 0; }
+.el-about-zh {
+  color: var(--muted);
+  font-size: 13px;
+}
+.el-about strong {
+  color: var(--green);
+  font-weight: 700;
+}
+.el-about-link a {
+  color: var(--orange);
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+.el-about-link a:hover { text-decoration: underline; }

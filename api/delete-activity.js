@@ -6,6 +6,7 @@
 
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
+import { kvDel, isKvConfigured } from './_kv.js';
 
 export default async function handler(req, res) {
   applyCors(res);
@@ -41,6 +42,15 @@ export default async function handler(req, res) {
     // 找不到记录也当作成功（可能已被手动删除过）
     if (delData.code !== 0 && delData.code !== 1254043) {
       throw new Error(`删除失败 (${delData.code}): ${delData.msg}`);
+    }
+
+    // 失效相关 KV 缓存
+    if (isKvConfigured()) {
+      await Promise.all([
+        kvDel('event:' + record_id),
+        kvDel('events:upcoming'),
+        kvDel('sitemap:acts'),
+      ]).catch(e => console.error('[delete-activity] cache invalidate failed:', e));
     }
 
     return res.status(200).json({
