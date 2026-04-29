@@ -14,7 +14,7 @@ const EDGE_CACHE    = 'public, s-maxage=300, stale-while-revalidate=3600';
 
 const SITE_URL  = 'https://cyc.center';
 const SITE_NAME = 'CYC 链岛青年社区';
-const OG_DEFAULT = SITE_URL + '/og-default.png';
+const OG_DEFAULT = SITE_URL + '/api/og-default';
 
 const CN_DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
 
