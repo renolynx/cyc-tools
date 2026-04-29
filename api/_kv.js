@@ -27,10 +27,17 @@ export async function kvGet(key) {
   }
 }
 
-/** 写 key，body 文本可包含中文等任意字符 */
-export async function kvSet(key, value) {
+/**
+ * 写 key
+ * @param {string} key
+ * @param {string} value 文本，可含中文
+ * @param {number} [ttlSec] 可选过期秒数；不传则永久存储
+ */
+export async function kvSet(key, value, ttlSec) {
   if (!isKvConfigured()) throw new Error('KV 存储未配置');
-  const res = await fetch(`${KV_URL}/set/${encodeURIComponent(key)}`, {
+  const url = `${KV_URL}/set/${encodeURIComponent(key)}`
+            + (ttlSec ? `?EX=${Math.max(1, Math.floor(ttlSec))}` : '');
+  const res = await fetch(url, {
     method:  'POST',
     headers: {
       Authorization: `Bearer ${KV_TOKEN}`,
