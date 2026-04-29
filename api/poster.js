@@ -4,29 +4,15 @@
  * 临时下载 URL 后流式回传，处理浏览器无法直接拉取私有附件的问题
  */
 
+import { getAccessToken } from './_feishu.js';
+
 export default async function handler(req, res) {
   const token = req.query.token || req.query.file_token;
   if (!token) return res.status(400).json({ error: 'missing token' });
 
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET } = process.env;
-  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET)
-    return res.status(500).json({ error: '飞书环境变量未配置' });
-
   try {
     // 1. 鉴权
-    const authRes = await fetch(
-      'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET }),
-      }
-    );
-    const authData = await authRes.json();
-    if (authData.code !== 0)
-      return res.status(500).json({ error: '飞书鉴权失败: ' + authData.msg });
-
-    const accessToken = authData.tenant_access_token;
+    const accessToken = await getAccessToken();
 
     // 2. 获取临时下载 URL（适用于 drive 上的所有附件）
     const tmpRes = await fetch(

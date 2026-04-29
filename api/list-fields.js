@@ -1,27 +1,22 @@
 /**
  * GET /api/list-fields
- * 列出多维表格「活动日历」表的所有字段名和类型
+ * 列出多维表格「活动日历」表的所有字段名和类型（一次性调试用）
  */
+
+import { getAccessToken, checkFeishuEnv } from './_feishu.js';
+
 export default async function handler(req, res) {
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
-  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID) {
-    return res.status(500).json({ error: '环境变量未配置完整' });
-  }
+  const envErr = checkFeishuEnv();
+  if (envErr) return res.status(500).json({ error: envErr });
+
+  const { FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
+
   try {
-    const authRes = await fetch(
-      'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET }),
-      }
-    );
-    const { code, msg, tenant_access_token } = await authRes.json();
-    if (code !== 0) throw new Error(`鉴权失败: ${msg}`);
+    const token = await getAccessToken();
 
     const fieldsRes = await fetch(
       `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/fields`,
-      { headers: { Authorization: `Bearer ${tenant_access_token}` } }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     const fieldsData = await fieldsRes.json();
     if (fieldsData.code !== 0) throw new Error(`获取字段失败: ${fieldsData.msg}`);

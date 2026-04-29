@@ -3,7 +3,8 @@
  * 将活动信息写入飞书多维表格「📅活动日历」
  */
 
-import { verifyPassword, getCurrentPassword } from './_password.js';
+import { getCurrentPassword } from './_password.js';
+import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
 
 /** 上传海报到飞书云文档，返回 file_token */
 async function uploadPoster(poster, token, appToken) {
@@ -29,9 +30,7 @@ async function uploadPoster(poster, token, appToken) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
@@ -39,29 +38,19 @@ export default async function handler(req, res) {
   if (!activity || !date)
     return res.status(400).json({ error: '缺少 activity 或 date 参数' });
 
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
-
   // 密码校验（KV 优先，fallback 到 SYNC_PASSWORD env var）
   const currentPwd = await getCurrentPassword();
   if (currentPwd && password !== currentPwd)
     return res.status(401).json({ error: '密码错误' });
 
-  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID)
-    return res.status(500).json({ error: '服务端飞书环境变量未配置' });
+  const envErr = checkFeishuEnv();
+  if (envErr) return res.status(500).json({ error: envErr });
+
+  const { FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
 
   try {
     // ── 1. 获取 tenant_access_token ──
-    const authRes  = await fetch(
-      'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET }),
-      }
-    );
-    const authData = await authRes.json();
-    if (authData.code !== 0) throw new Error(`飞书鉴权失败: ${authData.msg}`);
-    const token = authData.tenant_access_token;
+    const token = await getAccessToken();
 
     // ── 2. 组装字段 ──
     const fields = {};

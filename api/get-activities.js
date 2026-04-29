@@ -87,29 +87,24 @@ function getPoster(v) {
   return { file_token: f.file_token, name: f.name, url: f.url, type: f.type };
 }
 
+import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { weekStart, weekEnd } = req.body || {};
   if (!weekStart || !weekEnd)
     return res.status(400).json({ error: '缺少 weekStart / weekEnd' });
 
-  const { FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
-  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !FEISHU_APP_TOKEN || !FEISHU_TABLE_ID)
-    return res.status(500).json({ error: '服务端环境变量未配置' });
+  const envErr = checkFeishuEnv();
+  if (envErr) return res.status(500).json({ error: envErr });
+
+  const { FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
 
   try {
     // 1. 鉴权
-    const authRes  = await fetch(
-      'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
-      { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET }) }
-    );
-    const { code: ac, msg: am, tenant_access_token: token } = await authRes.json();
-    if (ac !== 0) throw new Error(`鉴权失败: ${am}`);
+    const token = await getAccessToken();
 
     // 2. 拉最近 100 条记录（按日期倒序），服务端筛选当周
     const startTs = new Date(weekStart + 'T00:00:00+08:00').getTime();
