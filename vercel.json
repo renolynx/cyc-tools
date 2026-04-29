@@ -26,6 +26,7 @@
     { "source": "/team", "destination": "/team/index.html" },
     { "source": "/food", "destination": "/food/index.html" },
     { "source": "/youyang", "destination": "/youyang/index.html" },
-    { "source": "/events/:id", "destination": "/api/event-page?id=:id" }
+    { "source": "/events/:id", "destination": "/api/event-page?id=:id" },
+    { "source": "/events", "destination": "/api/events-list" }
   ]
 }
