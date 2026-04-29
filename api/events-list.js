@@ -7,7 +7,7 @@
  */
 
 import { applyCors, checkFeishuEnv }    from './_feishu.js';
-import { fetchAllActivities }            from './_activity.js';
+import { fetchAllActivities, formatCnDate, todayBJ } from './_activity.js';
 import { kvGet, kvSet, isKvConfigured }  from './_kv.js';
 
 const CACHE_TTL_SEC = 300;
@@ -16,17 +16,11 @@ const EDGE_CACHE    = 'public, s-maxage=180, stale-while-revalidate=1800';
 const SITE_URL  = 'https://cyc.center';
 const SITE_NAME = 'CYC 链岛青年社区';
 const OG_DEFAULT = SITE_URL + '/api/og-default';
-const CN_DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
 
 function escapeHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function todayBJ() {
-  const bj = new Date(Date.now() + 8*3600*1000);
-  return bj.toISOString().slice(0,10);
 }
 
 function thumbUrl(act) {
@@ -35,30 +29,14 @@ function thumbUrl(act) {
   return null;
 }
 
-function renderEventsList(acts) {
-  const today = todayBJ();
-  const upcoming = acts.filter(a => a.date && a.date >= today && a.title);
+function renderCard(a, isPast) {
+  const thumb = thumbUrl(a);
+  let status = '';
+  if (isPast) status = '<span class="el-card-status past">已结束</span>';
+  else if (a.status === '确认举办') status = '<span class="el-card-status confirm">✓ 确认举办</span>';
+  else if (a.status === '筹备酝酿中') status = '<span class="el-card-status plan">筹备中</span>';
 
-  // 按日期升序分组
-  upcoming.sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
-  const groups = {};
-  for (const a of upcoming) {
-    if (!groups[a.date]) groups[a.date] = [];
-    groups[a.date].push(a);
-  }
-  const dates = Object.keys(groups).sort();
-
-  const groupsHtml = dates.map(date => {
-    const d = new Date(date + 'T00:00:00+08:00');
-    const dateLabel = `${d.getMonth()+1} 月 ${d.getDate()} 日 · ${CN_DAYS[d.getDay()]}`;
-
-    const cards = groups[date].map(a => {
-      const thumb = thumbUrl(a);
-      let status = '';
-      if (a.status === '确认举办') status = '<span class="el-card-status confirm">✓ 确认举办</span>';
-      else if (a.status === '筹备酝酿中') status = '<span class="el-card-status plan">筹备中</span>';
-
-      return `<a class="el-card" href="/events/${a.record_id}">
+  return `<a class="el-card${isPast ? ' is-past' : ''}" href="/events/${a.record_id}">
   ${thumb ? `<img class="el-card-thumb" src="${thumb}" alt="" loading="lazy">` : '<div class="el-card-thumb el-card-thumb-empty">📅</div>'}
   <div class="el-card-body">
     <div class="el-card-title">${escapeHtml(a.title)}</div>
@@ -70,21 +48,46 @@ function renderEventsList(acts) {
   </div>
   <span class="el-card-arrow">›</span>
 </a>`;
-    }).join('\n');
+}
 
-    return `<section class="el-day-group">
-  <div class="el-day-head">${dateLabel}</div>
-  ${cards}
-</section>`;
-  }).join('\n');
+function renderGroups(acts, isPast) {
+  const groups = {};
+  for (const a of acts) {
+    if (!groups[a.date]) groups[a.date] = [];
+    groups[a.date].push(a);
+  }
+  // 未来升序，过去降序（最新过去活动在前）
+  const dates = Object.keys(groups).sort();
+  if (isPast) dates.reverse();
 
-  const empty = upcoming.length === 0
-    ? `<div class="el-empty">
+  return dates.map(date => `<section class="el-day-group">
+  <div class="el-day-head">${formatCnDate(date)}</div>
+  ${groups[date].map(a => renderCard(a, isPast)).join('\n')}
+</section>`).join('\n');
+}
+
+function renderEventsList(acts) {
+  const today = todayBJ();
+  const valid = acts.filter(a => a.date && a.title);
+  const upcoming = valid.filter(a => a.date >= today)
+                        .sort((a,b) => a.date.localeCompare(b.date));
+  const past     = valid.filter(a => a.date <  today);
+
+  const upcomingHtml = upcoming.length
+    ? renderGroups(upcoming, false)
+    : `<div class="el-empty">
   <div class="el-empty-icon">🌿</div>
   <p>近期暂无即将到来的活动</p>
   <p class="el-empty-sub">下一波活动正在筹备中，过两天再来看看</p>
-</div>`
+</div>`;
+
+  const pastHtml = past.length
+    ? `<section class="el-past-section">
+  <div class="el-past-divider"><span>已结束的活动</span></div>
+  ${renderGroups(past, true)}
+</section>`
     : '';
+
 
   return `<!DOCTYPE html>
 <html lang="zh">
@@ -121,7 +124,8 @@ function renderEventsList(acts) {
     <p class="el-hero-sub">${SITE_NAME} · 大理</p>
   </div>
 
-  ${empty || groupsHtml}
+  ${upcomingHtml}
+  ${pastHtml}
 </main>
 
 <footer class="event-footer">

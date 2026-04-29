@@ -6,7 +6,7 @@
  */
 
 import { applyCors, checkFeishuEnv } from './_feishu.js';
-import { fetchActivity }              from './_activity.js';
+import { fetchActivity, formatCnDate, todayBJ } from './_activity.js';
 import { kvGet, kvSet, isKvConfigured } from './_kv.js';
 
 const CACHE_TTL_SEC = 600;     // KV 10 分钟
@@ -15,8 +15,6 @@ const EDGE_CACHE    = 'public, s-maxage=300, stale-while-revalidate=3600';
 const SITE_URL  = 'https://cyc.center';
 const SITE_NAME = 'CYC 链岛青年社区';
 const OG_DEFAULT = SITE_URL + '/api/og-default';
-
-const CN_DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
 
 // ─────────── 纯渲染函数 ───────────
 
@@ -28,11 +26,6 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function todayBJ() {
-  const bj = new Date(Date.now() + 8*3600*1000);
-  return bj.toISOString().slice(0,10);
 }
 
 function posterUrl(act) {
@@ -49,11 +42,7 @@ function renderEventDetail(act) {
   const url      = `${SITE_URL}/events/${act.record_id}`;
   const isPast   = act.date && act.date < todayBJ();
 
-  let dateStr = '';
-  if (act.date) {
-    const d = new Date(act.date + 'T00:00:00+08:00');
-    dateStr = `${d.getMonth()+1} 月 ${d.getDate()} 日 · ${CN_DAYS[d.getDay()]}`;
-  }
+  const dateStr = formatCnDate(act.date);
 
   return `<!DOCTYPE html>
 <html lang="zh">

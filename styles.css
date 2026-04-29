@@ -1096,3 +1096,23 @@ body.event-page {
 .el-empty-icon { font-size: 56px; margin-bottom: 12px; opacity: 0.5; }
 .el-empty p { font-size: 16px; margin-bottom: 4px; color: var(--text); }
 .el-empty-sub { font-size: 13px; color: var(--muted); }
+
+/* 过往活动 section（在 /events 列表页底部） */
+.el-card.is-past { opacity: 0.55; }
+.el-card.is-past:hover { opacity: 0.85; }
+.el-card-status.past {
+  background: rgba(0,0,0,0.06);
+  color: var(--muted);
+}
+.el-past-section { margin-top: 32px; }
+.el-past-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+  font-size: 12px; color: var(--muted);
+  letter-spacing: 0.05em;
+}
+.el-past-divider::before,
+.el-past-divider::after {
+  content: ''; flex: 1; height: 0.5px;
+  background: var(--stroke);
+}

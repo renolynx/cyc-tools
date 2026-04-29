@@ -14,6 +14,27 @@ function tsToDate(ts) {
   return bj.toISOString().slice(0, 10);
 }
 
+const _CN_DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
+
+/**
+ * YYYY-MM-DD → "M 月 D 日 · 周X"
+ * 避开服务器时区（Vercel 默认 UTC），纯字符串解析。
+ */
+export function formatCnDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  if (!y || !m || !d) return '';
+  // Date.UTC 是纯算术，getUTCDay 也不被本地时区影响
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return `${m} 月 ${d} 日 · ${_CN_DAYS[dow]}`;
+}
+
+/** 北京时间今天的日期字符串 YYYY-MM-DD */
+export function todayBJ() {
+  const bj = new Date(Date.now() + 8 * 3600 * 1000);
+  return bj.toISOString().slice(0, 10);
+}
+
 function getText(v) {
   if (!v) return '';
   if (Array.isArray(v)) return v.map(s => s.text || '').join('');
