@@ -1047,9 +1047,10 @@ function setCopyMode(mode){
 const CYC_FOOTER = '\n\n———————————\n📍 完整活动详情 · 在线日历\nhttps://cyc.center';
 
 function genPreview(){
-  const days=Object.keys(data).filter(k=>data[k]&&data[k].length).sort();
+  const todayStr=fmt(today);
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].length&&k>=todayStr).sort();
   const box=document.getElementById('preview');
-  if(!days.length){box.innerHTML='<div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div>';return}
+  if(!days.length){box.innerHTML='<div class="preview-empty">还没有未来的活动。在左侧选择日期添加活动，或点上方「☁️ 从飞书读取本周活动」拉取已有记录。</div>';return}
   const full = copyMode === 'full';
   let html='<div class="preview-global-head">CYC本周活动更新</div>';
   days.forEach(key=>{
@@ -1070,7 +1071,8 @@ function genPreview(){
   box.innerHTML=html;
 }
 function plainText(){
-  const days=Object.keys(data).filter(k=>data[k]&&data[k].length).sort();
+  const todayStr=fmt(today);
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].length&&k>=todayStr).sort();
   if(!days.length)return'';
   const full = copyMode === 'full';
   let txt='CYC本周活动更新';
@@ -1152,6 +1154,7 @@ async function fetchFromFeishu() {
       status.textContent = `已载入 ${json.count} 个活动`;
       renderWeek();
       if (selDate) renderActs();
+      genPreview();
     }
   } catch (err) {
     status.textContent = '读取失败：' + err.message;
