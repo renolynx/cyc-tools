@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /team/
+
+Sitemap: https://cyc.center/sitemap.xml
