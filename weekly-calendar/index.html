@@ -442,8 +442,24 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
   border:1px solid rgba(0,0,0,0.07);
   border-radius:12px;padding:12px 14px;margin-bottom:8px;
   box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background 0.18s,box-shadow 0.18s,border-color 0.18s;
 }
-.cal-act-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px}
+.cal-act-item:active{transform:scale(0.99)}
+.cal-act-item.expanded{
+  background:#fff;
+  border-color:rgba(28,61,46,0.18);
+  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+}
+.cal-act-head{display:flex;align-items:flex-start;gap:8px}
+.cal-act-head-main{flex:1;min-width:0}
+.cal-act-chevron{
+  flex-shrink:0;font-size:14px;color:#bbb;
+  transition:transform 0.22s ease;
+  margin-top:1px;line-height:1.1;
+}
+.cal-act-item.expanded .cal-act-chevron{transform:rotate(90deg);color:var(--green)}
+.cal-act-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px;letter-spacing:-0.01em}
 .cal-act-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
 .cal-act-badge{
   display:inline-block;font-size:11px;font-weight:600;
@@ -452,6 +468,47 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .badge-plan{background:rgba(28,61,46,0.10);color:var(--green)}
 .badge-confirm{background:rgba(217,101,42,0.12);color:var(--orange)}
 .badge-done{background:rgba(29,158,117,0.12);color:#1d9e75}
+
+/* ── 活动卡展开详情 ── */
+.cal-act-detail{
+  display:none;
+  margin-top:10px;padding-top:10px;
+  border-top:0.5px dashed var(--stroke);
+  font-size:13px;line-height:1.65;color:var(--text);
+}
+.cal-act-item.expanded .cal-act-detail{display:block}
+.cal-detail-row{margin-bottom:8px}
+.cal-detail-row:last-child{margin-bottom:0}
+.cal-detail-label{
+  font-size:11px;font-weight:700;color:var(--muted);
+  letter-spacing:0.04em;display:block;margin-bottom:2px;
+}
+.cal-detail-text{white-space:pre-wrap;word-break:break-word;color:var(--text)}
+.cal-detail-flow{
+  list-style:none;padding:0;margin:0;
+  border-left:2px solid rgba(28,61,46,0.12);
+  padding-left:10px;margin-left:2px;
+}
+.cal-detail-flow li{margin:2px 0;font-size:12.5px;color:var(--text)}
+.cal-detail-spk{display:flex;flex-direction:column;gap:4px}
+.cal-detail-spk-row{font-size:12.5px}
+.cal-detail-spk-name{font-weight:600;color:var(--green)}
+.cal-detail-spk-bio{color:var(--muted)}
+.cal-detail-poster{
+  display:block;max-width:100%;max-height:180px;
+  border-radius:8px;margin-top:4px;
+  border:1px solid var(--stroke);
+}
+.cal-act-edit-btn{
+  margin-top:12px;width:100%;
+  padding:9px;background:var(--green);
+  color:#fff;border:none;border-radius:var(--r-sm);
+  font-size:13px;font-weight:600;letter-spacing:-0.01em;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 2px 8px rgba(28,61,46,0.18);
+}
+.cal-act-edit-btn:active{transform:scale(0.98);opacity:0.92}
 .cal-empty{
   display:flex;flex-direction:column;align-items:center;
   padding:48px 20px;color:var(--muted);text-align:center;gap:8px;
@@ -970,8 +1027,10 @@ async function loadCalendarData() {
 }
 
 const CAL_BADGE = {'筹备酝酿中':'badge-plan','确认举办':'badge-confirm','办完了！':'badge-done'};
+let _calActs = [];   // 抽屉内当前活动列表（用 record_id 索引）
 
 function renderCalendarContent(activities, rangeStart, rangeEnd) {
+  _calActs = activities;
   const content = document.getElementById('calContent');
   if (!activities.length) {
     content.innerHTML = '<div class="cal-empty"><span class="cal-empty-icon">🌿</span><span class="cal-empty-text">近期暂无活动安排</span></div>';
@@ -1008,7 +1067,9 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
 
     groups[date].forEach(a => {
       const badgeCls = CAL_BADGE[a.status] || '';
-      html += '<div class="cal-act-item" style="' + (isPast?'opacity:0.6':'') + '">';
+      const rid      = a.record_id || '';
+      html += '<div class="cal-act-item" data-rid="' + rid + '" style="' + (isPast?'opacity:0.7':'') + '" onclick="toggleCalAct(\'' + rid + '\')">';
+      html += '<div class="cal-act-head"><div class="cal-act-head-main">';
       html += '<div class="cal-act-title">' + escHtml(a.title || '（无标题）') + '</div>';
       html += '<div class="cal-act-meta">';
       if (a.time) html += '<span>⏰ ' + escHtml(a.time) + '</span>';
@@ -1017,12 +1078,74 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
       html += '</div>';
       if (a.status && badgeCls)
         html += '<span class="cal-act-badge ' + badgeCls + '">' + escHtml(a.status) + '</span>';
+      html += '</div><span class="cal-act-chevron">›</span></div>';
+
+      // 展开详情
+      html += '<div class="cal-act-detail">';
+      if (a.signup) html += renderDetailRow('报名方式', escHtml(a.signup));
+      if (a.desc)   html += renderDetailRow('活动简介', '<span class="cal-detail-text">' + escHtml(a.desc) + '</span>');
+      if (a.flow && a.flow.length)
+        html += renderDetailRow('活动流程', '<ul class="cal-detail-flow">' + a.flow.map(f => '<li>' + escHtml(f) + '</li>').join('') + '</ul>');
+      if (a.spk && a.spk.length) {
+        const spkHtml = '<div class="cal-detail-spk">' + a.spk.map(s =>
+          '<div class="cal-detail-spk-row"><span class="cal-detail-spk-name">' + escHtml(s.name) + '</span>' +
+          (s.bio ? '<span class="cal-detail-spk-bio">　' + escHtml(s.bio) + '</span>' : '') + '</div>'
+        ).join('') + '</div>';
+        html += renderDetailRow('带领人 / 嘉宾', spkHtml);
+      }
+      if (a.poster && a.poster.url)
+        html += renderDetailRow('活动海报', '<img class="cal-detail-poster" src="' + a.poster.url + '" alt="poster">');
+
+      html += '<button class="cal-act-edit-btn" onclick="event.stopPropagation();editFromCalendar(\'' + rid + '\')">✏️ 跳转编辑此活动</button>';
+      html += '</div>';
       html += '</div>';
     });
     html += '</div>';
   });
 
   content.innerHTML = html;
+}
+
+function renderDetailRow(label, contentHtml) {
+  return '<div class="cal-detail-row"><span class="cal-detail-label">' + label + '</span>' + contentHtml + '</div>';
+}
+
+// 点击展开 / 收起活动卡（同时只展开一张）
+function toggleCalAct(rid) {
+  if (!rid) return;
+  const item = document.querySelector('.cal-act-item[data-rid="' + rid + '"]');
+  if (!item) return;
+  const wasOpen = item.classList.contains('expanded');
+  document.querySelectorAll('.cal-act-item.expanded').forEach(el => el.classList.remove('expanded'));
+  if (!wasOpen) item.classList.add('expanded');
+}
+
+// 从日历跳转到主面板编辑此活动
+function editFromCalendar(rid) {
+  if (!rid) return;
+  const actData = _calActs.find(x => x.record_id === rid);
+  if (!actData || !actData.date) return;
+
+  // 已存在则复用，不存在则注入到本地 data
+  let existing = null;
+  if (data[actData.date]) {
+    existing = data[actData.date].find(x => x.record_id === rid);
+  }
+  let id;
+  if (existing) {
+    id = existing.id;
+    // 顺便用最新的飞书数据覆盖一下
+    Object.assign(existing, actData, { id });
+  } else {
+    if (!data[actData.date]) data[actData.date] = [];
+    const localAct = Object.assign({}, actData, { id: 'a' + (uid++) });
+    data[actData.date].push(localAct);
+    id = localAct.id;
+  }
+
+  // 关闭抽屉，跳转编辑
+  closeCalendar();
+  setTimeout(() => jumpToAct(actData.date, id), 350);
 }
 
 // ── 密码弹窗（通用：sync / delete） ──
