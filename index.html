@@ -578,7 +578,7 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 
 /* ── Lightbox ── */
 .lightbox-overlay{
-  position:fixed;inset:0;z-index:200;
+  position:fixed;inset:0;z-index:9999;
   background:rgba(0,0,0,0.92);
   display:none;flex-direction:column;
   align-items:center;justify-content:center;
@@ -946,7 +946,9 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
   </div>
 </div>
 
-<!-- Lightbox（海报全屏查看 + 下载 / 分享） -->
+</div>
+
+<!-- Lightbox（海报全屏查看 + 下载 / 分享）— 必须放在 .page 之外，否则会被日历/菜单抽屉的 z-index 盖住 -->
 <div class="lightbox-overlay" id="lightbox" onclick="lightboxBackdropClick(event)">
   <button class="lightbox-close" onclick="closeLightbox()" aria-label="关闭">✕</button>
   <div class="lightbox-img-wrap">
@@ -958,8 +960,6 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
     <button class="lightbox-btn" id="lightboxDlBtn" onclick="downloadLightbox()">↓ 下载到相册</button>
     <button class="lightbox-btn primary" id="lightboxShareBtn" onclick="shareLightbox()">📤 分享到微信</button>
   </div>
-</div>
-
 </div>
 
 <!-- 日历抽屉 -->
