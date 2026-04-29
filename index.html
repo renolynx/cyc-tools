@@ -483,6 +483,50 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .copy-btn:active{transform:scale(0.98);box-shadow:0 2px 8px rgba(28,61,46,0.2)}
 .copy-btn.ok{background:#1d9e75;box-shadow:0 4px 16px rgba(29,158,117,0.25)}
 
+/* ── 字数计数器 ── */
+.label-row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.char-counter{
+  font-size:10px;font-weight:600;color:var(--muted);
+  letter-spacing:0;line-height:1;
+}
+.char-counter.over{color:#c0392b}
+
+/* ── 简版 / 完整版切换 ── */
+.copy-mode{
+  display:flex;gap:0;margin:10px 0 4px;
+  background:rgba(0,0,0,0.05);border-radius:100px;padding:3px;
+}
+.copy-mode-btn{
+  flex:1;padding:7px 10px;
+  background:transparent;border:none;
+  border-radius:100px;
+  font-size:12px;font-weight:600;color:var(--muted);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background 0.15s,color 0.15s,box-shadow 0.15s;
+  letter-spacing:-0.01em;
+}
+.copy-mode-btn.active{
+  background:#fff;color:var(--green);
+  box-shadow:0 1px 4px rgba(0,0,0,0.10);
+}
+.copy-mode-hint{
+  font-size:11px;color:var(--muted);text-align:center;
+  margin-top:4px;line-height:1.4;
+}
+
+/* ── 通告底部 cyc.center 引导（预览里） ── */
+.preview-cyc-footer{
+  margin:10px 12px 6px;padding:10px 12px;
+  border:1px dashed rgba(28,61,46,0.22);
+  border-radius:var(--r-sm);
+  font-size:12px;line-height:1.55;color:var(--muted);
+  text-align:center;
+}
+.preview-cyc-footer a{
+  color:var(--green);font-weight:700;text-decoration:none;
+  letter-spacing:0;
+}
+
 /* ── 顶栏日历按钮 ── */
 .topbar-cal{
   display:inline-flex;align-items:center;gap:4px;
@@ -757,6 +801,11 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
     <div class="panel">
       <div class="panel-head">通告预览 <span>— 点击活动快速跳转编辑</span></div>
       <div class="preview-box" id="preview"><div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div></div>
+      <div class="copy-mode" role="tablist">
+        <button class="copy-mode-btn active" data-mode="brief" onclick="setCopyMode('brief')">📝 简版</button>
+        <button class="copy-mode-btn" data-mode="full" onclick="setCopyMode('full')">📋 完整版</button>
+      </div>
+      <p class="copy-mode-hint" id="copyModeHint">仅含简介，避免微信折叠（推荐发群用）</p>
       <button class="copy-btn" id="copyBtn" onclick="doCopy()">复制通告文本</button>
     </div>
   </div>
@@ -871,7 +920,15 @@ function renderActs(){
 function find(id){for(const k in data){const f=data[k].find(a=>a.id===id);if(f)return f;}return null}
 function upd(id,f,v){
   const a=find(id);if(a){a[f]=v;genPreview();
-    if(f==='title'){const el=document.querySelector('#hdr-'+id+' .act-preview');if(el)el.textContent=v||'（未填标题）';}}
+    if(f==='title'){const el=document.querySelector('#hdr-'+id+' .act-preview');if(el)el.textContent=v||'（未填标题）';}
+    if(f==='desc'){updateCharCounter(id);}}
+}
+function updateCharCounter(id){
+  const a=find(id);if(!a)return;
+  const el=document.getElementById('counter-'+id);if(!el)return;
+  const len=(a.desc||'').length;
+  el.textContent=len+'/50';
+  el.classList.toggle('over',len>50);
 }
 function makeCard(a,idx){
   const card=document.createElement('div');card.className='act-card';card.id='card-'+a.id;
@@ -890,10 +947,14 @@ function makeCard(a,idx){
       +'<div class="field"><label>费用<span class="opt">选填</span></label><input placeholder="如：随喜 / 60元" value="'+esc(a.fee)+'" oninput="upd(\''+a.id+'\',\'fee\',this.value)"></div>'
       +'<div class="field"><label>报名方式<span class="opt">选填</span></label><input placeholder="如：群内接龙" value="'+esc(a.signup)+'" oninput="upd(\''+a.id+'\',\'signup\',this.value)"></div>'
     +'</div>'
-    +'<div class="field"><label>活动简介</label><textarea placeholder="1-3句话介绍内容和氛围" oninput="upd(\''+a.id+'\',\'desc\',this.value)">'+esc(a.desc)+'</textarea></div>'
-    +'<div class="field"><label>活动流程<span class="opt">选填，适合半日以上活动</span></label>'
+    +'<div class="field">'
+      +'<div class="label-row"><label>活动简介<span class="opt">建议 ≤ 50 字</span></label>'
+        +'<span class="char-counter" id="counter-'+a.id+'">0/50</span></div>'
+      +'<textarea placeholder="一句话点睛（用于微信群通告，过长会被折叠）" oninput="upd(\''+a.id+'\',\'desc\',this.value)">'+esc(a.desc)+'</textarea>'
+    +'</div>'
+    +'<div class="field"><label>详情·流程<span class="opt">选填，每行一条 — 详细介绍 / 时间节点 / 注意事项</span></label>'
       +'<div class="flow-list" id="flow-'+a.id+'"></div>'
-      +'<button class="add-sub" onclick="addFlow(\''+a.id+'\')">＋ 添加流程节点</button>'
+      +'<button class="add-sub" onclick="addFlow(\''+a.id+'\')">＋ 添加一条</button>'
     +'</div>'
     +'<div class="field"><label>带领人 / 分享嘉宾<span class="opt">选填</span></label>'
       +'<div class="spk-list" id="spk-'+a.id+'"></div>'
@@ -926,6 +987,7 @@ function makeCard(a,idx){
   setTimeout(()=>{
     renderFlows(a); renderSpks(a); initStatusPills(a);
     updateSyncBtn(a.id);
+    updateCharCounter(a.id);
     if (a.poster?.base64)      showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
     else if (a.poster?.url)    showPosterPreview(a.id, a.poster.url);
   },0);
@@ -946,7 +1008,7 @@ function rmFlow(id,i){const a=find(id);if(!a)return;a.flow.splice(i,1);renderFlo
 function updFlow(id,i,v){const a=find(id);if(a){a.flow[i]=v;genPreview()}}
 function renderFlows(a){
   const c=document.getElementById('flow-'+a.id);if(!c)return;
-  c.innerHTML=a.flow.map((f,i)=>'<div class="flow-row"><input type="text" placeholder="如：15:00 自由交换开始" value="'+esc(f)+'" oninput="updFlow(\''+a.id+'\','+i+',this.value)"><button class="rm" onclick="rmFlow(\''+a.id+'\','+i+')">×</button></div>').join('');
+  c.innerHTML=a.flow.map((f,i)=>'<div class="flow-row"><input type="text" placeholder="如：本次活动我们将... / 15:00 开场" value="'+esc(f)+'" oninput="updFlow(\''+a.id+'\','+i+',this.value)"><button class="rm" onclick="rmFlow(\''+a.id+'\','+i+')">×</button></div>').join('');
 }
 function addSpk(id){const a=find(id);if(!a)return;a.spk.push({name:'',bio:''});renderSpks(a)}
 function rmSpk(id,i){const a=find(id);if(!a)return;a.spk.splice(i,1);renderSpks(a);genPreview()}
@@ -955,31 +1017,47 @@ function renderSpks(a){
   const c=document.getElementById('spk-'+a.id);if(!c)return;
   c.innerHTML=a.spk.map((s,i)=>'<div class="spk-row"><input type="text" placeholder="姓名" value="'+esc(s.name)+'" oninput="updSpk(\''+a.id+'\','+i+',\'name\',this.value)"><input type="text" placeholder="背景简介" value="'+esc(s.bio)+'" oninput="updSpk(\''+a.id+'\','+i+',\'bio\',this.value)"><button class="rm" onclick="rmSpk(\''+a.id+'\','+i+')">×</button></div>').join('');
 }
-function actBodyText(a){
+// full=true 完整版：含详情·流程 + 嘉宾；false 简版：仅 meta + 简介
+function actBodyText(a, full){
   let t='';
   if(a.time)t+='⏰ '+a.time+'\n';
   if(a.loc)t+='📍 '+a.loc+'\n';
   if(a.fee)t+='💰 '+a.fee+'\n';
   if(a.signup)t+='🙋 报名：'+a.signup+'\n';
   if(a.desc)t+='\n'+a.desc+'\n';
-  const fl=a.flow.filter(f=>f);
-  if(fl.length)t+='\n🗓️ 活动流程：\n'+fl.join('\n')+'\n';
-  const sp=a.spk.filter(s=>s.name||s.bio);
-  if(sp.length)t+='\n分享嘉宾：\n'+sp.map(s=>s.name+(s.bio?'，'+s.bio:'')).join('\n')+'\n';
+  if(full){
+    const fl=a.flow.filter(f=>f);
+    if(fl.length)t+='\n🗓️ 详情·流程：\n'+fl.join('\n')+'\n';
+    const sp=a.spk.filter(s=>s.name||s.bio);
+    if(sp.length)t+='\n分享嘉宾：\n'+sp.map(s=>s.name+(s.bio?'，'+s.bio:'')).join('\n')+'\n';
+  }
   return t.trim();
 }
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+let copyMode='brief';   // 'brief' | 'full'
+function setCopyMode(mode){
+  copyMode=mode;
+  document.querySelectorAll('.copy-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  const hint=document.getElementById('copyModeHint');
+  if(hint) hint.textContent = mode==='brief'
+    ? '仅含简介，避免微信折叠（推荐发群用）'
+    : '含完整详情·流程 + 嘉宾，文本较长';
+  genPreview();
+}
+const CYC_FOOTER = '\n\n———————————\n📍 完整活动详情 · 在线日历\nhttps://cyc.center';
+
 function genPreview(){
   const days=Object.keys(data).filter(k=>data[k]&&data[k].length).sort();
   const box=document.getElementById('preview');
   if(!days.length){box.innerHTML='<div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div>';return}
+  const full = copyMode === 'full';
   let html='<div class="preview-global-head">CYC本周活动更新</div>';
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
     html+='<div class="preview-day">';
     data[key].forEach(a=>{
       const isActive=activePreviewId===a.id;
-      const body=actBodyText(a);
+      const body=actBodyText(a, full);
       html+='<div class="preview-act'+(isActive?' active-preview':'')+'" onclick="jumpToAct(\''+key+'\',\''+a.id+'\')">'
         +'<div class="preview-act-hdr"><span>【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题')+'</span><span class="edit-hint">点击编辑 →</span></div>'
         +(body?'<div class="preview-act-body">'+escHtml(body)+'</div>':'')
@@ -987,19 +1065,23 @@ function genPreview(){
     });
     html+='</div>';
   });
+  // cyc.center 引导卡片
+  html+='<div class="preview-cyc-footer">📍 完整活动详情 · 在线日历<br><a href="https://cyc.center" target="_blank" rel="noopener">https://cyc.center</a></div>';
   box.innerHTML=html;
 }
 function plainText(){
   const days=Object.keys(data).filter(k=>data[k]&&data[k].length).sort();
   if(!days.length)return'';
+  const full = copyMode === 'full';
   let txt='CYC本周活动更新';
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
     data[key].forEach(a=>{
       txt+='\n\n【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题');
-      const b=actBodyText(a);if(b)txt+='\n'+b;
+      const b=actBodyText(a, full);if(b)txt+='\n'+b;
     });
   });
+  txt += CYC_FOOTER;
   return txt.trim();
 }
 function doCopy(){
@@ -1254,7 +1336,7 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
       if (a.signup) html += renderDetailRow('报名方式', escHtml(a.signup));
       if (a.desc)   html += renderDetailRow('活动简介', '<span class="cal-detail-text">' + escHtml(a.desc) + '</span>');
       if (a.flow && a.flow.length)
-        html += renderDetailRow('活动流程', '<ul class="cal-detail-flow">' + a.flow.map(f => '<li>' + escHtml(f) + '</li>').join('') + '</ul>');
+        html += renderDetailRow('详情·流程', '<ul class="cal-detail-flow">' + a.flow.map(f => '<li>' + escHtml(f) + '</li>').join('') + '</ul>');
       if (a.spk && a.spk.length) {
         const spkHtml = '<div class="cal-detail-spk">' + a.spk.map(s =>
           '<div class="cal-detail-spk-row"><span class="cal-detail-spk-name">' + escHtml(s.name) + '</span>' +
