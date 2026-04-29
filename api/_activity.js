@@ -86,19 +86,29 @@ export function parseRecord(record) {
 
 // ─────────── 数据拉取（有 I/O）───────────
 
-/** 拉单条活动；不存在返回 null；其他错误抛 Error */
+/** 拉单条活动；不存在返回 null；只在真正异常（鉴权/网络）时抛 Error */
 export async function fetchActivity(recordId) {
   const { FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
-  const token = await getAccessToken();
+  const token = await getAccessToken();  // 鉴权失败这里会抛
   const res = await fetch(
     `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/${recordId}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
-  const data = await res.json();
-  // 飞书 record 不存在的常见错误码（防御式处理）
-  if (data.code === 1254040 || data.code === 1254044 || res.status === 404) return null;
-  if (data.code !== 0) throw new Error(`飞书读取失败 (${data.code}): ${data.msg}`);
-  return parseRecord(data.data.record);
+  if (res.status === 404) return null;
+
+  let data;
+  try { data = await res.json(); } catch { return null; }
+
+  if (data.code === 0) return parseRecord(data.data.record);
+
+  // 1254xxx 是 bitable 业务错误：record 不存在 / 无权限 / 字段错 等
+  // 全部视为"找不到"返回 null，避免详情页报 500
+  if (data.code >= 1254000 && data.code < 1255000) {
+    console.warn(`[fetchActivity] record ${recordId} → ${data.code}: ${data.msg}`);
+    return null;
+  }
+  // 其他错误（鉴权类 99991xxx 等）才真抛
+  throw new Error(`飞书读取失败 (${data.code}): ${data.msg}`);
 }
 
 /** 拉最近 100 条活动（按日期倒序），全部 parsed */
