@@ -386,25 +386,55 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .status-pill.sp-orange{background:var(--orange);color:#fff;border-color:var(--orange)}
 .status-pill.sp-done{background:#1d9e75;color:#fff;border-color:#1d9e75}
 
-/* ── Poster upload ── */
-.poster-area{
+/* ── Poster upload zone（无海报状态） ── */
+.poster-upload{
   border:1.5px dashed rgba(0,0,0,0.14);border-radius:var(--r-sm);
-  overflow:hidden;cursor:pointer;background:rgba(255,255,255,0.5);
-  min-height:72px;display:flex;align-items:center;justify-content:center;
-  transition:border-color 0.15s;position:relative;
+  background:rgba(255,255,255,0.5);
+  padding:18px 14px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  color:var(--muted);font-size:12px;text-align:center;
+  -webkit-tap-highlight-color:transparent;
+  transition:border-color 0.15s,background 0.15s;
 }
-.poster-area:active{border-color:var(--green)}
-.poster-placeholder{
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:14px;color:var(--muted);font-size:12px;pointer-events:none;text-align:center;
+.poster-upload:active{border-color:var(--green);background:rgba(28,61,46,0.04)}
+.poster-upload-icon{font-size:24px;line-height:1}
+.poster-upload-tip{font-size:11px;color:#aaa;margin-top:2px}
+
+/* ── Poster preview zone（已上传状态） ── */
+.poster-preview{
+  border:1px solid var(--stroke);border-radius:var(--r-sm);
+  overflow:hidden;background:#fff;
+  display:flex;flex-direction:column;
 }
-.poster-img{width:100%;display:block;max-height:160px;object-fit:cover}
-.poster-clear{
-  position:absolute;top:6px;right:6px;width:22px;height:22px;
-  background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;
-  font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;z-index:2;
+.poster-preview-img{
+  width:100%;display:block;max-height:200px;object-fit:cover;
+  background:rgba(0,0,0,0.03);
 }
+.poster-preview-img.loading{
+  min-height:120px;
+  background:repeating-linear-gradient(45deg,rgba(0,0,0,0.03),rgba(0,0,0,0.03) 8px,rgba(0,0,0,0.05) 8px,rgba(0,0,0,0.05) 16px);
+}
+.poster-preview-actions{
+  display:flex;gap:6px;padding:8px;
+  background:rgba(255,255,255,0.6);
+  border-top:0.5px solid var(--stroke);
+}
+.poster-preview-btn{
+  flex:1;padding:7px;
+  background:rgba(0,0,0,0.04);
+  border:1px solid var(--stroke);
+  border-radius:8px;
+  font-size:12px;font-weight:600;color:var(--text);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background 0.15s;
+}
+.poster-preview-btn:active{background:rgba(0,0,0,0.08);transform:scale(0.97)}
+.poster-preview-btn.danger{
+  color:#c0392b;
+  background:rgba(192,57,43,0.06);
+  border-color:rgba(192,57,43,0.2);
+}
+.poster-preview-btn.danger:active{background:rgba(192,57,43,0.12)}
 
 /* ── Add activity button ── */
 .add-act-btn{
@@ -603,6 +633,12 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 }
 .cal-act-head{display:flex;align-items:flex-start;gap:8px}
 .cal-act-head-main{flex:1;min-width:0}
+.cal-act-thumb{
+  width:54px;height:54px;flex-shrink:0;
+  border-radius:8px;object-fit:cover;
+  border:1px solid var(--stroke);
+  background:rgba(0,0,0,0.04);
+}
 .cal-act-chevron{
   flex-shrink:0;font-size:14px;color:#bbb;
   transition:transform 0.22s ease;
@@ -914,10 +950,18 @@ function renderActs(){
   document.getElementById('dayHead').textContent='【'+dayLabel(d)+'】'+(d.getMonth()+1)+'月'+d.getDate()+'日';
   document.getElementById('addActBtn').style.display='block';
   const list=document.getElementById('actsList');list.innerHTML='';
-  (data[selDate]||[]).forEach((a,i)=>list.appendChild(makeCard(a,i)));
+  sortByTime(data[selDate]||[]).forEach((a,i)=>list.appendChild(makeCard(a,i)));
   genPreview();
 }
 function find(id){for(const k in data){const f=data[k].find(a=>a.id===id);if(f)return f;}return null}
+// 从 a.time（"14:30-17:00" / "14:30" / 空）提取开始分钟数；无时间排到最后
+function actStartMin(a){
+  if(!a||!a.time) return 99999;
+  const m=a.time.match(/(\d{1,2})\s*[:：]\s*(\d{2})/);
+  if(!m) return 99999;
+  return parseInt(m[1],10)*60+parseInt(m[2],10);
+}
+function sortByTime(acts){return [...acts].sort((a,b)=>actStartMin(a)-actStartMin(b));}
 function upd(id,f,v){
   const a=find(id);if(a){a[f]=v;genPreview();
     if(f==='title'){const el=document.querySelector('#hdr-'+id+' .act-preview');if(el)el.textContent=v||'（未填标题）';}
@@ -968,10 +1012,19 @@ function makeCard(a,idx){
       +'</div>'
     +'</div>'
     +'<div class="field"><label>活动海报<span class="opt">选填，最大 3MB</span></label>'
-      +'<div class="poster-area" id="poster-area-'+a.id+'" onclick="triggerPoster(\''+a.id+'\')">'
-        +'<div class="poster-placeholder" id="poster-ph-'+a.id+'"><span style="font-size:22px">🖼️</span><span>点击上传活动海报</span></div>'
-        +'<img id="poster-img-'+a.id+'" style="display:none" class="poster-img" alt="海报预览">'
-        +'<button class="poster-clear" id="poster-clear-'+a.id+'" style="display:none" onclick="event.stopPropagation();clearPoster(\''+a.id+'\')">×</button>'
+      // 上传区（无海报时显示）
+      +'<div class="poster-upload" id="poster-upload-'+a.id+'" onclick="triggerPoster(\''+a.id+'\')">'
+        +'<span class="poster-upload-icon">🖼️</span>'
+        +'<span>点击上传活动海报</span>'
+        +'<span class="poster-upload-tip">JPG / PNG · 最大 3MB</span>'
+      +'</div>'
+      // 预览区（已有海报时显示）
+      +'<div class="poster-preview" id="poster-preview-'+a.id+'" style="display:none">'
+        +'<img class="poster-preview-img" id="poster-img-'+a.id+'" alt="活动海报">'
+        +'<div class="poster-preview-actions">'
+          +'<button type="button" class="poster-preview-btn" onclick="triggerPoster(\''+a.id+'\')">↻ 替换图片</button>'
+          +'<button type="button" class="poster-preview-btn danger" onclick="clearPoster(\''+a.id+'\')">× 移除</button>'
+        +'</div>'
       +'</div>'
       +'<input type="file" id="poster-input-'+a.id+'" accept="image/*" style="display:none" onchange="handlePoster(\''+a.id+'\',this)">'
     +'</div>'
@@ -988,8 +1041,9 @@ function makeCard(a,idx){
     renderFlows(a); renderSpks(a); initStatusPills(a);
     updateSyncBtn(a.id);
     updateCharCounter(a.id);
-    if (a.poster?.base64)      showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
-    else if (a.poster?.url)    showPosterPreview(a.id, a.poster.url);
+    if (a.poster?.base64)           showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
+    else if (a.poster?.file_token)  showPosterPreview(a.id, '/api/poster?token='+encodeURIComponent(a.poster.file_token));
+    else if (a.poster?.url)         showPosterPreview(a.id, a.poster.url);
   },0);
   return card;
 }
@@ -1056,7 +1110,7 @@ function genPreview(){
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
     html+='<div class="preview-day">';
-    data[key].forEach(a=>{
+    sortByTime(data[key]).forEach(a=>{
       const isActive=activePreviewId===a.id;
       const body=actBodyText(a, full);
       html+='<div class="preview-act'+(isActive?' active-preview':'')+'" onclick="jumpToAct(\''+key+'\',\''+a.id+'\')">'
@@ -1078,7 +1132,7 @@ function plainText(){
   let txt='CYC本周活动更新';
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
-    data[key].forEach(a=>{
+    sortByTime(data[key]).forEach(a=>{
       txt+='\n\n【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题');
       const b=actBodyText(a, full);if(b)txt+='\n'+b;
     });
@@ -1203,24 +1257,41 @@ function handlePoster(id, input) {
   reader.readAsDataURL(file);
 }
 function showPosterPreview(id, src) {
-  const img = document.getElementById('poster-img-'+id);
-  const ph  = document.getElementById('poster-ph-'+id);
-  const clr = document.getElementById('poster-clear-'+id);
-  if (img) { img.src = src; img.style.display = 'block'; }
-  if (ph)  ph.style.display  = 'none';
-  if (clr) clr.style.display = 'flex';
+  const img    = document.getElementById('poster-img-'+id);
+  const upload = document.getElementById('poster-upload-'+id);
+  const prev   = document.getElementById('poster-preview-'+id);
+  if (!img || !upload || !prev) return;
+
+  // 先显示加载占位
+  img.classList.add('loading');
+  img.onload  = () => img.classList.remove('loading');
+  img.onerror = () => {
+    // 加载失败：回退到上传态，并提示
+    img.classList.remove('loading');
+    upload.style.display = 'flex';
+    prev.style.display   = 'none';
+    upload.querySelector('span:nth-child(2)').textContent = '海报加载失败，点击重新上传';
+  };
+  img.src = src;
+  upload.style.display = 'none';
+  prev.style.display   = 'flex';
 }
+
 function clearPoster(id) {
   const a = find(id); if (!a) return;
   a.poster = null;
-  const img = document.getElementById('poster-img-'+id);
-  const ph  = document.getElementById('poster-ph-'+id);
-  const clr = document.getElementById('poster-clear-'+id);
-  const inp = document.getElementById('poster-input-'+id);
-  if (img) { img.src=''; img.style.display='none'; }
-  if (ph)  ph.style.display  = 'flex';
-  if (clr) clr.style.display = 'none';
-  if (inp) inp.value = '';
+  const img    = document.getElementById('poster-img-'+id);
+  const upload = document.getElementById('poster-upload-'+id);
+  const prev   = document.getElementById('poster-preview-'+id);
+  const inp    = document.getElementById('poster-input-'+id);
+  if (img) { img.src = ''; img.classList.remove('loading'); }
+  if (upload) {
+    upload.style.display = 'flex';
+    const t = upload.querySelector('span:nth-child(2)');
+    if (t) t.textContent = '点击上传活动海报';
+  }
+  if (prev) prev.style.display = 'none';
+  if (inp)  inp.value = '';
 }
 
 // ── 汉堡菜单抽屉 ──
@@ -1319,11 +1390,16 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
     html += (isToday ? '📍 今天  ' : '') + m + '月' + day + '日  ' + dow;
     html += '</div>';
 
-    groups[date].forEach(a => {
+    sortByTime(groups[date]).forEach(a => {
       const badgeCls = CAL_BADGE[a.status] || '';
       const rid      = a.record_id || '';
+      const thumbSrc = a.poster?.file_token
+        ? '/api/poster?token=' + encodeURIComponent(a.poster.file_token)
+        : (a.poster?.url || '');
       html += '<div class="cal-act-item" data-rid="' + rid + '" style="' + (isPast?'opacity:0.7':'') + '" onclick="toggleCalAct(\'' + rid + '\')">';
-      html += '<div class="cal-act-head"><div class="cal-act-head-main">';
+      html += '<div class="cal-act-head">';
+      if (thumbSrc) html += '<img class="cal-act-thumb" src="' + thumbSrc + '" alt="海报" onerror="this.style.display=\'none\'">';
+      html += '<div class="cal-act-head-main">';
       html += '<div class="cal-act-title">' + escHtml(a.title || '（无标题）') + '</div>';
       html += '<div class="cal-act-meta">';
       if (a.time) html += '<span>⏰ ' + escHtml(a.time) + '</span>';
@@ -1347,8 +1423,12 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
         ).join('') + '</div>';
         html += renderDetailRow('带领人 / 嘉宾', spkHtml);
       }
-      if (a.poster && a.poster.url)
-        html += renderDetailRow('活动海报', '<img class="cal-detail-poster" src="' + a.poster.url + '" alt="poster">');
+      if (a.poster && (a.poster.file_token || a.poster.url)) {
+        const src = a.poster.file_token
+          ? '/api/poster?token=' + encodeURIComponent(a.poster.file_token)
+          : a.poster.url;
+        html += renderDetailRow('活动海报', '<img class="cal-detail-poster" src="' + src + '" alt="poster">');
+      }
 
       html += '<button class="cal-act-edit-btn" onclick="event.stopPropagation();editFromCalendar(\'' + rid + '\')">✏️ 跳转编辑此活动</button>';
       html += '</div>';
