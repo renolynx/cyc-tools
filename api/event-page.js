@@ -158,7 +158,12 @@ ${jsonLd}
 
   <h1 class="event-title">${title}</h1>
 
-  ${act.types?.length ? `<div class="event-types">${act.types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+  <div class="event-types-row">
+    ${act.types?.length
+      ? `<div class="event-types">${act.types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>`
+      : '<span class="event-types-empty">暂无活动类型</span>'}
+    <button class="event-types-edit" type="button" onclick="openTypesModal()">✏️ 编辑</button>
+  </div>
 
   <dl class="event-info">
     ${act.loc    ? `<div class="event-info-row"><dt>📍 地点</dt><dd>${escapeHtml(act.loc)}</dd></div>` : ''}
@@ -233,6 +238,29 @@ ${jsonLd}
   <p class="event-footer-tagline">链接每一座孤岛</p>
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
+
+<!-- 编辑活动类型 modal（任何活动状态都能用） -->
+<div class="rsvp-modal-overlay" id="typesModal" onclick="if(event.target.id==='typesModal')closeTypesModal()">
+  <div class="rsvp-modal" style="max-width:520px">
+    <div class="rsvp-modal-handle"></div>
+    <div class="rsvp-modal-title">✏️ 编辑活动类型</div>
+    <p class="rsvp-modal-sub">${title}</p>
+
+    <div class="types-multi" id="typesEditList" style="margin-bottom:12px"></div>
+    <input class="rsvp-input" id="typesEditNew" type="text" maxlength="20" placeholder="输入新类型 + 回车 →" onkeydown="typesEditKey(event)">
+
+    <label class="rsvp-label" style="margin-top:14px">管理密码 <span class="rsvp-required">*</span></label>
+    <input class="rsvp-input pwd-mask" id="typesEditPwd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="rsvp-hint" style="margin-top:4px;font-size:11px;color:var(--muted)">活动同步密码</p>
+
+    <div class="rsvp-err" id="typesEditErr"></div>
+
+    <div class="rsvp-actions">
+      <button type="button" class="rsvp-cancel" onclick="closeTypesModal()">取消</button>
+      <button type="button" class="rsvp-confirm" id="typesEditSubmit" onclick="submitTypesEdit()">保存</button>
+    </div>
+  </div>
+</div>
 
 <!-- 取消 / 删除报名确认 modal -->
 <div class="rsvp-modal-overlay" id="rsvpDelModal" onclick="if(event.target.id==='rsvpDelModal')closeDelRsvpModal()">
@@ -412,6 +440,96 @@ async function submitDelRsvp() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('rsvpDelModal').classList.contains('open')) {
     closeDelRsvpModal();
+  }
+});
+
+// ─────────── 编辑活动类型 ───────────
+const ACT_TYPES_INIT = ${JSON.stringify(act.types || [])};
+let _typesSelected = [...ACT_TYPES_INIT];
+let _typesKnown    = [...ACT_TYPES_INIT];
+
+function openTypesModal() {
+  _typesSelected = [...ACT_TYPES_INIT];
+  document.getElementById('typesEditPwd').value = '';
+  document.getElementById('typesEditNew').value = '';
+  const errEl = document.getElementById('typesEditErr');
+  errEl.textContent = ''; errEl.style.color = '';
+  renderTypesEdit();
+  document.getElementById('typesModal').classList.add('open');
+  setTimeout(() => document.getElementById('typesEditNew').focus(), 200);
+}
+function closeTypesModal() {
+  document.getElementById('typesModal').classList.remove('open');
+}
+function renderTypesEdit() {
+  const c = document.getElementById('typesEditList'); if (!c) return;
+  const sel = new Set(_typesSelected);
+  const opts = [..._typesKnown];
+  for (const t of _typesSelected) if (!opts.includes(t)) opts.push(t);
+  // 默认推荐（与主页 TYPES_DEFAULTS 同步）
+  const defaults = ['户外','身体','疗愈','艺术','学习','创作','美食','社区','自然','对话'];
+  for (const t of defaults) if (!opts.includes(t)) opts.push(t);
+  c.innerHTML = opts.map(t => {
+    const on = sel.has(t);
+    return '<button type="button" class="type-chip' + (on ? ' is-on' : '') + '" onclick=\\'toggleEditType(' + JSON.stringify(t) + ')\\'>' + escHtmlT(t) + '</button>';
+  }).join('');
+}
+function toggleEditType(t) {
+  const i = _typesSelected.indexOf(t);
+  if (i >= 0) _typesSelected.splice(i, 1); else _typesSelected.push(t);
+  renderTypesEdit();
+}
+function typesEditKey(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const v = e.target.value.trim();
+  if (!v) return;
+  if (!_typesSelected.includes(v)) _typesSelected.push(v);
+  if (!_typesKnown.includes(v))    _typesKnown.push(v);
+  e.target.value = '';
+  renderTypesEdit();
+}
+function escHtmlT(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function submitTypesEdit() {
+  const pwd = document.getElementById('typesEditPwd').value.trim();
+  const errEl = document.getElementById('typesEditErr');
+  const btn = document.getElementById('typesEditSubmit');
+  errEl.textContent = ''; errEl.style.color = '';
+  if (!pwd) { errEl.style.color = '#c0392b'; errEl.textContent = '请输入管理密码'; return; }
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'set-activity-types',
+        password: pwd,
+        record_id: _ACT_REC_ID,
+        types: _typesSelected,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || '保存失败');
+    if (Array.isArray(data.all_known_types)) _typesKnown = data.all_known_types;
+    errEl.style.color = 'var(--green)';
+    errEl.textContent = '✓ 已保存，刷新页面看效果';
+    setTimeout(() => location.reload(), 800);
+  } catch (err) {
+    errEl.style.color = '#c0392b';
+    errEl.textContent = '失败：' + err.message;
+    btn.disabled = false; btn.textContent = '保存';
+  }
+}
+
+// ESC 关闭编辑类型 modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('typesModal').classList.contains('open')) {
+    closeTypesModal();
   }
 });
 </script>

@@ -266,17 +266,29 @@ export async function deleteRsvp(record_id) {
 
 /**
  * 把一条 RSVP 的「关联成员ID」改指向另一个成员（用于合并成员场景）
- * 不动其他字段；调用方负责清缓存（合并端点最后批量清）
+ * 可选同步覆盖姓名 / 个人简介字段（合并悠扬→悠洋后让 RSVP 显示新名字）
+ *
+ * 第二参数支持两种形式：
+ *   updateRsvpMemberLink(rid, 'rec_xxx')                            旧签名
+ *   updateRsvpMemberLink(rid, { member_rec_id, name?, bio? })       扩展签名
  */
-export async function updateRsvpMemberLink(record_id, new_member_rec_id) {
+export async function updateRsvpMemberLink(record_id, payloadOrId) {
   if (!record_id) throw new Error('缺 record_id');
+  const fields = {};
+  if (typeof payloadOrId === 'string' || payloadOrId == null) {
+    fields['关联成员ID'] = payloadOrId || '';
+  } else {
+    if (payloadOrId.member_rec_id !== undefined) fields['关联成员ID'] = payloadOrId.member_rec_id || '';
+    if (payloadOrId.name           !== undefined) fields['姓名']      = payloadOrId.name || '';
+    if (payloadOrId.bio            !== undefined) fields['个人简介']  = payloadOrId.bio  || '';
+  }
   const token = await getAccessToken();
   const res = await fetch(
     `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/${record_id}`,
     {
       method:  'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields: { '关联成员ID': new_member_rec_id || '' } }),
+      body:    JSON.stringify({ fields }),
     }
   );
   const data = await res.json();

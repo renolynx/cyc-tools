@@ -388,6 +388,66 @@ async function handleStripActivityTypes(req, res) {
   });
 }
 
+/**
+ * 给单个活动设置「活动类型」字段（密码保护，活动详情页编辑入口）
+ *
+ * Body: { action:'set-activity-types', password, record_id, types:[] }
+ * Response: { success, record_id, types, all_known_types:[] }
+ *   all_known_types：返回值里附带全站已用过的所有 types 的 union（前端
+ *   用作候选 chip 列表，无需额外 fetch 一次活动列表）
+ */
+async function handleSetActivityTypes(req, res) {
+  const { record_id, types } = req.body || {};
+  if (!record_id) return res.status(400).json({ error: '缺 record_id' });
+  if (!Array.isArray(types)) return res.status(400).json({ error: 'types 必须是数组（可空）' });
+
+  const { FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
+  if (!FEISHU_APP_TOKEN || !FEISHU_TABLE_ID) return res.status(500).json({ error: '活动表 env 未配' });
+
+  const cleanTypes = types.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
+
+  const { getAccessToken } = await import('./_feishu.js');
+  const token = await getAccessToken();
+  const r = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/${record_id}`,
+    {
+      method:  'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ fields: { '活动类型': cleanTypes } }),
+    }
+  );
+  const data = await r.json();
+  if (data.code !== 0) return res.status(500).json({ error: `飞书写入失败 (${data.code}): ${data.msg}` });
+
+  // 失效相关 KV cache
+  if (isKvConfigured()) {
+    await Promise.all([
+      kvDel('event:' + record_id),
+      kvDel('events:upcoming'),
+      kvDel('sitemap:acts'),
+      kvDel('members:大理'),
+      kvDel('members:上海'),
+    ]).catch(() => {});
+  }
+
+  // 顺手返回全站 types union 给前端做候选 chip
+  let allKnownTypes = [];
+  try {
+    const acts = await fetchAllActivities();
+    const set = new Set();
+    for (const a of acts) for (const t of (a.types || [])) if (t) set.add(t);
+    for (const t of cleanTypes) set.add(t);
+    allKnownTypes = [...set].sort();
+  } catch {}
+
+  return res.status(200).json({
+    success: true,
+    record_id,
+    types: cleanTypes,
+    all_known_types: allKnownTypes,
+  });
+}
+
 // ─────────── 合并去重 ───────────
 
 /** admin UI 编辑表单暴露的可合并字段（hidden 不参与；avatar/identity/contribution/hubs 暂不动） */
@@ -495,12 +555,26 @@ async function handleMerge(req, res) {
   try { rsvps = await fetchRsvpsByMember(source_id); }
   catch (err) { return res.status(500).json({ error: '拉 source RSVP 失败：' + err.message }); }
 
+  // 拉 target 的最新数据（field_overrides 可能刚刚改了 name/bio）
+  let targetForRsvp;
+  try { targetForRsvp = await fetchMember(target_id); }
+  catch { targetForRsvp = null; }
+  // RSVP 显示用 称呼 优先，再退到 姓名；bio 用 target 的 bio
+  const rsvpName = targetForRsvp ? (targetForRsvp.nickname || targetForRsvp.name || '') : '';
+  const rsvpBio  = targetForRsvp ? (targetForRsvp.bio || '') : '';
+
   let rsvpUpdated = 0;
   const rsvpFailed = [];
   const affectedActivityIds = new Set();
   for (const r of rsvps) {
     try {
-      await updateRsvpMemberLink(r.record_id, target_id);
+      // 同步 name + bio：合并后那条 RSVP 显示的应该是 target（合并保留方）
+      // bio 仅在原本为空 / 是 source 旧值时覆盖；如果原 RSVP bio 是嘉宾输入的"背景简介"
+      // 强行覆盖会丢失 — 折中：仅 name 总是覆盖，bio 只在原为空时填
+      const payload = { member_rec_id: target_id };
+      if (rsvpName) payload.name = rsvpName;
+      if (!r.bio && rsvpBio) payload.bio = rsvpBio;
+      await updateRsvpMemberLink(r.record_id, payload);
       rsvpUpdated++;
       if (r.activity_rec_id) affectedActivityIds.add(r.activity_rec_id);
     } catch (err) {
@@ -566,6 +640,7 @@ export default async function handler(req, res) {
   if (action === 'clear-cache')        return handleClearCache(req, res);
   if (action === 'list-activity-types')   return handleListActivityTypes(req, res);
   if (action === 'strip-activity-types')  return handleStripActivityTypes(req, res);
+  if (action === 'set-activity-types')    return handleSetActivityTypes(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }
