@@ -193,6 +193,12 @@
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0;
+      overflow: hidden;
+    }
+    .topbar-identity-avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
     }
     .topbar-identity-name {
       font-size: 12px;
@@ -330,6 +336,8 @@
         0 4px 12px -2px rgba(28, 61, 46, 0.10),
         0 0 24px rgba(28, 61, 46, 0.04);
       display: flex; align-items: center; justify-content: center;
+      position: relative;
+      overflow: hidden;
     }
     .mood-frame--lg {
       width: 96px; height: 96px;
@@ -339,6 +347,57 @@
         0 0 48px rgba(28, 61, 46, 0.06);
     }
     .mood-svg { width: 100%; height: 100%; display: block; }
+
+    /* 已上传头像：图片占满圆形，覆盖 mascot */
+    .mood-frame.has-image { padding: 0; }
+    .mood-frame.has-image img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* 可点击上传（仅 identity-card 那个 64×64 启用） */
+    .mood-frame.is-clickable {
+      cursor: pointer;
+      transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+      border: none;
+      background: var(--cyc-surface-pure);
+      font-family: inherit;
+    }
+    .mood-frame.is-clickable:hover {
+      transform: scale(1.04);
+      box-shadow:
+        0 6px 16px -2px rgba(28, 61, 46, 0.16),
+        0 0 32px rgba(28, 61, 46, 0.08);
+    }
+    .mood-frame.is-clickable:active { transform: scale(0.97); }
+    .mood-frame.is-clickable:focus-visible {
+      outline: 2px solid var(--cyc-green);
+      outline-offset: 3px;
+    }
+    /* hover 时浮出 "换头像" 提示徽章 */
+    .mood-frame-hint {
+      position: absolute;
+      left: 50%;
+      bottom: -22px;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      background: var(--cyc-sand);
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      border: 0.5px solid var(--cyc-stroke);
+      letter-spacing: 0;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--dur-fast);
+    }
+    .mood-frame.is-clickable:hover + .mood-frame-hint,
+    .mood-frame.is-clickable:focus-visible + .mood-frame-hint {
+      opacity: 1;
+    }
 
     /* ──────────────────────────────────────────────
      *  ONBOARDING (未关联身份)
@@ -1022,9 +1081,16 @@
     <!-- ═══════════ 状态 2 · 已关联 ═══════════ -->
     <section class="bound hidden" id="bound">
 
-      <!-- Identity Card -->
+      <!-- Identity Card —— 头像可点击上传 -->
       <div class="identity-card">
-        <div class="mood-frame" id="identity-mood"></div>
+        <div style="position: relative;">
+          <button type="button"
+                  class="mood-frame is-clickable"
+                  id="identity-mood"
+                  onclick="triggerAvatarUpload()"
+                  aria-label="点击上传头像"></button>
+          <span class="mood-frame-hint">换头像</span>
+        </div>
         <div class="identity-info">
           <div class="identity-name" id="identity-name">玖玖</div>
           <div class="identity-metric" id="identity-metric">
@@ -1032,6 +1098,8 @@
           </div>
         </div>
       </div>
+      <!-- 头像专用 file input（独立于活动照片上传） -->
+      <input type="file" id="avatar-file-input" class="upload-file-input" accept="image/*">
 
       <!-- Hero · Stack（最近 8 张精选） -->
       <section class="surface-halo" aria-label="精选回忆">
@@ -1314,15 +1382,17 @@
     /* ─── Topbar identity chip ─── */
     function renderTopbarIdentity() {
       const slot = document.getElementById('topbar-identity-slot');
-      const initial = _identity.name.slice(0, 1);
+      const avatarInner = _identity.avatarDataUrl
+        ? `<img src="${_identity.avatarDataUrl}" alt="${escHtml(_identity.name)}">`
+        : escHtml(_identity.name.slice(0, 1));
       slot.innerHTML = `
         <button class="topbar-identity" onclick="logoutIdentity()" aria-label="退出当前身份">
-          <span class="topbar-identity-avatar">${escHtml(initial)}</span>
+          <span class="topbar-identity-avatar">${avatarInner}</span>
           <span class="topbar-identity-name">${escHtml(_identity.name)}</span>
         </button>`;
     }
     function logoutIdentity() {
-      if (!confirm('退出当前身份？已上传的照片会保留在浏览器本地。')) return;
+      if (!confirm('退出当前身份？已上传的照片和头像会保留在浏览器本地，下次同一身份登录后还在。')) return;
       _identity = null;
       saveIdentity();
       showOnboarding();
@@ -1335,9 +1405,67 @@
       const count = _photos.length;
       document.getElementById('identity-metric').innerHTML =
         `在 CYC 度过了 <span class="accent">${days}</span> 天 · 已贡献 <span class="accent">${count}</span> 张`;
-      // mascot 跟着行为变：有上传 = content；空 = neutral
-      const moodState = count > 0 ? 'content' : 'neutral';
-      document.getElementById('identity-mood').innerHTML = moodSvg(moodState);
+      // 头像优先 — 没传则显示默认笑脸 mascot（content：轻微笑）
+      const frame = document.getElementById('identity-mood');
+      if (_identity.avatarDataUrl) {
+        frame.innerHTML = `<img src="${_identity.avatarDataUrl}" alt="${escHtml(_identity.name)}">`;
+        frame.classList.add('has-image');
+      } else {
+        frame.innerHTML = moodSvg('content');
+        frame.classList.remove('has-image');
+      }
+    }
+
+    /* ─── Avatar upload (头像专用，区别于活动照片) ─── */
+    function triggerAvatarUpload() {
+      document.getElementById('avatar-file-input').click();
+    }
+    // script 在 body 末尾执行 → DOM 已 parse 完，直接绑
+    document.getElementById('avatar-file-input').addEventListener('change', handleAvatarChange);
+
+    async function handleAvatarChange(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      setActivity('Cropping', '正在处理头像…');
+      try {
+        // 头像压到 256×256 中心方裁，体积小 + 快
+        const dataUrl = await compressAvatar(file, 256, 0.85);
+        _identity.avatarDataUrl = dataUrl;
+        saveIdentity();
+        renderIdentity();
+        renderTopbarIdentity();
+        setActivity('Saved', '头像换好了。');
+      } catch (err) {
+        setActivity('Error', '处理失败：' + (err.message || '未知错误'));
+      } finally {
+        // 清掉 input value 让用户可以再次上传同一张文件触发 change
+        e.target.value = '';
+      }
+    }
+
+    function compressAvatar(file, size, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            // 中心方形裁剪
+            const min = Math.min(img.width, img.height);
+            const sx = (img.width  - min) / 2;
+            const sy = (img.height - min) / 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = () => reject(new Error('图片解析失败'));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsDataURL(file);
+      });
     }
     function computeDays() {
       // mock：从最早一张照片日期算到今天；都没有就给固定 100
