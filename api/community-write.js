@@ -448,6 +448,75 @@ async function handleSetActivityTypes(req, res) {
   });
 }
 
+/**
+ * 一次性扫所有 RSVP，把 name ≠ member_rec_id 指向成员 nickname/name 的修齐
+ * 用于清理合并历史遗留的脏 name（合并悠扬→悠洋后 RSVP 仍叫"悠扬"）
+ *
+ * Body: { action:'resync-rsvp-names', password, dryRun? }
+ * Response: { success, total_scanned, has_member, mismatched, fixed, details:[{rid, before, after}] }
+ */
+async function handleResyncRsvpNames(req, res) {
+  const { dryRun } = req.body || {};
+  const [rsvps, members] = await Promise.all([
+    (await import('./_rsvp.js')).fetchAllRsvps(),
+    fetchAllMembers(),
+  ]);
+  const memMap = new Map(members.map(m => [m.record_id, m]));
+
+  const candidates = [];
+  for (const r of rsvps) {
+    if (!r.member_rec_id) continue;
+    const m = memMap.get(r.member_rec_id);
+    if (!m) continue;
+    const target = (m.nickname || m.name || '').trim();
+    if (!target) continue;
+    const cur = (r.name || '').trim();
+    if (cur === target) continue;
+    candidates.push({ rid: r.record_id, before: cur, after: target, member_id: r.member_rec_id });
+  }
+
+  if (dryRun) {
+    return res.status(200).json({
+      success: true,
+      dryRun: true,
+      total_scanned: rsvps.length,
+      has_member: rsvps.filter(r => r.member_rec_id).length,
+      mismatched: candidates.length,
+      details: candidates.slice(0, 100),
+    });
+  }
+
+  const { updateRsvpMemberLink } = await import('./_rsvp.js');
+  let fixed = 0;
+  const failed = [];
+  for (const c of candidates) {
+    try {
+      await updateRsvpMemberLink(c.rid, { member_rec_id: c.member_id, name: c.after });
+      fixed++;
+    } catch (err) {
+      failed.push({ rid: c.rid, error: err.message });
+    }
+  }
+
+  // 失效相关 cache
+  if (isKvConfigured()) {
+    const ops = [kvDel('rsvp:all')];
+    for (const c of candidates) ops.push(kvDel('rsvp:member:' + c.member_id));
+    // 不知具体活动 ID 全清 rsvp:activity:* 太重；让 5min TTL 自然过期
+    await Promise.all(ops).catch(() => {});
+  }
+
+  return res.status(200).json({
+    success: true,
+    dryRun: false,
+    total_scanned: rsvps.length,
+    mismatched: candidates.length,
+    fixed,
+    failed,
+    details: candidates.slice(0, 100),
+  });
+}
+
 // ─────────── 合并去重 ───────────
 
 /** admin UI 编辑表单暴露的可合并字段（hidden 不参与；avatar/identity/contribution/hubs 暂不动） */
@@ -641,6 +710,7 @@ export default async function handler(req, res) {
   if (action === 'list-activity-types')   return handleListActivityTypes(req, res);
   if (action === 'strip-activity-types')  return handleStripActivityTypes(req, res);
   if (action === 'set-activity-types')    return handleSetActivityTypes(req, res);
+  if (action === 'resync-rsvp-names')     return handleResyncRsvpNames(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }
