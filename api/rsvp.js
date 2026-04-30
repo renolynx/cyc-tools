@@ -17,7 +17,7 @@
 
 import { applyCors } from './_feishu.js';
 import { fetchRsvpsForActivity, findExistingRsvp, addRsvp, deleteRsvp, fetchRsvpByRecordId } from './_rsvp.js';
-import { findMemberByName, findMemberByWechat } from './_member.js';
+import { ensureMemberByWechat } from './_member.js';
 import { verifyPassword } from './_password.js';
 
 // ─────────── 工具函数 ───────────
@@ -89,13 +89,16 @@ async function handlePost(req, res) {
       });
     }
 
-    // 尝试匹配成员表：先按微信号（唯一性最高），再按称呼/姓名 fallback
+    // 拿 / 建成员 record_id：
+    //   找到 → 用现有；找不到 → 自动建一个隐藏成员
+    //   用 KV mark 强一致防 race（连点报名不会建多个成员）
     let member_rec_id;
     try {
-      let m = await findMemberByWechat(wechat.trim());
-      if (!m) m = await findMemberByName(name.trim());
-      if (m) member_rec_id = m.record_id;
-    } catch {}  // 匹配失败不阻塞报名
+      member_rec_id = await ensureMemberByWechat(name.trim(), wechat.trim(), (bio || '').trim());
+    } catch (err) {
+      console.warn('[rsvp] ensureMemberByWechat failed:', err.message);
+      // 不阻塞 RSVP 写入；member_rec_id 留空
+    }
 
     const result = await addRsvp({
       name:            name.trim(),

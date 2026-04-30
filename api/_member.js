@@ -259,6 +259,73 @@ export async function findMemberByWechat(wechat) {
   return all.find(m => (m._wechat || '').trim().toLowerCase() === target) || null;
 }
 
+/** 自动创建最小成员记录（默认隐藏） */
+export async function autoCreateMember(data) {
+  if (!data || !data.name || !data.wechat) throw new Error('autoCreateMember 需要 name + wechat');
+
+  const fields = {
+    '姓名':   data.name,
+    '微信号':  data.wechat,
+    '在社群成员列表中隐藏': true,
+    '来自渠道': data.source || '活动报名自动建',
+  };
+  if (data.bio) fields['个人介绍'] = data.bio;
+
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records`,
+    {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ fields }),
+    }
+  );
+  const result = await res.json();
+  if (result.code !== 0) throw new Error(`成员自动创建失败 (${result.code}): ${result.msg}`);
+  return result.data.record.record_id;
+}
+
+/**
+ * 确保成员存在，返回 member_rec_id：
+ *   1. KV mark `member_by_wechat:{wechat}` → 强一致快速命中
+ *   2. 飞书 search by wechat
+ *   3. 都没有 → 自动创建
+ *
+ * 同时打 KV mark 防 race（用户连续两次报名不会建 2 个成员）
+ */
+export async function ensureMemberByWechat(name, wechat, bio) {
+  if (!wechat) return null;
+  const norm = wechat.trim().toLowerCase();
+  if (!norm) return null;
+
+  const markKey = 'member_by_wechat:' + norm;
+
+  // 1. KV mark
+  if (isKvConfigured()) {
+    try {
+      const mark = await kvGet(markKey);
+      if (mark) return mark;
+    } catch {}
+  }
+
+  // 2. 飞书 search
+  let m = null;
+  try { m = await findMemberByWechat(wechat); } catch {}
+  if (m) {
+    if (isKvConfigured()) {
+      try { await kvSet(markKey, m.record_id, 86400); } catch {}
+    }
+    return m.record_id;
+  }
+
+  // 3. 自动建
+  const newId = await autoCreateMember({ name, wechat, bio });
+  if (isKvConfigured()) {
+    try { await kvSet(markKey, newId, 86400); } catch {}
+  }
+  return newId;
+}
+
 /**
  * 嘉宾匹配：先匹配称呼，回退姓名
  * 用于活动详情页"嘉宾"卡 → 链 profile
