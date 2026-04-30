@@ -254,11 +254,18 @@ async function inferMemberActivityCities() {
 
   for (const r of allRsvps) {
     if (!r.member_rec_id) continue;
-    const loc = actLoc.get(r.activity_rec_id) || '';
+    const loc = (actLoc.get(r.activity_rec_id) || '').toLowerCase();
     if (!loc) continue;
     if (!result.has(r.member_rec_id)) result.set(r.member_rec_id, new Set());
-    if (loc.includes('大理')) result.get(r.member_rec_id).add('大理');
-    if (loc.includes('上海')) result.get(r.member_rec_id).add('上海');
+
+    // 宽松匹配：CYC 现阶段所有据点都在大理或上海，活动地点字段
+    // 多写"cyc青年社区活动室" / "雪卢艺术公寓" 等不含城市名
+    // 显式有"上海" → 上海；其余一律算大理（主基地）
+    if (loc.includes('上海') || loc.includes('shanghai')) {
+      result.get(r.member_rec_id).add('上海');
+    } else {
+      result.get(r.member_rec_id).add('大理');
+    }
   }
 
   if (isKvConfigured()) {
@@ -274,17 +281,26 @@ async function inferMemberActivityCities() {
 /** 按城市拉公开成员
  *  匹配两路：
  *    1. 据点关联：现在所在据点 → 城市（飞书显式填了的）
- *    2. 活动反推：ta 报过的活动地点含城市名（隐式生效）
+ *    2. 活动反推：ta 报过的活动 → 推断城市（隐式生效）
  *  任一命中即纳入；hidden=true 永远过滤
+ *  options.bypassCache=true 强制重算（用于部署后刷新）
  */
-export async function fetchMembersByCity(city) {
+export async function fetchMembersByCity(city, options = {}) {
   if (!city) return [];
   const cacheKey = 'members:' + city;
-  if (isKvConfigured()) {
+  if (!options.bypassCache && isKvConfigured()) {
     try {
       const cached = await kvGet(cacheKey);
       if (cached) return JSON.parse(cached);
     } catch {}
+  }
+
+  // bypass: 同时清掉两层 cache，让重算生效
+  if (options.bypassCache && isKvConfigured()) {
+    await Promise.all([
+      kvDel(cacheKey),
+      kvDel('member_activity_cities'),
+    ]).catch(() => {});
   }
 
   const [all, inferredMap] = await Promise.all([

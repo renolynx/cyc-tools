@@ -358,9 +358,11 @@ export default async function handler(req, res) {
     }));
   }
 
+  const bypassCache = req.query.refresh === '1';
+
   let members = [];
   try {
-    members = await fetchMembersByCity(city);
+    members = await fetchMembersByCity(city, { bypassCache });
   } catch (err) {
     console.error('[community-page list]', err.message);
     members = [];
