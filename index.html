@@ -783,6 +783,15 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
         html += renderDetailRow('活动海报', '<img class="cal-detail-poster" src="' + src + '" style="cursor:pointer" onclick="event.stopPropagation();openPosterLightboxByRid(\'' + (a.record_id||'') + '\')" alt="poster">');
       }
 
+      // 主 CTA：跳到 /events/:id（SSR 公开页，有完整报名 UI 和分享卡）
+      // 仅当活动有 record_id 才能跳（来自飞书的活动都有；本地未同步的草稿没有）
+      if (rid) {
+        html += '<a class="cal-act-rsvp-btn" href="/events/' + encodeURIComponent(rid) + '" '
+              + 'target="_blank" rel="noopener" onclick="event.stopPropagation()">'
+              + '💬 查看详情 · 我要报名 <span class="cal-rsvp-arrow">→</span>'
+              + '</a>';
+      }
+      // 次 CTA：编辑（仍是全宽绿，但放在报名下方层级更低）
       html += '<button class="cal-act-edit-btn" onclick="event.stopPropagation();editFromCalendar(\'' + rid + '\')">✏️ 跳转编辑此活动</button>';
       html += '</div>';
       html += '</div>';
