@@ -573,28 +573,17 @@
       transform: translate(calc(-50% + var(--fanX, 0px)), -50%) rotate(var(--fanTilt, 0deg));
     }
 
-    .stack-quote {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 50;
-      pointer-events: none;
-      background: var(--cyc-surface-pure);
-      border-radius: var(--r-pill);
-      padding: var(--sp-3) var(--sp-6);
-      box-shadow:
-        0 8px 24px -8px rgba(28, 61, 46, 0.12),
-        0 0 32px rgba(28, 61, 46, 0.06);
+    /* surface-sub —— 静态副标题（替代了之前会"躲" 的 stack-quote 浮动胶囊）
+     * 用 :has 让 title 在有 sub 时自动收紧间距；不支持 :has 的旧浏览器
+     * 退化为"间距稍大但不影响阅读" */
+    .surface-title:has(+ .surface-sub) { margin-bottom: var(--sp-2); }
+    .surface-sub {
       font-size: 14px;
-      font-weight: 600;
-      color: var(--cyc-text-strong);
+      font-weight: 400;
+      color: var(--cyc-text-muted);
       letter-spacing: 0;
-      white-space: nowrap;
-      transition: transform 600ms var(--ease-spring), opacity 300ms ease;
-    }
-    .stack-wrap:hover .stack-quote {
-      transform: translate(-50%, calc(-50% - 160px));
-      opacity: 0.4;
+      line-height: 1.5;
+      margin-bottom: var(--sp-6);
     }
 
     /* ──────────────────────────────────────────────
@@ -1167,9 +1156,9 @@
       <section class="surface-halo" aria-label="精选回忆">
         <div class="surface-eyebrow">今年最难忘的</div>
         <h2 class="surface-title">你的回忆</h2>
+        <p class="surface-sub">来到社区后，发生了好多事。</p>
         <div class="stack-wrap" id="stack-wrap">
           <div class="stack" id="stack"></div>
-          <div class="stack-quote">来到社区后，发生了好多事</div>
         </div>
         <div class="empty-state hidden" id="hero-empty">
           <div class="empty-state-icon">📷</div>
