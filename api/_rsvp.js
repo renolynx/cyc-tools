@@ -278,11 +278,14 @@ function seenKey(activity_rec_id, wechat) {
 
 /**
  * 写入新 RSVP 记录
- * data: { name, activity_rec_id, activity_title?, roles?, wechat, bio?, member_rec_id? }
+ * data: { name, activity_rec_id, activity_title?, roles?, wechat?, bio?, member_rec_id? }
+ *
+ * wechat 可选：嘉宾联动写入时活动录入界面没有微信号字段；普通报名时由调用端保证非空
+ * （/api/rsvp 端点自己校验）。wechat 为空时不写「微信号」字段，也不打去重 KV mark。
  */
 export async function addRsvp(data) {
-  if (!data || !data.name || !data.activity_rec_id || !data.wechat) {
-    throw new Error('缺必填字段（name / activity_rec_id / wechat）');
+  if (!data || !data.name || !data.activity_rec_id) {
+    throw new Error('缺必填字段（name / activity_rec_id）');
   }
 
   const fields = {};
@@ -290,7 +293,7 @@ export async function addRsvp(data) {
   fields['关联活动ID']    = data.activity_rec_id;
   if (data.activity_title) fields['关联活动名称'] = data.activity_title;
   fields['角色']         = data.roles && data.roles.length ? data.roles : ['活动参与者'];
-  fields['微信号']        = data.wechat;
+  if (data.wechat)         fields['微信号']      = data.wechat;
   if (data.bio)            fields['个人简介']     = data.bio;
   if (data.member_rec_id)  fields['关联成员ID']  = data.member_rec_id;
 
@@ -309,17 +312,67 @@ export async function addRsvp(data) {
   const newRecordId = result.data.record.record_id;
 
   // 1. 失效相关缓存
-  // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）
+  // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）—— 仅当 wechat 非空时
   if (isKvConfigured()) {
-    await Promise.all([
+    const ops = [
       kvDel('rsvp:activity:' + data.activity_rec_id),
       kvDel('rsvp:all'),
       kvDel('member_activity_cities'),
       kvDel('members:大理'),  // 推断的城市可能变 → 列表缓存也清
       kvDel('members:上海'),
-      kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400),
-    ]).catch(() => {});
+    ];
+    if (data.wechat) ops.push(kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400));
+    await Promise.all(ops).catch(() => {});
   }
 
   return { success: true, record_id: newRecordId };
+}
+
+/**
+ * 同步活动嘉宾 RSVP（新建 / 编辑活动后调用）
+ *   1. 拉该活动现有所有 RSVP，删除「角色含 活动发起者」的旧条
+ *   2. 按 speakers 数组写新条（wechat 不传，去重靠"活动+角色+姓名"语义）
+ *
+ * speakers: [{ name, bio, member_rec_id? }]
+ *   member_rec_id 由调用端预先用 findMemberByName 解析；没匹配上就不传
+ *
+ * 返回 { written, removed, names_unmatched }
+ *   失败抛错；调用端通常 catch 后不阻塞主流程
+ */
+export async function replaceSpeakerRsvps(activity_rec_id, activity_title, speakers) {
+  if (!activity_rec_id) throw new Error('缺 activity_rec_id');
+  const list = Array.isArray(speakers) ? speakers.filter(s => s && s.name) : [];
+
+  // 1. 删旧的发起者
+  const existing = await fetchRsvpsForActivity(activity_rec_id);
+  const stale    = existing.filter(r => Array.isArray(r.roles) && r.roles.includes('活动发起者'));
+  let removed    = 0;
+  for (const r of stale) {
+    try { await deleteRsvp(r.record_id); removed++; } catch (err) {
+      console.warn('[replaceSpeakerRsvps] delete failed:', err.message);
+    }
+  }
+
+  // 2. 写新的
+  let written = 0;
+  const names_unmatched = [];
+  for (const s of list) {
+    try {
+      await addRsvp({
+        name:           s.name,
+        activity_rec_id,
+        activity_title: activity_title || '',
+        roles:          ['活动发起者'],
+        bio:            s.bio || '',
+        member_rec_id:  s.member_rec_id || '',
+      });
+      written++;
+      if (!s.member_rec_id) names_unmatched.push(s.name);
+    } catch (err) {
+      console.warn('[replaceSpeakerRsvps] add failed:', err.message);
+      names_unmatched.push(s.name);
+    }
+  }
+
+  return { written, removed, names_unmatched };
 }

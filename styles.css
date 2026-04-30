@@ -339,6 +339,22 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 /* ── 同步按钮 + 删除按钮组合 ── */
 .sync-row{display:flex;gap:6px;align-items:stretch}
 .sync-row .sync-btn{flex:1}
+
+/* ── 嘉宾联动结果（同步成功后短暂显示）── */
+.sync-detail{
+  margin-top:8px;padding:8px 12px;
+  background:rgba(255,255,255,0.6);
+  border:1px solid var(--stroke);
+  border-radius:10px;
+  font-size:12px;line-height:1.55;color:var(--text);
+  opacity:0;transform:translateY(-4px);
+  transition:opacity 0.3s ease,transform 0.3s ease;
+}
+.sync-detail.show{opacity:1;transform:translateY(0)}
+.sync-detail .sync-detail-line{display:block}
+.sync-detail .sync-detail-warn{color:var(--orange)}
+.sync-detail .sync-detail-mute{color:var(--muted)}
+
 .del-feishu-btn{
   display:none;
   width:46px;flex-shrink:0;
@@ -967,6 +983,24 @@ body.event-page {
 }
 .event-spk-row strong { color: var(--green); }
 .event-spk-bio { color: var(--muted); font-size: 13px; }
+
+.event-spk-hint {
+  margin-top: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(217,101,42,0.06);
+  border: 1px dashed rgba(217,101,42,0.25);
+  border-radius: 8px;
+  line-height: 1.55;
+}
+.event-spk-hint-link {
+  color: var(--orange);
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.event-spk-hint-link:hover { text-decoration: underline; }
 
 .event-footer {
   text-align: center;

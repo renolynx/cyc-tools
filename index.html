@@ -774,6 +774,49 @@ function editFromCalendar(rid) {
   setTimeout(() => jumpToAct(actData.date, id), 350);
 }
 
+// ── 嘉宾联动结果展示（add-activity 成功后调用） ──
+function showSpeakerSyncDetail(id, sync) {
+  const row = document.getElementById('sync-' + id)?.parentElement;
+  if (!row) return;
+  // 先移除旧的
+  const old = row.parentElement.querySelector('#sync-detail-' + id);
+  if (old) old.remove();
+  if (!sync) return;
+
+  const lines = [];
+  if (sync.error) {
+    lines.push('<span class="sync-detail-line sync-detail-warn">嘉宾联动失败：' + esc(sync.error) + '</span>');
+  } else if ((sync.written || 0) === 0 && (sync.removed || 0) === 0) {
+    return;  // 没嘉宾、没动作 → 不显示
+  } else {
+    const matched = (sync.names_matched || []).length;
+    const total   = sync.written || 0;
+    lines.push('<span class="sync-detail-line">已写入 <strong>' + total + '</strong> 条嘉宾 RSVP'
+      + (matched ? '，匹配上 <strong>' + matched + '</strong> 位社群成员' : '') + '</span>');
+    if (sync.removed) {
+      lines.push('<span class="sync-detail-line sync-detail-mute">替换了 ' + sync.removed + ' 条旧记录</span>');
+    }
+    const unmatched = sync.names_unmatched || [];
+    if (unmatched.length) {
+      lines.push('<span class="sync-detail-line sync-detail-warn">未在成员表找到：'
+        + unmatched.map(esc).join('、') + '</span>');
+    }
+  }
+
+  const el = document.createElement('div');
+  el.id = 'sync-detail-' + id;
+  el.className = 'sync-detail';
+  el.innerHTML = lines.join('');
+  row.parentElement.insertBefore(el, row.nextSibling);
+  requestAnimationFrame(() => el.classList.add('show'));
+
+  // 8 秒后淡出
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 400);
+  }, 8000);
+}
+
 // ── 密码弹窗（通用：sync / delete） ──
 let _pendingAction = null;   // { type: 'sync' | 'delete', id: string }
 
@@ -957,6 +1000,9 @@ async function doSync(id, password) {
     btn.classList.add('ok');
     icon.textContent  = '✓';
     label.textContent = json.is_update ? '已更新飞书记录' : '已录入飞书';
+
+    showSpeakerSyncDetail(id, json.speaker_sync);
+
     setTimeout(() => {
       btn.classList.remove('ok');
       btn.disabled = false;

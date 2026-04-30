@@ -6,6 +6,22 @@
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
 import { kvDel, isKvConfigured } from './_kv.js';
+import { replaceSpeakerRsvps } from './_rsvp.js';
+import { fetchAllMembers }     from './_member.js';
+
+/** 在已拉好的成员列表里匹配单个嘉宾名字（避免 N 次 fetchAllMembers）
+ *  规则同 _member.findMemberByName：先 nickname 精确，再 name 精确，再 nickname 包含
+ */
+function matchSpeaker(allMembers, name) {
+  const target = String(name || '').trim();
+  if (!target) return null;
+  return (
+    allMembers.find(m => m.nickname && m.nickname.trim() === target) ||
+    allMembers.find(m => m.name && m.name.trim() === target) ||
+    allMembers.find(m => m.nickname && m.nickname.includes(target)) ||
+    null
+  );
+}
 
 /** 上传海报到飞书云文档，返回 file_token */
 async function uploadPoster(poster, token, appToken) {
@@ -115,10 +131,33 @@ export default async function handler(req, res) {
       ]).catch(e => console.error('[add-activity] cache invalidate failed:', e));
     }
 
+    // 嘉宾联动：自动写「角色=活动发起者」的 RSVP 记录（失败不阻塞主流程）
+    // 即使 sp 为空也调用，确保编辑活动后删掉嘉宾时旧 RSVP 也跟着清掉
+    let speakerSync = null;
+    try {
+      let speakers = [];
+      if (sp.length) {
+        const allMembers = await fetchAllMembers();
+        speakers = sp.filter(s => s.name).map(s => {
+          const m = matchSpeaker(allMembers, s.name);
+          return { name: s.name, bio: s.bio || '', member_rec_id: m?.record_id || '' };
+        });
+      }
+      const result = await replaceSpeakerRsvps(newRecordId, activity.title || '', speakers);
+      speakerSync = {
+        ...result,
+        names_matched: speakers.filter(s => s.member_rec_id).map(s => s.name),
+      };
+    } catch (err) {
+      console.error('[add-activity] speaker sync failed:', err.message);
+      speakerSync = { error: err.message };
+    }
+
     return res.status(200).json({
-      success:   true,
-      is_update: hasRecord,
-      record_id: newRecordId,
+      success:      true,
+      is_update:    hasRecord,
+      record_id:    newRecordId,
+      speaker_sync: speakerSync,
     });
 
   } catch (err) {

@@ -188,6 +188,9 @@ ${jsonLd}
           </div>`).join('')
         : act.spk.map(s => `<div class="event-spk-row"><span class="event-spk-content"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</span></div>`).join('')
     }</div>
+    ${(!rsvpHosts.length && act.spk?.length) ? `<p class="event-spk-hint">
+      ℹ️ 嘉宾资料尚未关联到社群成员主页 · <a href="${SITE_URL}/" class="event-spk-hint-link">在主页重新录入此活动 →</a> 可自动补全
+    </p>` : ''}
   </section>` : ''}
 
   ${!isPast ? `<section class="event-section event-rsvp-section">
