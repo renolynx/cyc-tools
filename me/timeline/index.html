@@ -6,726 +6,678 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="社区的回忆 — 来到 CYC 后发生的一切">
 
+  <!-- Daybreak OS — Daybook layer fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    /* ─────────────────────────────────────────
-     *  Daybreak OS — me/timeline
-     *  延续 cyc.center 视觉系统（绿/橙/沙）+ 日出渐变 + 玻璃质感
-     *  iOS 16 widget 范式：Stack（堆叠）/ Lineup（队列）
-     * ───────────────────────────────────────── */
+    /* ──────────────────────────────────────────────
+     *  Daybook layer · /me/timeline
+     *  严格按 daybreak-os v2 规范实现
+     *  - canvas: near-white     - surface: white + halo
+     *  - 单一 coral 强调（仅 temporal/active/verb 语义）
+     *  - 间距 4/8/12/16/24/32/48/64
+     *  - 半径 9999/24/16/50% 四档
+     *  - 字重 400/600/700
+     *  - 字号 12/14/16/20/28/40
+     *  - 禁纯 #fff / #000 / 第二强调色 / 装饰用色
+     * ────────────────────────────────────────────── */
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --green:    #1c3d2e;
-      --green2:   #2a5740;
-      --orange:   #d9652a;
-      --orange2:  #b5512a;
-      --sand:     #f2ede6;
-      --sand-warm:#fff3e3;
-      --daybreak: #ffd9b5;     /* 晨曦 */
-      --night:    #2d2438;     /* 夜尽 */
-      --glass:    rgba(255,255,255,0.55);
-      --stroke:   rgba(0,0,0,0.08);
-      --text:     #1a1a1a;
-      --muted:    #6b6b6b;
-      --r:        16px;
-      --r-lg:     22px;
+      /* Daybook canvas + surface */
+      --db-canvas:        oklch(0.985 0 0);
+      --db-surface:       oklch(1 0 0);
+      --db-text-primary:  oklch(0.15 0 0);
+      --db-text-secondary:oklch(0.55 0 0);
+      --db-text-tertiary: oklch(0.75 0 0);
+      --db-fill-empty:    oklch(0.94 0 0);
+
+      /* The ONE accent — temporal/active/verb only */
+      --db-accent:        oklch(0.62 0.22 30);
+      --db-accent-soft:   oklch(0.62 0.22 30 / 0.12);
+
+      /* Radii — only four */
+      --r-pill:           9999px;
+      --r-card:           24px;
+      --r-inner:          16px;
+      --r-dot:            50%;
     }
 
-    html, body { width: 100%; overflow-x: hidden; }
+    html { -webkit-text-size-adjust: 100%; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
-                   "Hiragino Sans GB", "SF Pro Display", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 0%,
-          rgba(255,180,120,0.55) 0%,
-          rgba(255,180,120,0) 60%),
-        linear-gradient(180deg, var(--daybreak) 0%, var(--sand) 50%, var(--sand) 100%);
-      background-attachment: fixed;
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
+                   "PingFang SC", system-ui, sans-serif;
+      background: var(--db-canvas);
+      color: var(--db-text-primary);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       min-height: 100vh;
-      padding-bottom: 96px;        /* 留 activity bar 空间 */
+      padding-bottom: 96px;   /* room for activity bar */
+      overflow-x: hidden;
     }
 
-    /* 漂浮的太阳光圈（装饰） */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -180px; left: 50%;
-      transform: translateX(-50%);
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, rgba(255,200,100,0.65), transparent 65%);
-      filter: blur(20px);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ── Page container ── */
+    /* ─── Page container ─── */
     .page {
-      position: relative;
-      z-index: 1;
       max-width: 720px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 32px 16px 48px;
     }
 
-    /* ── Header ── */
+    /* ─── Header ─── */
     .page-header {
       display: flex;
-      align-items: flex-end;
+      align-items: baseline;
       justify-content: space-between;
-      gap: 20px;
-      padding: 48px 0 24px;
-      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 48px;
     }
-    .page-header h1 {
-      font-size: 30px;
-      font-weight: 800;
-      color: var(--green);
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-    }
-    .page-header h1 em {
-      font-style: normal;
-      color: var(--orange);
-    }
+
     .back-link {
-      display: inline-block;
       font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      margin-bottom: 6px;
-    }
-    .back-link:hover { color: var(--green); }
-    .greeting {
-      font-size: 12.5px;
-      font-weight: 500;
-      color: var(--muted);
-      text-align: right;
-      line-height: 1.5;
-      max-width: 240px;
-    }
-    .greeting strong { color: var(--green); font-weight: 700; }
-
-    /* ── Section labels ── */
-    .section-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: 0.15em;
+      font-weight: 600;
+      color: var(--db-text-tertiary);
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      margin-bottom: 18px;
+      text-decoration: none;
     }
-    .section-label::after {
-      content: '';
-      flex: 1; min-width: 40px;
-      height: 1px;
-      background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
-      margin-left: 8px;
+    .back-link:hover { color: var(--db-text-secondary); }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--db-text-primary);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
     }
 
-    /* ─────────────────────────────────────────
-     *  HERO — Stack 模式
-     * ───────────────────────────────────────── */
-    .hero-stack {
-      position: relative;
-      padding: 16px 0 60px;
-      isolation: isolate;        /* 让卡片阴影不外溢到 scrubber */
+    /* ──────────────────────────────────────────────
+     *  Pattern 4 · Identity Card
+     * ────────────────────────────────────────────── */
+    .identity-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
     }
 
-    .stack-wrap {
-      position: relative;
-      height: 420px;
+    .mood-frame {
+      width: 96px;
+      height: 96px;
+      background: var(--db-surface);
+      border-radius: var(--r-dot);
+      padding: 16px;
+      box-shadow:
+        0 8px 24px -8px oklch(0 0 0 / 0.06),
+        0 0 32px oklch(0 0 0 / 0.04);
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    .mood-svg { width: 100%; height: 100%; display: block; }
 
-    .stack {
-      position: relative;
-      width: 220px;
-      height: 280px;
-      cursor: pointer;
+    .identity-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--db-text-primary);
+      letter-spacing: -0.01em;
     }
 
-    /* 中间叠加的引言胶囊 */
+    .identity-metric {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--db-text-secondary);
+      letter-spacing: 0;
+      text-align: center;
+    }
+    /* coral on temporal anchor only */
+    .identity-metric .accent {
+      color: var(--db-accent);
+      font-weight: 600;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Surface (halo shadow — Daybook signature)
+     * ────────────────────────────────────────────── */
+    .surface {
+      background: var(--db-surface);
+      border-radius: var(--r-card);
+      padding: 32px 24px;
+      margin-bottom: 32px;
+      box-shadow:
+        0 8px 24px -8px oklch(0 0 0 / 0.08),
+        0 0 48px oklch(0 0 0 / 0.04);
+    }
+
+    .surface-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--db-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 16px;
+    }
+    .surface-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--db-text-primary);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      margin-bottom: 32px;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Pattern 1 · Artifact — Polaroid
+     *  - white frame, 8/8/32 padding (不等距是规范关键)
+     *  - photo aspect 1:1
+     *  - tilt ±8° max
+     * ────────────────────────────────────────────── */
+    .polaroid {
+      width: 160px;
+      background: var(--db-surface);
+      padding: 8px 8px 32px;
+      box-shadow:
+        0 2px 4px oklch(0 0 0 / 0.08),
+        0 12px 24px -8px oklch(0 0 0 / 0.12);
+      transform: rotate(var(--tilt, 0deg));
+    }
+    .polaroid__photo {
+      aspect-ratio: 1;
+      background: var(--db-fill-empty);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      /* placeholder: 灰阶 emoji（真实数据接入时换成 <img>） */
+      filter: grayscale(1) opacity(0.45);
+    }
+    .polaroid__cap {
+      padding-top: 12px;
+      text-align: center;
+    }
+    .polaroid__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--db-text-primary);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .polaroid__date {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--db-text-secondary);
+      margin-top: 4px;
+      letter-spacing: 0;
+    }
+
+    /* ─── Stack mode — 精选回忆 ─── */
+    .stack-wrap {
+      position: relative;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stack {
+      position: relative;
+      width: 200px;
+      height: 220px;
+      cursor: pointer;
+    }
+    .stack .polaroid {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(var(--tilt, 0deg));
+      transform-origin: center bottom;
+      transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: var(--z, 1);
+    }
+    .stack-wrap:hover .stack .polaroid {
+      transform: translate(calc(-50% + var(--fanX, 0px)), -50%) rotate(var(--fanTilt, 0deg));
+    }
+
     .stack-quote {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 50;
-      padding: 12px 20px;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(20px) saturate(1.6);
-      -webkit-backdrop-filter: blur(20px) saturate(1.6);
-      border-radius: 100px;
-      border: 0.5px solid rgba(255,255,255,0.7);
-      box-shadow:
-        0 8px 32px rgba(28,61,46,0.18),
-        0 0 0 0.5px rgba(28,61,46,0.06);
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--green);
-      letter-spacing: 0.02em;
-      white-space: nowrap;
       pointer-events: none;
-      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  opacity 0.35s ease;
-    }
-    .stack:hover ~ .stack-quote,
-    .stack-wrap:hover .stack-quote {
-      transform: translate(-50%, calc(-50% - 180px)) scale(0.94);
-      opacity: 0.92;
-    }
-
-    /* Polaroid 单卡 */
-    .stack-card {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 200px; height: 240px;
-      transform-origin: center bottom;
-      transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
-      z-index: var(--z, 1);
-      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      filter: drop-shadow(0 12px 24px rgba(60, 30, 10, 0.18));
-    }
-
-    /* hover：散开成扇形 */
-    .stack-wrap:hover .stack-card {
-      transform: translate(calc(-50% + var(--tx, 0px)), -50%) rotate(var(--hover-rot, 0deg));
-    }
-
-    .polaroid {
-      width: 100%; height: 100%;
-      background: #fff;
-      border-radius: 4px;
-      padding: 10px 10px 14px;
-      display: flex; flex-direction: column;
-      box-shadow: 0 0 0 0.5px rgba(0,0,0,0.05);
-    }
-    .polaroid-photo {
-      flex: 1;
-      border-radius: 2px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 56px;
-      filter: saturate(1.05);
-      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
-    .polaroid-cap {
-      padding-top: 10px;
-      text-align: center;
-      font-family: 'Caveat', 'Permanent Marker', "Marker Felt", "PingFang SC", cursive;
-    }
-    .polaroid-title {
-      font-size: 13.5px;
+      background: var(--db-surface);
+      border-radius: var(--r-pill);
+      padding: 12px 24px;
+      box-shadow:
+        0 8px 24px -8px oklch(0 0 0 / 0.10),
+        0 0 32px oklch(0 0 0 / 0.05);
+      font-size: 14px;
       font-weight: 600;
-      color: #2a2a2a;
+      color: var(--db-text-primary);
       letter-spacing: 0;
-      line-height: 1.2;
+      white-space: nowrap;
+      transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  opacity 300ms ease;
     }
-    .polaroid-date {
-      font-size: 10.5px;
-      color: var(--muted);
-      margin-top: 1px;
-      letter-spacing: 0.05em;
+    .stack-wrap:hover .stack-quote {
+      transform: translate(-50%, calc(-50% - 160px));
+      opacity: 0.4;
     }
 
-    /* ─────────────────────────────────────────
-     *  LINEUP — 月度队列
-     * ───────────────────────────────────────── */
-    .lineup {
-      padding: 36px 0;
-    }
+    /* ─── Lineup mode — 按月队列 ─── */
     .month-section {
-      margin-bottom: 36px;
-      scroll-margin-top: 60px;
+      margin-bottom: 48px;
+      scroll-margin-top: 24px;
     }
-    .month-label {
+    .month-section:last-child { margin-bottom: 0; }
+
+    .month-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      margin-bottom: 14px;
-      padding: 0 2px;
+      padding: 0 8px;
+      margin-bottom: 16px;
     }
     .month-name {
-      font-size: 17px;
-      font-weight: 800;
-      color: var(--green);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--db-text-primary);
       letter-spacing: -0.01em;
     }
-    .month-count {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--orange);
-      background: rgba(217,101,42,0.10);
-      padding: 3px 10px;
-      border-radius: 100px;
-      letter-spacing: 0.02em;
+    .month-metric {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--db-text-tertiary);
+      letter-spacing: 0;
     }
-    .month-strip {
+
+    .lineup-row {
       display: flex;
-      gap: 10px;
-      padding: 4px 2px 16px;
+      gap: 16px;
       overflow-x: auto;
+      padding: 16px 8px 24px;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(28,61,46,0.15) transparent;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
-    .month-strip::-webkit-scrollbar { height: 4px; }
-    .month-strip::-webkit-scrollbar-thumb { background: rgba(28,61,46,0.15); border-radius: 4px; }
+    .lineup-row::-webkit-scrollbar { display: none; }
 
-    .strip-item {
+    .lineup-row .polaroid {
       flex-shrink: 0;
-      width: 124px;
       scroll-snap-align: start;
-      cursor: pointer;
-      transition: transform 0.18s ease;
     }
-    .strip-item:active { transform: scale(0.96); }
-    .strip-photo {
-      width: 124px; height: 124px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-      box-shadow: 0 4px 14px rgba(60,30,10,0.12);
-      filter: saturate(1.05);
-      position: relative;
-      overflow: hidden;
-    }
-    .strip-photo::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 40%, rgba(0,0,0,0.08) 100%);
-      pointer-events: none;
-    }
-    .strip-title {
-      margin-top: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.35;
-      padding: 0 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .lineup-row .polaroid:nth-child(odd)  { --tilt: -3deg; }
+    .lineup-row .polaroid:nth-child(even) { --tilt:  3deg; }
 
-    /* ─────────────────────────────────────────
-     *  SCRUBBER — 右侧时间轴
-     * ───────────────────────────────────────── */
+    /* ──────────────────────────────────────────────
+     *  Pattern 3 · Scrubber
+     *  - sticky right edge, 36-40px wide
+     *  - month markers Bold UPPERCASE tracked
+     *  - active entry: coral pill
+     * ────────────────────────────────────────────── */
     .scrubber {
       position: fixed;
-      right: 18px;
-      top: 50%;
-      transform: translateY(-50%);
+      right: 16px;
+      top: 96px;
+      bottom: 96px;
+      width: 36px;
       z-index: 30;
-      padding: 14px 8px;
-      background: rgba(255,255,255,0.45);
-      backdrop-filter: blur(20px) saturate(1.6);
-      -webkit-backdrop-filter: blur(20px) saturate(1.6);
-      border: 0.5px solid rgba(255,255,255,0.6);
-      border-radius: 100px;
-      box-shadow:
-        0 6px 24px rgba(60,30,10,0.10),
-        0 0 0 0.5px rgba(0,0,0,0.04);
       display: flex;
       flex-direction: column;
       gap: 4px;
+      padding: 8px 0;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
-    .scrubber-dot {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px; height: 22px;
-      cursor: pointer;
-      text-decoration: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .dot-bullet {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: rgba(28,61,46,0.30);
-      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-    }
-    .dot-label {
-      position: absolute;
-      right: 32px;
-      padding: 4px 9px;
-      background: var(--green);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 100px;
-      white-space: nowrap;
-      letter-spacing: 0.02em;
-      opacity: 0;
-      transform: translateX(8px);
-      pointer-events: none;
-      transition: opacity 0.2s, transform 0.2s;
-      box-shadow: 0 2px 8px rgba(28,61,46,0.25);
-    }
-    .scrubber-dot:hover .dot-bullet,
-    .scrubber-dot.is-active .dot-bullet {
-      background: var(--orange);
-      transform: scale(1.6);
-      box-shadow: 0 0 0 4px rgba(217,101,42,0.18);
-    }
-    .scrubber-dot:hover .dot-label,
-    .scrubber-dot.is-active .dot-label {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    .scrubber-dot.is-active .dot-label { background: var(--orange); }
+    .scrubber::-webkit-scrollbar { display: none; }
 
-    /* ─────────────────────────────────────────
-     *  ACTIVITY BAR — 底部
-     * ───────────────────────────────────────── */
+    .scrubber__month {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--db-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-align: center;
+      margin-top: 12px;
+      padding: 0 4px;
+    }
+    .scrubber__month:first-child { margin-top: 0; }
+
+    .scrubber__entry {
+      display: block;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--db-text-secondary);
+      text-decoration: none;
+      text-align: center;
+      padding: 4px;
+      border-radius: var(--r-inner);
+      transition: background 150ms, color 150ms, font-weight 150ms;
+      letter-spacing: 0;
+    }
+    .scrubber__entry:hover {
+      background: oklch(0.96 0 0);
+    }
+    .scrubber__entry[data-active] {
+      background: var(--db-accent);
+      color: oklch(0.985 0 0);
+      font-weight: 600;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Pattern 2 · Persistent Activity Bar
+     *  - bottom anchored, full width minus 16px
+     *  - near-white surface (NOT dark — that's Aurora)
+     *  - single coral pulse dot (temporal/active 语义)
+     *  - plain language subtitle
+     * ────────────────────────────────────────────── */
     .activity-bar {
       position: fixed;
+      left: 16px;
+      right: 16px;
       bottom: calc(16px + env(safe-area-inset-bottom));
-      left: 50%;
-      transform: translateX(-50%);
       z-index: 40;
-      max-width: calc(100vw - 32px);
+      max-width: 688px;     /* 720 - 32 */
+      margin: 0 auto;
+      background: oklch(0.97 0 0);
+      border-radius: var(--r-card);
+      padding: 16px 24px;
+      box-shadow:
+        0 -4px 16px -4px oklch(0 0 0 / 0.06),
+        0 0 32px oklch(0 0 0 / 0.04);
+    }
+    .activity-bar__header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 18px 12px 14px;
-      background: rgba(28,36,56,0.85);
-      color: rgba(255,255,255,0.92);
-      backdrop-filter: blur(24px) saturate(1.8);
-      -webkit-backdrop-filter: blur(24px) saturate(1.8);
-      border-radius: 100px;
-      border: 0.5px solid rgba(255,255,255,0.12);
-      box-shadow:
-        0 8px 32px rgba(28,36,56,0.32),
-        0 0 0 0.5px rgba(0,0,0,0.18);
-      font-size: 12.5px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
+      gap: 8px;
+      margin-bottom: 4px;
     }
-    .activity-pulse {
-      display: flex; gap: 3px;
-      align-items: center;
+    .activity-bar__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--r-dot);
+      background: var(--db-accent);
+      animation: db-pulse 1.6s ease-in-out infinite;
       flex-shrink: 0;
     }
-    .activity-pulse .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #ffb976, #ff7e3e);
-      animation: pulseGlow 1.4s ease-in-out infinite;
+    @keyframes db-pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.4; }
     }
-    .activity-pulse .dot:nth-child(2) { animation-delay: 0.2s; }
-    .activity-pulse .dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes pulseGlow {
-      0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
-      40%           { opacity: 1;    transform: scale(1.15); box-shadow: 0 0 8px rgba(255,180,120,0.7); }
+    .activity-bar__label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--db-text-primary);
+      letter-spacing: 0;
     }
-    .activity-text {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .activity-progress {
-      width: 56px; height: 3px;
-      background: rgba(255,255,255,0.12);
-      border-radius: 100px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .activity-progress-fill {
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,180,120,0.9), transparent);
-      animation: progSweep 2.2s linear infinite;
-    }
-    @keyframes progSweep {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
+    .activity-bar__sub {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--db-text-secondary);
+      letter-spacing: 0;
+      line-height: 1.5;
     }
 
-    /* ─────────────────────────────────────────
-     *  RESPONSIVE
-     * ───────────────────────────────────────── */
+    /* ──────────────────────────────────────────────
+     *  Responsive — small screens
+     * ────────────────────────────────────────────── */
     @media (max-width: 640px) {
-      .page-header { padding: 32px 0 16px; }
-      .page-header h1 { font-size: 26px; }
-      .greeting { font-size: 11.5px; max-width: 50%; }
-      .stack-wrap { height: 360px; }
-      .stack { width: 180px; height: 230px; }
-      .stack-card { width: 160px; height: 200px; }
-      .polaroid-photo { font-size: 44px; }
-      .scrubber {
-        right: 10px;
-        padding: 10px 6px;
-      }
-      .scrubber-dot { width: 22px; height: 18px; }
-      .activity-bar { font-size: 11.5px; padding: 10px 14px 10px 12px; }
-      .activity-progress { display: none; }
+      .page { padding: 24px 16px 32px; }
+      .page-header { margin-bottom: 32px; }
+      .identity-card { margin-bottom: 32px; gap: 12px; }
+      .mood-frame { width: 80px; height: 80px; padding: 12px; }
+      .surface { padding: 24px 16px; }
+      .stack-wrap { height: 280px; }
+      .stack { width: 180px; height: 200px; }
+      .polaroid { width: 140px; }
+      .scrubber { right: 8px; width: 32px; }
     }
     @media (max-width: 420px) {
-      .scrubber .dot-label { display: none; }   /* 太小屏，hover label 没意义 */
+      .scrubber { display: none; } /* 太挤 — 留给 sticky 顶部条之类，先隐藏 */
     }
   </style>
 </head>
 <body>
 
-  <div class="page">
+  <main class="page">
 
     <!-- ═══════════ Header ═══════════ -->
     <header class="page-header">
-      <div>
-        <a href="/" class="back-link">← cyc.center</a>
-        <h1>我的<em>时间线</em></h1>
-      </div>
-      <div class="greeting" id="greeting"><!-- JS 填 --></div>
+      <a href="/" class="back-link">cyc.center</a>
+      <h1 class="page-title">我的时间线</h1>
     </header>
 
-    <!-- ═══════════ Hero — Stack ═══════════ -->
-    <section class="hero-stack">
-      <div class="section-label">✨ 社区的回忆</div>
+    <!-- ═══════════ Identity Card ═══════════ -->
+    <section class="identity-card">
+      <div class="mood-frame">
+        <!-- Self-Mood Mascot · 默认 content 状态（pure black on white） -->
+        <svg class="mood-svg" viewBox="0 0 64 64" aria-label="content">
+          <circle cx="22" cy="26" r="2.5" fill="oklch(0.15 0 0)"/>
+          <circle cx="42" cy="26" r="2.5" fill="oklch(0.15 0 0)"/>
+          <path d="M 22 38 Q 32 46 42 38"
+                stroke="oklch(0.15 0 0)" stroke-width="2.5"
+                fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="identity-name">玖玖</div>
+      <div class="identity-metric">
+        在 CYC 度过了 <span class="accent">142</span> 天 · 出席 23 次
+      </div>
+    </section>
+
+    <!-- ═══════════ Memory Hero — Stack ═══════════ -->
+    <section class="surface" aria-label="精选回忆">
+      <div class="surface-eyebrow">今年最难忘的</div>
+      <h2 class="surface-title">社区的回忆</h2>
       <div class="stack-wrap">
-        <div class="stack" id="stack"><!-- JS 填 8 张 polaroid --></div>
+        <div class="stack" id="stack"><!-- JS --></div>
         <div class="stack-quote">来到社区后，发生了好多事</div>
       </div>
     </section>
 
-    <!-- ═══════════ Lineup — 月度 ═══════════ -->
-    <section class="lineup">
-      <div class="section-label">📅 时光机 · LINEUP</div>
-      <div id="months"><!-- JS 填 月份 sections --></div>
+    <!-- ═══════════ Timeline — Lineup ═══════════ -->
+    <section class="surface" aria-label="完整时光">
+      <div class="surface-eyebrow">逐月翻阅</div>
+      <h2 class="surface-title">全部时光</h2>
+      <div id="months"><!-- JS --></div>
     </section>
 
-  </div>
+  </main>
 
   <!-- ═══════════ Right Scrubber ═══════════ -->
-  <aside class="scrubber" id="scrubber"><!-- JS 填 dots --></aside>
+  <nav class="scrubber" id="scrubber" aria-label="时间轴导航"><!-- JS --></nav>
 
   <!-- ═══════════ Bottom Activity Bar ═══════════ -->
-  <div class="activity-bar" role="status" aria-live="polite">
-    <div class="activity-pulse">
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
+  <aside class="activity-bar" role="status" aria-live="polite">
+    <div class="activity-bar__header">
+      <span class="activity-bar__dot" aria-hidden="true"></span>
+      <span class="activity-bar__label" id="ab-label">Recalling</span>
     </div>
-    <div class="activity-text" id="activity-text">AI 正在整理社区回忆…</div>
-    <div class="activity-progress"><div class="activity-progress-fill"></div></div>
-  </div>
+    <p class="activity-bar__sub" id="ab-sub">
+      Going through your year — give it a sec.
+    </p>
+  </aside>
 
   <script>
-    /* ─────────────────────────────────────────
+    /* ──────────────────────────────────────────────
      *  Mock 数据
      *  TODO 接真实数据：
-     *    HERO_PICS  ← /api/member?id=<self> .activities (按权重精选 8 条)
-     *    MONTHS     ← 同上，按 YYYY-MM 分组倒序
-     *    GREETING   ← 加入 CYC 的天数（first RSVP timestamp）
-     * ───────────────────────────────────────── */
+     *    HERO_PICS  ← /api/member?id=<self> .activities 中精选 8 条
+     *                 （按"代表性"评分：参与角色权重、活动 cover quality）
+     *    MONTHS     ← 同接口，按 YYYY-MM 分组倒序
+     *    days       ← max(0, today - first_rsvp_at)
+     *    out_count  ← rsvps.length
+     * ────────────────────────────────────────────── */
     const HERO_PICS = [
-      { grad: ['#ff9966','#ff5e62'], emoji: '🌊', title: '苍洱海边野餐',  date: '5月12日' },
-      { grad: ['#a8e063','#56ab2f'], emoji: '🥾', title: '苍山徒步',       date: '4月28日' },
-      { grad: ['#fcb045','#fd1d1d'], emoji: '🎤', title: 'Open Mic 之夜', date: '4月15日' },
-      { grad: ['#667eea','#764ba2'], emoji: '📖', title: '新书共读',       date: '4月3日'  },
-      { grad: ['#f093fb','#f5576c'], emoji: '🎭', title: '即兴戏剧工作坊', date: '3月22日' },
-      { grad: ['#4facfe','#00f2fe'], emoji: '🌅', title: '日出冥想',       date: '3月10日' },
-      { grad: ['#fa709a','#fee140'], emoji: '🎂', title: '生日派对',       date: '2月14日' },
-      { grad: ['#fdfbfb','#ebedee'], emoji: '🎬', title: '冬日深夜电影',   date: '1月28日' },
+      { emoji: '🌊', title: '海边野餐',     date: '5月12日' },
+      { emoji: '🥾', title: '苍山徒步',     date: '4月28日' },
+      { emoji: '🎤', title: 'Open Mic',     date: '4月15日' },
+      { emoji: '📖', title: '新书共读',     date: '4月3日'  },
+      { emoji: '🎭', title: '即兴戏剧',     date: '3月22日' },
+      { emoji: '🌅', title: '日出冥想',     date: '3月10日' },
+      { emoji: '🎂', title: '生日派对',     date: '2月14日' },
+      { emoji: '🎬', title: '深夜电影',     date: '1月28日' },
     ];
 
     const MONTHS = [
-      { label: '2025 · 5月', items: [
-        { grad: ['#ff9966','#ff5e62'], emoji: '🌊', title: '苍洱野餐' },
-        { grad: ['#56ab2f','#a8e063'], emoji: '🥾', title: '徒步' },
-        { grad: ['#667eea','#764ba2'], emoji: '🎨', title: '艺术沙龙' },
-        { grad: ['#fa709a','#fee140'], emoji: '🍰', title: '伴月烘焙' },
-        { grad: ['#43e97b','#38f9d7'], emoji: '🌱', title: '种植日' },
+      { ym: '2025-05', label: '2025 · 5月', short: 'May', items: [
+        { emoji: '🌊', title: '苍洱野餐',  day: 12 },
+        { emoji: '🥾', title: '徒步',      day: 5  },
+        { emoji: '🎨', title: '艺术沙龙',  day: 3  },
       ]},
-      { label: '2025 · 4月', items: [
-        { grad: ['#fcb045','#fd1d1d'], emoji: '🎤', title: 'Open Mic' },
-        { grad: ['#667eea','#764ba2'], emoji: '📖', title: '新书共读' },
-        { grad: ['#f093fb','#f5576c'], emoji: '🎭', title: '即兴戏剧' },
-        { grad: ['#4facfe','#00f2fe'], emoji: '🌊', title: '看海' },
+      { ym: '2025-04', label: '2025 · 4月', short: 'Apr', items: [
+        { emoji: '🎤', title: 'Open Mic',  day: 28 },
+        { emoji: '📖', title: '新书共读',  day: 15 },
+        { emoji: '🎭', title: '即兴戏剧',  day: 8  },
+        { emoji: '🌊', title: '看海',      day: 3  },
       ]},
-      { label: '2025 · 3月', items: [
-        { grad: ['#fa709a','#fee140'], emoji: '🌅', title: '日出冥想' },
-        { grad: ['#a18cd1','#fbc2eb'], emoji: '🎵', title: '音乐分享' },
-        { grad: ['#ffecd2','#fcb69f'], emoji: '☕', title: '咖啡品鉴' },
-        { grad: ['#84fab0','#8fd3f4'], emoji: '🧘', title: '瑜伽'    },
-        { grad: ['#d299c2','#fef9d7'], emoji: '🌸', title: '春日漫步' },
-        { grad: ['#89f7fe','#66a6ff'], emoji: '💧', title: '湖边游泳' },
+      { ym: '2025-03', label: '2025 · 3月', short: 'Mar', items: [
+        { emoji: '🌅', title: '日出冥想',  day: 30 },
+        { emoji: '🎵', title: '音乐分享',  day: 22 },
+        { emoji: '☕', title: '咖啡品鉴',  day: 18 },
+        { emoji: '🧘', title: '瑜伽',      day: 10 },
+        { emoji: '🌸', title: '春日漫步',  day: 5  },
       ]},
-      { label: '2025 · 2月', items: [
-        { grad: ['#fa709a','#fee140'], emoji: '🎂', title: '生日派对' },
-        { grad: ['#ff9a9e','#fad0c4'], emoji: '💝', title: '情人节' },
-        { grad: ['#a1c4fd','#c2e9fb'], emoji: '🎲', title: '桌游夜' },
+      { ym: '2025-02', label: '2025 · 2月', short: 'Feb', items: [
+        { emoji: '🎂', title: '生日派对',  day: 14 },
+        { emoji: '💝', title: '情人节',    day: 14 },
+        { emoji: '🎲', title: '桌游夜',    day: 7  },
       ]},
-      { label: '2025 · 1月', items: [
-        { grad: ['#fdfbfb','#ebedee'], emoji: '🎬', title: '深夜电影' },
-        { grad: ['#fbc2eb','#a6c1ee'], emoji: '🎉', title: '元旦派对' },
-        { grad: ['#fee140','#fa709a'], emoji: '🥟', title: '年夜饺子' },
-        { grad: ['#a18cd1','#fbc2eb'], emoji: '✍️', title: '新年写字' },
+      { ym: '2025-01', label: '2025 · 1月', short: 'Jan', items: [
+        { emoji: '🎬', title: '深夜电影',  day: 28 },
+        { emoji: '🎉', title: '元旦派对',  day: 1  },
+        { emoji: '🥟', title: '年夜饺子',  day: 23 },
       ]},
-      { label: '2024 · 12月', items: [
-        { grad: ['#f6d365','#fda085'], emoji: '🎄', title: '圣诞树' },
-        { grad: ['#84fab0','#8fd3f4'], emoji: '🎁', title: '礼物交换' },
-        { grad: ['#a1c4fd','#c2e9fb'], emoji: '⛄', title: '冬日散步' },
+      { ym: '2024-12', label: '2024 · 12月', short: 'Dec', items: [
+        { emoji: '🎄', title: '圣诞树',    day: 24 },
+        { emoji: '🎁', title: '礼物交换',  day: 21 },
+        { emoji: '⛄', title: '冬日散步',  day: 8  },
       ]},
-      { label: '2024 · 11月', items: [
-        { grad: ['#fa709a','#fee140'], emoji: '🍂', title: '秋叶' },
-        { grad: ['#fcb69f','#ffecd2'], emoji: '🎃', title: '万圣节' },
-        { grad: ['#d4fc79','#96e6a1'], emoji: '🌾', title: '稻田丰收' },
+      { ym: '2024-11', label: '2024 · 11月', short: 'Nov', items: [
+        { emoji: '🍂', title: '秋叶',      day: 18 },
+        { emoji: '🎃', title: '万圣节',    day: 1  },
       ]},
     ];
 
-    /* ─── 问候语 + 加入天数 ─── */
-    function setGreeting() {
-      const h = new Date().getHours();
-      const greet =
-        h < 6  ? '夜深了' :
-        h < 11 ? '早安'   :
-        h < 14 ? '午安'   :
-        h < 18 ? '下午好' :
-        h < 22 ? '晚上好' : '深夜了';
-      // mock 天数；TODO: 拿成员第一次 RSVP 时间算
-      const days = 142;
-      document.getElementById('greeting').innerHTML =
-        `${greet}，你已经在 CYC<br>度过了 <strong>${days}</strong> 天`;
+    /* ─── 工具：随机但可重现的 tilt（基于 index 哈希，避免每次 render 抖） ─── */
+    function tiltFor(seed) {
+      const s = (seed * 9301 + 49297) % 233280;
+      // 范围 ±8°（规范：tilt range ±8°）
+      return ((s / 233280) * 16 - 8).toFixed(2) + 'deg';
     }
 
-    /* ─── 渲染 hero stack ─── */
+    /* ─── Stack（精选 8 张） ─── */
     function renderStack() {
       const el = document.getElementById('stack');
-      // 8 张的旋转 + 散开偏移（fan-out）
-      const layout = [
-        { rot: -12, hoverRot: -28, tx: -260 },
-        { rot:  -8, hoverRot: -20, tx: -185 },
-        { rot:  -5, hoverRot: -13, tx: -110 },
-        { rot:  -2, hoverRot:  -5, tx:  -40 },
-        { rot:   2, hoverRot:   5, tx:   30 },
-        { rot:   5, hoverRot:  13, tx:  100 },
-        { rot:   8, hoverRot:  20, tx:  175 },
-        { rot:  12, hoverRot:  28, tx:  250 },
-      ];
+      // fan-out 横向位置（hover 时散开，从 -200 到 +200 均匀分布）
+      const fanX = [-220, -160, -100, -36, 36, 100, 160, 220];
+      const fanTilts = [-8, -6, -4, -2, 2, 4, 6, 8];
+
       HERO_PICS.forEach((p, i) => {
-        const L = layout[i] || layout[0];
         const card = document.createElement('div');
-        card.className = 'stack-card';
-        card.style.setProperty('--rot', L.rot + 'deg');
-        card.style.setProperty('--hover-rot', L.hoverRot + 'deg');
-        card.style.setProperty('--tx', L.tx + 'px');
+        card.className = 'polaroid';
+        card.style.setProperty('--tilt', tiltFor(i + 1));
+        card.style.setProperty('--fanX', fanX[i] + 'px');
+        card.style.setProperty('--fanTilt', fanTilts[i] + 'deg');
         card.style.setProperty('--z', i + 1);
         card.innerHTML = `
-          <div class="polaroid">
-            <div class="polaroid-photo" style="background: linear-gradient(135deg, ${p.grad[0]}, ${p.grad[1]})">
-              <span>${p.emoji}</span>
-            </div>
-            <div class="polaroid-cap">
-              <div class="polaroid-title">${p.title}</div>
-              <div class="polaroid-date">${p.date}</div>
-            </div>
+          <div class="polaroid__photo"><span>${p.emoji}</span></div>
+          <div class="polaroid__cap">
+            <div class="polaroid__title">${p.title}</div>
+            <div class="polaroid__date">${p.date}</div>
           </div>`;
         el.appendChild(card);
       });
     }
 
-    /* ─── 渲染月度 lineup ─── */
+    /* ─── Lineup（按月分组） ─── */
     function renderMonths() {
       const el = document.getElementById('months');
       MONTHS.forEach((m, mi) => {
         const sec = document.createElement('section');
         sec.className = 'month-section';
         sec.id = 'month-' + mi;
+        const itemsHtml = m.items.map((it, i) => `
+          <div class="polaroid">
+            <div class="polaroid__photo"><span>${it.emoji}</span></div>
+            <div class="polaroid__cap">
+              <div class="polaroid__title">${it.title}</div>
+              <div class="polaroid__date">${it.day} 日</div>
+            </div>
+          </div>`).join('');
         sec.innerHTML = `
-          <div class="month-label">
-            <span class="month-name">${m.label}</span>
-            <span class="month-count">${m.items.length} 张</span>
+          <div class="month-head">
+            <div class="month-name">${m.label}</div>
+            <div class="month-metric">${m.items.length} 场</div>
           </div>
-          <div class="month-strip">
-            ${m.items.map(it => `
-              <div class="strip-item">
-                <div class="strip-photo" style="background: linear-gradient(135deg, ${it.grad[0]}, ${it.grad[1]})">
-                  <span>${it.emoji}</span>
-                </div>
-                <div class="strip-title">${it.title}</div>
-              </div>`).join('')}
-          </div>`;
+          <div class="lineup-row">${itemsHtml}</div>`;
         el.appendChild(sec);
       });
     }
 
-    /* ─── 渲染 scrubber ─── */
+    /* ─── Scrubber（右侧时间尺） ─── */
     function renderScrubber() {
       const el = document.getElementById('scrubber');
+      let html = '';
       MONTHS.forEach((m, mi) => {
-        const dot = document.createElement('a');
-        dot.className = 'scrubber-dot';
-        dot.href = '#month-' + mi;
-        dot.dataset.target = 'month-' + mi;
-        // 标签只取月份部分（"2025 · 5月" → "5月"），节省空间
-        const short = (m.label.split(' · ')[1] || m.label);
-        dot.innerHTML = `
-          <span class="dot-bullet"></span>
-          <span class="dot-label">${m.label}</span>`;
-        el.appendChild(dot);
+        html += `<div class="scrubber__month">${m.short}</div>`;
+        // 每月只列一个 entry — 月份本身（点击跳到该月 section）
+        // 真实数据接入后可展开为每天日期
+        html += `<a class="scrubber__entry" data-target="month-${mi}" href="#month-${mi}">${mi === 0 ? '·' : '·'}</a>`;
       });
+      el.innerHTML = html;
 
-      // 点击平滑滚动
-      el.querySelectorAll('.scrubber-dot').forEach(d => {
-        d.addEventListener('click', e => {
+      // 平滑滚动
+      el.querySelectorAll('.scrubber__entry').forEach(a => {
+        a.addEventListener('click', e => {
           e.preventDefault();
-          const t = document.getElementById(d.dataset.target);
+          const t = document.getElementById(a.dataset.target);
           if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       });
 
-      // 滚动联动：当前月份 dot 高亮
+      // 联动高亮
       const obs = new IntersectionObserver(entries => {
         entries.forEach(en => {
           if (en.isIntersecting) {
-            el.querySelectorAll('.scrubber-dot').forEach(d => d.classList.remove('is-active'));
-            const dot = el.querySelector(`[data-target="${en.target.id}"]`);
-            if (dot) dot.classList.add('is-active');
+            el.querySelectorAll('.scrubber__entry').forEach(a => a.removeAttribute('data-active'));
+            const a = el.querySelector(`[data-target="${en.target.id}"]`);
+            if (a) a.setAttribute('data-active', '');
           }
         });
-      }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
+      }, { rootMargin: '-30% 0px -55% 0px' });
       document.querySelectorAll('.month-section').forEach(s => obs.observe(s));
     }
 
-    /* ─── Activity bar 文案轮播 ─── */
-    //   纯前端假动效 — 给"AI 正在整理"一种活着的感觉
-    //   接真实进度时，把 setInterval 换成根据后端推进度更新
+    /* ─── Activity Bar 文案轮播（朴素，不抒情） ─── */
     function loopActivity() {
+      // 规范要求 plain language，reduces user anxiety
       const phrases = [
-        'AI 正在整理社区回忆…',
-        '正在按时间脉络梳理活动…',
-        '正在挑选你最有代表性的瞬间…',
-        '正在配对照片与回忆…',
-        '快好了，再过一会就能呈现给你…',
+        ['Recalling',  'Going through your year — give it a sec.'],
+        ['Sorting',    'Putting the moments in order.'],
+        ['Selecting',  'Picking the ones that mattered most.'],
       ];
-      const el = document.getElementById('activity-text');
+      const lab = document.getElementById('ab-label');
+      const sub = document.getElementById('ab-sub');
       let i = 0;
       setInterval(() => {
         i = (i + 1) % phrases.length;
-        el.style.opacity = '0';
-        setTimeout(() => {
-          el.textContent = phrases[i];
-          el.style.opacity = '0.92';
-        }, 220);
-      }, 3200);
-      el.style.transition = 'opacity 0.22s ease';
+        lab.textContent = phrases[i][0];
+        sub.textContent = phrases[i][1];
+      }, 3600);
     }
 
     /* ─── 启动 ─── */
-    setGreeting();
     renderStack();
     renderMonths();
     renderScrubber();
