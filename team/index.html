@@ -1202,7 +1202,11 @@ function openDetail(path, idx) {
          </a>`
       : '';
 
-    const pwdBtn = (item.name === '悠洋')
+    // 「社区层负责人」角色绑定的管理类按钮：修改密码 + 管理成员名单
+    // 用 role 而非 name，未来换人时不用改代码
+    const isCommunityLead = (item.role === '社区层');
+
+    const pwdBtn = isCommunityLead
       ? `<button onclick="openChangePwdModal()"
             style="display:flex;align-items:center;justify-content:center;gap:6px;
                    width:100%;padding:11px;border-radius:12px;margin-bottom:10px;
@@ -1212,6 +1216,17 @@ function openDetail(path, idx) {
                    -webkit-tap-highlight-color:transparent;">
            🔑 修改活动通告密码
          </button>`
+      : '';
+
+    const communityAdminBtn = isCommunityLead
+      ? `<a href="/community/admin" target="_blank" rel="noopener"
+            style="display:flex;align-items:center;justify-content:center;gap:6px;
+                   width:100%;padding:11px;border-radius:12px;margin-bottom:10px;
+                   background:linear-gradient(135deg,#1c3d2e,#2a5740);
+                   color:#fff;font-size:14px;font-weight:700;text-decoration:none;
+                   box-shadow:0 3px 12px rgba(28,61,46,0.22);">
+           👥 管理社区成员名单 ↗
+         </a>`
       : '';
 
     content.innerHTML = `
@@ -1225,6 +1240,7 @@ function openDetail(path, idx) {
       </div>
       <div style="margin-top:24px;">
         ${cvBtn}
+        ${communityAdminBtn}
         ${pwdBtn}
         <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
       </div>
