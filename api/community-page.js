@@ -143,13 +143,18 @@ function renderList(city, members) {
 
 // ─────────── 详情页 ───────────
 
-function renderDetail(member, rsvps) {
+function renderDetail(member, rsvps, fromActivityId) {
   const name = displayName(member);
   const ava  = avatarUrl(member);
   const url  = `${SITE_URL}/community/${member.record_id}`;
   const ogImage = ava || OG_DEFAULT;
   const descShort = truncate(member.bio || member.job || `${name} · CYC 社区成员`, 100);
   const hubName = displayHub(member);
+
+  // 智能返回：来自活动页就回活动；否则回 /community 列表
+  const validFrom = fromActivityId && /^rec[a-zA-Z0-9]+$/.test(fromActivityId);
+  const backHref  = validFrom ? `/events/${fromActivityId}` : '/community';
+  const backLabel = validFrom ? '‹ 返回活动' : '‹ 全部成员';
 
   // RSVP 拆 hosts vs participated
   const founded = rsvps.filter(r => r.roles.includes('活动发起者') || r.roles.includes('嘉宾'));
@@ -190,7 +195,7 @@ function renderDetail(member, rsvps) {
 <div class="blob b3"></div>
 
 <header class="event-topbar">
-  <a href="/community" class="event-back">‹ 全部成员</a>
+  <a href="${backHref}" class="event-back">${backLabel}</a>
   <a href="${SITE_URL}" class="event-site">CYC.center</a>
 </header>
 
@@ -680,7 +685,7 @@ export default async function handler(req, res) {
     catch (err) { console.warn('[community-page] member rsvps fetch failed:', err.message); }
 
     res.setHeader('Cache-Control', EDGE_CACHE);
-    return res.status(200).send(renderDetail(stripPrivate(member), rsvps));
+    return res.status(200).send(renderDetail(stripPrivate(member), rsvps, req.query.from));
   }
 
   // 3. 列表页

@@ -1221,11 +1221,13 @@ body.event-page {
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s, transform 0.1s;
 }
+.event-rsvp-chip.expandable,
 .event-rsvp-chip.has-bio {
   cursor: pointer;
   border-color: rgba(28,61,46,0.20);
   position: relative;
 }
+.event-rsvp-chip.expandable::after,
 .event-rsvp-chip.has-bio::after {
   content: '›';
   margin-left: 4px;
@@ -1234,27 +1236,55 @@ body.event-page {
   display: inline-block;
   transition: transform 0.18s;
 }
+.event-rsvp-chip.expandable.expanded::after,
 .event-rsvp-chip.has-bio.expanded::after {
   transform: rotate(90deg);
 }
-.event-rsvp-chip.has-bio:active { transform: scale(0.97); background: rgba(28,61,46,0.10); }
-.event-rsvp-chip-bio {
+.event-rsvp-chip.expandable:active,
+.event-rsvp-chip.has-bio:active {
+  transform: scale(0.97); background: rgba(28,61,46,0.10);
+}
+
+/* 展开详情区（含 bio + 跳转 profile 按钮） */
+.event-rsvp-chip-detail {
   display: none;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 0.5px solid var(--stroke);
+  flex-basis: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 0.5px dashed var(--stroke);
+}
+.event-rsvp-chip.expanded .event-rsvp-chip-detail { display: block; }
+.event-rsvp-chip-bio {
+  display: block;
   font-size: 12px;
   color: var(--muted);
   line-height: 1.55;
   white-space: pre-wrap;
+  margin-bottom: 8px;
 }
+.event-rsvp-chip-bio:last-child { margin-bottom: 0; }
+.event-rsvp-chip-profile {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  background: rgba(28,61,46,0.10);
+  color: var(--green);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  -webkit-tap-highlight-color: transparent;
+}
+.event-rsvp-chip-profile:active {
+  background: var(--green);
+  color: #fff;
+}
+
 .event-rsvp-chip.expanded {
   display: block;        /* 展开后变块状，占整行 */
   border-radius: 12px;
   padding: 10px 14px;
-}
-.event-rsvp-chip.expanded .event-rsvp-chip-bio {
-  display: block;
 }
 .event-rsvp-chip.is-past {
   background: rgba(0,0,0,0.04);

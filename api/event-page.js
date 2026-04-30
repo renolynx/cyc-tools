@@ -181,7 +181,7 @@ ${jsonLd}
         ? rsvpHosts.map(h => `<div class="event-spk-row" data-rid="${escapeHtml(h.record_id)}" data-name="${escapeHtml(h.name)}">
             <span class="event-spk-content">${
               h.member_rec_id
-                ? `<a href="/community/${escapeHtml(h.member_rec_id)}" class="event-spk-link"><strong>${escapeHtml(h.name)}</strong></a>`
+                ? `<a href="/community/${escapeHtml(h.member_rec_id)}?from=${escapeHtml(act.record_id)}" class="event-spk-link"><strong>${escapeHtml(h.name)}</strong></a>`
                 : `<strong>${escapeHtml(h.name)}</strong>`
             }${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</span>
             <button class="event-rsvp-del" onclick="askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
@@ -197,13 +197,16 @@ ${jsonLd}
       <div class="event-rsvp-list">
         ${rsvpAttendees.slice(0, 30).map(a => {
           const hasMember = !!a.member_rec_id;
-          const nameEl = hasMember
-            ? `<a class="event-rsvp-chip-name event-rsvp-chip-link" href="/community/${escapeHtml(a.member_rec_id)}" onclick="event.stopPropagation()">${escapeHtml(a.name)} ›</a>`
-            : `<span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>`;
-          return `<div class="event-rsvp-chip${a.bio ? ' has-bio' : ''}" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}" ${a.bio ? `onclick="if(!event.target.closest('button,a'))this.classList.toggle('expanded')"` : ''}>
-          ${nameEl}
+          const hasBio    = !!a.bio;
+          const expandable = hasMember || hasBio;
+          const profileUrl = hasMember ? `/community/${escapeHtml(a.member_rec_id)}?from=${escapeHtml(act.record_id)}` : '';
+          return `<div class="event-rsvp-chip${hasBio ? ' has-bio' : ''}${expandable ? ' expandable' : ''}" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}" ${expandable ? `onclick="if(!event.target.closest('button,a'))this.classList.toggle('expanded')"` : ''}>
+          <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
           <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
-          ${a.bio ? `<div class="event-rsvp-chip-bio">${escapeHtml(a.bio)}</div>` : ''}
+          ${expandable ? `<div class="event-rsvp-chip-detail">
+            ${hasBio ? `<div class="event-rsvp-chip-bio">${escapeHtml(a.bio)}</div>` : ''}
+            ${hasMember ? `<a class="event-rsvp-chip-profile" href="${profileUrl}">查看完整资料 →</a>` : ''}
+          </div>` : ''}
         </div>`;
         }).join('')}
         ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
@@ -214,7 +217,7 @@ ${jsonLd}
     <h2>当时参加的伙伴</h2>
     <div class="event-rsvp-list">
       ${rsvpAttendees.map(a => a.member_rec_id
-        ? `<a class="event-rsvp-chip is-past event-rsvp-chip-link" href="/community/${escapeHtml(a.member_rec_id)}">${escapeHtml(a.name)} ›</a>`
+        ? `<a class="event-rsvp-chip is-past event-rsvp-chip-link" href="/community/${escapeHtml(a.member_rec_id)}?from=${escapeHtml(act.record_id)}">${escapeHtml(a.name)} ›</a>`
         : `<div class="event-rsvp-chip is-past">${escapeHtml(a.name)}</div>`
       ).join('')}
     </div>
