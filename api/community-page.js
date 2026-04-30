@@ -19,7 +19,7 @@ import { fetchRsvpsByMember }                            from './_rsvp.js';
 const SITE_URL  = 'https://cyc.center';
 const SITE_NAME = 'CYC 链岛青年社区';
 const OG_DEFAULT = SITE_URL + '/api/og-default';
-const EDGE_CACHE = 'public, s-maxage=180, stale-while-revalidate=1800';
+const EDGE_CACHE = 'public, s-maxage=60, stale-while-revalidate=1800';
 const CITIES = ['大理', '上海'];
 
 // ─────────── 工具 ───────────
@@ -399,6 +399,7 @@ let _adminPwd = '';
 let _editingId = null;
 let _curTab = 'all';
 let _searchTimer = null;
+let _allMembers = [];   // 登录时一次拉全，含 hidden 含 inferredCities
 
 const $ = id => document.getElementById(id);
 const escapeHtml = s => (s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'));
@@ -423,7 +424,7 @@ async function cmLogin(silent) {
     const res = await fetch('/api/community-write', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'search', password: pwd, query: '', cityFilter: 'all' }),
+      body: JSON.stringify({ action: 'search', password: pwd }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -436,7 +437,8 @@ async function cmLogin(silent) {
     try { sessionStorage.setItem(SAVED_PWD_KEY, pwd); } catch {}
     $('cmLoginCard').style.display = 'none';
     $('cmAdminApp').style.display = 'block';
-    cmRenderList(data);
+    _allMembers = data.members || [];
+    cmRender();
   } catch (err) {
     $('cmLoginErr').textContent = '网络错误：' + err.message;
     $('cmLoginBtn').disabled = false; $('cmLoginBtn').textContent = '进入';
@@ -445,59 +447,84 @@ async function cmLogin(silent) {
 
 $('cmPwd').addEventListener('keydown', e => { if (e.key === 'Enter') cmLogin(); });
 
-// ─────────── 搜索 / 列表 ───────────
+// ─────────── 客户端搜索 + tab ───────────
 
 function cmDebouncedSearch() {
   clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(cmDoSearch, 300);
-}
-
-async function cmDoSearch() {
-  const q = $('cmSearch').value.trim();
-  $('cmAdminCount').textContent = '加载中...';
-  try {
-    const res = await fetch('/api/community-write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'search', password: _adminPwd, query: q, cityFilter: _curTab }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    cmRenderList(data);
-  } catch (err) {
-    $('cmAdminCount').textContent = '加载失败：' + err.message;
-  }
+  _searchTimer = setTimeout(cmRender, 200);
 }
 
 function cmSetTab(city) {
   _curTab = city;
   document.querySelectorAll('#cmAdminTabs .cm-tab').forEach(b => b.classList.toggle('active', b.dataset.city === city));
-  cmDoSearch();
+  cmRender();
 }
 
-function cmRenderList(data) {
-  const members = data.members || [];
-  $('cmAdminCount').textContent = data.total > data.count
-    ? \`显示 \${data.count} / 共 \${data.total} 位\`
-    : \`共 \${data.count} 位\`;
+/** 同步刷新一次（保存成员后调） */
+async function cmReload() {
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'search', password: _adminPwd }),
+    });
+    const data = await res.json();
+    if (res.ok) { _allMembers = data.members || []; cmRender(); }
+  } catch {}
+}
 
-  if (!members.length) {
+function cmRender() {
+  const q = $('cmSearch').value.trim().toLowerCase();
+  let pool = _allMembers;
+
+  // 1. tab 过滤
+  if (_curTab === 'hidden') {
+    pool = pool.filter(m => m.hidden);
+  } else {
+    pool = pool.filter(m => !m.hidden);
+    if (_curTab === '大理' || _curTab === '上海') {
+      pool = pool.filter(m =>
+        (m.cities && m.cities.includes(_curTab)) ||
+        (m.inferredCities && m.inferredCities.includes(_curTab))
+      );
+    }
+  }
+
+  // 2. 客户端搜索
+  if (q) {
+    pool = pool.filter(m =>
+      [m.name, m.nickname, m.bio, m.job, m.company, m.topics, m.willShare, m.interests, m._wechat]
+        .some(s => s && String(s).toLowerCase().includes(q))
+    );
+  }
+
+  $('cmAdminCount').textContent = q || _curTab !== 'all'
+    ? \`显示 \${pool.length} / 共 \${_allMembers.length} 位\`
+    : \`共 \${_allMembers.length} 位\`;
+
+  if (!pool.length) {
     $('cmAdminList').innerHTML = '<div class="cm-admin-empty">没有匹配的成员</div>';
     return;
   }
 
-  $('cmAdminList').innerHTML = members.map(m => {
+  // 显示前 200 条防止 DOM 爆炸（再多请求精确搜索）
+  const view = pool.slice(0, 200);
+  $('cmAdminList').innerHTML = view.map(m => {
     const display = (m.nickname || m.name || '未署名').trim();
     const hub = (m.hubs && m.hubs[0] && m.hubs[0].name) || '';
+    const inferred = (m.inferredCities || []).join(' / ');
+    const meta = hub
+      ? '📍 ' + escapeHtml(hub)
+      : (inferred ? '🎯 ' + escapeHtml(inferred) + '（活动参与）' : '');
     const job = (m.job || m.company || '').slice(0, 40);
     return \`<div class="cm-admin-item" data-rid="\${escapeHtml(m.record_id)}">
       <div class="cm-admin-item-main">
         <div class="cm-admin-item-name">\${escapeHtml(display)}\${m.hidden ? ' <span class="cm-hidden-tag">已隐藏</span>' : ''}</div>
-        <div class="cm-admin-item-meta">\${hub ? '📍 ' + escapeHtml(hub) : ''}\${hub && job ? ' · ' : ''}\${escapeHtml(job)}</div>
+        <div class="cm-admin-item-meta">\${meta}\${meta && job ? ' · ' : ''}\${escapeHtml(job)}</div>
       </div>
       <button class="cm-admin-edit" onclick="cmStartEdit('\${escapeHtml(m.record_id)}')">编辑</button>
     </div>\`;
-  }).join('');
+  }).join('') + (pool.length > 200 ? \`<div class="cm-admin-empty">还有 \${pool.length - 200} 位未显示，请继续搜索缩小范围</div>\` : '');
 }
 
 // ─────────── 创建 / 编辑 ───────────
@@ -585,7 +612,7 @@ async function cmSubmitEdit() {
     $('cmEditErr').textContent = '✓ 已保存';
     setTimeout(() => {
       cmCloseEdit();
-      cmDoSearch();
+      cmReload();
       btn.disabled = false; btn.textContent = '保存';
     }, 800);
   } catch (err) {

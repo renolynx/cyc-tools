@@ -17,43 +17,29 @@ import { verifyPassword } from './_password.js';
 import {
   fetchAllMembers,
   fetchMember,
-  searchMembers,
   writeMember,
-  stripPrivate,
+  inferMemberActivityCities,
 } from './_member.js';
 
-// 把含 _wechat / _phone 的成员对象给 admin（有密码 → 可见私密）
-function adminView(m) {
-  return m;
-}
-
+/**
+ * 拉所有成员 + 给每条加 inferredCities 字段（活动反推）
+ * 服务端不做 city/hidden 过滤，客户端拿全集自己筛 → tab 切换瞬时
+ */
 async function handleSearch(req, res) {
-  const q = (req.body.query || '').toString();
-  const cityFilter = req.body.cityFilter || 'all';
+  const [members, inferredMap] = await Promise.all([
+    fetchAllMembers(),
+    inferMemberActivityCities(),
+  ]);
 
-  // 含 hidden 的全部
-  let members;
-  if (q) {
-    members = await searchMembers(q, { includeHidden: true });
-  } else {
-    members = await fetchAllMembers();
-  }
-
-  // 城市筛选
-  if (cityFilter === '大理' || cityFilter === '上海') {
-    members = members.filter(m => m.cities.includes(cityFilter));
-  } else if (cityFilter === 'hidden') {
-    members = members.filter(m => m.hidden);
-  }
-
-  // 限制返回条数（避免 1MB JSON）
-  const limited = members.slice(0, 100);
+  const enriched = members.map(m => ({
+    ...m,
+    inferredCities: [...(inferredMap.get(m.record_id) || [])],
+  }));
 
   return res.status(200).json({
     success: true,
-    count: limited.length,
-    total: members.length,
-    members: limited.map(adminView),
+    count: enriched.length,
+    members: enriched,
   });
 }
 

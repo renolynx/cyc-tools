@@ -228,7 +228,7 @@ export async function fetchMember(rec_id) {
  * 解决：很多成员的「现在所在据点」字段是空的，但他们其实参加过本地活动
  * 返回 Map<member_rec_id, Set<city>>
  */
-async function inferMemberActivityCities() {
+export async function inferMemberActivityCities() {
   const cacheKey = 'member_activity_cities';
   if (isKvConfigured()) {
     try {
