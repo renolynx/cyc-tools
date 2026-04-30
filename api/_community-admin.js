@@ -5,6 +5,8 @@
  * 这部分长，自成一体（800+ 行），从 community-page.js 拆出来减小主文件压力
  */
 
+import { SITE_NAME } from './_community-shared.js';
+
 // ─────────── Admin SPA shell ───────────
 
 export function renderAdminApp() {
