@@ -432,6 +432,15 @@ function fmtActDate(d) {
   return m[1].slice(2) + '年' + Number(m[2]) + '月' + Number(m[3]) + '日';
 }
 
+/** 展开/收起活动列表里的多余条目（>8 时显示） */
+function toggleMemberActsExpand(btn) {
+  const sec = btn.closest('.member-activities-section');
+  if (!sec) return;
+  const expanded = sec.classList.toggle('is-expanded');
+  const more = btn.dataset.more;
+  btn.textContent = expanded ? '收起 ▴' : ('展开剩余 ' + more + ' 条 ▾');
+}
+
 /** 拉成员池（懒加载，登录后预热一次；picker 打开时若未就绪再触发） */
 async function loadMembers(force = false) {
   if (_membersById !== null && !force) return _membersById;
@@ -932,16 +941,20 @@ function openDetail(path, idx) {
             + '</div>';
         }
 
-        // 活动参与记录（最近 8 条；超过 8 给"主页查看全部"链接）
+        // 活动参与记录 — 默认展示前 8 条，多余的渲染但隐藏，
+        // 由"展开剩余 N 条 ▾"按钮就地切换（不跳转，避免和底下"查看完整成员主页"重复）
         const acts = fullMember.activities || [];
         if (acts.length) {
+          const VISIBLE = 8;
+          const more = Math.max(0, acts.length - VISIBLE);
           body += '<div class="member-activities-section">';
           body += `<div class="member-section-label">📅 活动参与（共 ${acts.length} 条）</div>`;
           body += '<div class="member-activities-list">';
-          for (const act of acts.slice(0, 8)) {
+          acts.forEach((act, i) => {
             const dateStr = fmtActDate(act.date);
             const rolesStr = (act.roles || []).join(' / ');
-            body += '<a class="member-activity-item" href="/events/' + encodeURIComponent(act.id) + '" target="_blank" rel="noopener">'
+            const extraCls = i >= VISIBLE ? ' is-extra' : '';
+            body += '<a class="member-activity-item' + extraCls + '" href="/events/' + encodeURIComponent(act.id) + '" target="_blank" rel="noopener">'
               +   '<div class="member-activity-title">' + escTeamHtml(act.title || '（未命名活动）') + '</div>'
               +   '<div class="member-activity-meta">'
               +     (dateStr  ? '<span class="member-activity-date">' + dateStr + '</span>' : '')
@@ -949,12 +962,14 @@ function openDetail(path, idx) {
               +     (act.loc  ? '<span class="member-activity-loc">📍 ' + escTeamHtml(act.loc) + '</span>' : '')
               +   '</div>'
               + '</a>';
-          }
+          });
           body += '</div>';
-          if (acts.length > 8) {
-            body += '<div class="member-activities-more">还有 ' + (acts.length - 8) + ' 条 — '
-              +   '<a href="/community/' + encodeURIComponent(linkedRecId) + '" target="_blank" rel="noopener">主页查看全部</a>'
-              + '</div>';
+          if (more > 0) {
+            body += '<button type="button" class="member-activities-toggle"'
+              +   ' data-more="' + more + '"'
+              +   ' onclick="toggleMemberActsExpand(this)">'
+              +   '展开剩余 ' + more + ' 条 ▾'
+              + '</button>';
           }
           body += '</div>';
         }

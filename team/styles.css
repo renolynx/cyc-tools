@@ -844,20 +844,28 @@
       white-space: nowrap; overflow: hidden;
       text-overflow: ellipsis;
     }
-    .member-activities-more {
+    /* 默认隐藏前 8 条之外的活动；展开后显示 */
+    .member-activity-item.is-extra { display: none; }
+    .member-activities-section.is-expanded .member-activity-item.is-extra { display: block; }
+
+    /* 展开/收起按钮 — 不跳转、就地切换，区分于底部"查看完整成员主页"按钮 */
+    .member-activities-toggle {
+      width: 100%;
       margin-top: 10px;
-      font-size: 12px; color: var(--muted);
-      text-align: center;
-      padding: 4px 0;
+      padding: 9px;
+      background: rgba(28,61,46,0.05);
+      border: 0.5px dashed rgba(28,61,46,0.25);
+      border-radius: 10px;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--green); font-family: inherit;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .member-activities-more a {
-      color: var(--green); font-weight: 600;
-      text-decoration: none;
-      border-bottom: 1px dotted rgba(28,61,46,0.4);
+    .member-activities-toggle:hover {
+      background: rgba(28,61,46,0.08);
+      border-color: rgba(28,61,46,0.4);
     }
-    .member-activities-more a:hover {
-      border-bottom-style: solid;
-    }
+    .member-activities-toggle:active { transform: scale(0.99); }
 
     /* 底部按钮栈 — 替代之前散落各处的 inline-style 按钮 */
     .modal-actions-stack {
