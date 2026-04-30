@@ -76,7 +76,7 @@ function buildJsonLd(act, ogImage, url, isPast) {
   return JSON.stringify(ld);
 }
 
-function renderEventDetail(act, rsvps = []) {
+function renderEventDetail(act, rsvps = [], fromMemberId = '') {
   const title    = escapeHtml(act.title || '未命名活动');
   const descRaw  = act.desc || '';
   const descShort = escapeHtml(descRaw.replace(/\n/g, ' ').slice(0, 100));
@@ -142,7 +142,7 @@ ${jsonLd}
 <div class="blob b3"></div>
 
 <header class="event-topbar">
-  <a href="/events" class="event-back">‹ 全部活动</a>
+  <a href="${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? `/community/${fromMemberId}` : '/events'}" class="event-back">${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? '‹ 返回成员主页' : '‹ 全部活动'}</a>
   <a href="${SITE_URL}" class="event-site">CYC.center</a>
 </header>
 
@@ -651,7 +651,9 @@ export default async function handler(req, res) {
   }
 
   // 5. 渲染
+  // ?from=memberRecId 让 back 按钮回到成员主页（从 /community/{id} 跳来时）
+  const fromMemberId = typeof req.query.from === 'string' ? req.query.from : '';
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', EDGE_CACHE);
-  return res.status(200).send(renderEventDetail(act, rsvps));
+  return res.status(200).send(renderEventDetail(act, rsvps, fromMemberId));
 }

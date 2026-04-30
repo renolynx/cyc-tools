@@ -204,7 +204,7 @@ function renderDetail(member, rsvps, fromActivityId, topTypes = []) {
     const date = r.activity_date
       || (r.registered_at ? new Date(r.registered_at).toISOString().slice(0,10) : '');
     const types = (r.activity_types || []).slice(0, 3);
-    return `<a class="cm-rsvp-row" href="/events/${escapeHtml(r.activity_rec_id)}">
+    return `<a class="cm-rsvp-row" href="/events/${escapeHtml(r.activity_rec_id)}?from=${escapeHtml(member.record_id)}">
   <span class="cm-rsvp-title">${escapeHtml(r.activity_title || '未命名活动')}</span>
   ${types.length ? `<span class="cm-rsvp-types">${types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</span>` : ''}
   <span class="cm-rsvp-meta">
@@ -772,7 +772,9 @@ function cmRenderEditRsvps(rsvps) {
   $('cmEditRsvpsCount').textContent = '· 共 ' + rsvps.length + ' 条';
   $('cmEditRsvpsList').innerHTML = rsvps.map(r => {
     const date = r.activity_date || '';
-    const link = r.activity_rec_id ? '/events/' + escapeHtml(r.activity_rec_id) : '#';
+    const link = r.activity_rec_id
+      ? '/events/' + escapeHtml(r.activity_rec_id) + (_editingId ? '?from=' + escapeHtml(_editingId) : '')
+      : '#';
     const roles = (r.roles || []).map(x => '<span class="cm-edit-rsvp-role role-' + roleStyle(x) + '">' + escapeHtml(x) + '</span>').join('');
     return '<a class="cm-edit-rsvp-row" href="' + link + '" target="_blank" rel="noopener">'
       + '<span class="cm-edit-rsvp-date">' + escapeHtml(date) + '</span>'
