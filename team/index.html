@@ -250,11 +250,14 @@ let data = {};
 let editMode = false;
 let wkOffset = 0;
 // 成员池缓存（B 战役：team ↔ member 联动）
-//   _membersById: { rec_id → 成员对象 }，null 代表还没拉过
+//   _membersById: { rec_id → 成员对象 }，null 代表还没拉过 — picker 列表用（精简字段）
 //   _membersList: 同样数据但是数组，picker 列表用，按姓名排序
+//   _membersFullById: { rec_id → 完整档案 } — 详情卡用，按需懒加载
 let _membersById = null;
 let _membersList = [];
 let _membersErr  = null;
+let _membersFullById = {};
+let _loadingFull = {};   // rec_id → Promise，避免同一 id 并发拉
 
 function loadData() {
   const saved = localStorage.getItem('cyc-team-data');
@@ -349,8 +352,39 @@ function doLogout() {
   sessionStorage.removeItem('cyc-team-pwd');
   editMode = false;
   _membersById = null; _membersList = []; _membersErr = null;
+  _membersFullById = {}; _loadingFull = {};
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+}
+
+/** 拉单个成员的完整档案（详情卡用 — bio 完整 + 职业 / 兴趣 / 身份等丰富字段）
+ *  缓存到 _membersFullById；同一 id 并发请求合并到一个 Promise
+ *  失败返回 null（调用方 fallback 到精简版） */
+async function loadFullMember(rec_id) {
+  if (!rec_id) return null;
+  if (_membersFullById[rec_id]) return _membersFullById[rec_id];
+  if (_loadingFull[rec_id]) return _loadingFull[rec_id];
+
+  const pwd = sessionStorage.getItem('cyc-team-pwd');
+  if (!pwd) return null;
+
+  _loadingFull[rec_id] = (async () => {
+    try {
+      const res = await fetch('/api/member?id=' + encodeURIComponent(rec_id), {
+        headers: { 'Authorization': 'Bearer ' + pwd },
+      });
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (!json.success || !json.member) return null;
+      _membersFullById[rec_id] = json.member;
+      return json.member;
+    } catch {
+      return null;
+    } finally {
+      delete _loadingFull[rec_id];
+    }
+  })();
+  return _loadingFull[rec_id];
 }
 
 /** 拉成员池（懒加载，登录后预热一次；picker 打开时若未就绪再触发） */
@@ -729,14 +763,19 @@ function openDetail(path, idx) {
       linkBlock += '</div>';
       fields += linkBlock;
 
+      // 是否已关联：决定下方「手动填写」区块是激活态还是灰显（已关联时这些字段
+      // 不会展示在详情页，但保留以便解除关联时立刻有 fallback，且不丢失历史数据）
+      const hasLink = !!(linkRecId && (linkedMember || isStaleLink || isLoadingMembers));
       fields += `
-        <div style="border-top: 1px solid var(--stroke); margin: 16px 0; padding-top: 16px;">
-          <p class="section-title" style="margin-bottom: 12px;">手动填写（未关联成员时使用）</p>
+        <div class="manual-section ${hasLink ? 'is-dimmed' : ''}">
+          <p class="section-title" style="margin-bottom: 12px;">
+            手动填写${hasLink ? '<span class="manual-hint">（已关联成员，下方字段不会展示在详情页 — 解除关联后才生效）</span>' : '（未关联成员时使用）'}
+          </p>
+          <div class="form-group"><label class="form-label">头像 URL</label><input class="form-input" id="df-avatar" value="${item.avatar || ''}"></div>
+          <div class="form-group"><label class="form-label">岗位职责 (JD)</label><textarea class="form-input" id="df-jd">${item.jd || ''}</textarea></div>
+          <div class="form-group"><label class="form-label">个人简介</label><textarea class="form-input" id="df-bio">${item.bio || ''}</textarea></div>
+          <div class="form-group"><label class="form-label">任职时间</label><input class="form-input" id="df-since" value="${item.since || ''}" placeholder="如：2025年3月"></div>
         </div>
-        <div class="form-group"><label class="form-label">头像 URL</label><input class="form-input" id="df-avatar" value="${item.avatar || ''}"></div>
-        <div class="form-group"><label class="form-label">岗位职责 (JD)</label><textarea class="form-input" id="df-jd">${item.jd || ''}</textarea></div>
-        <div class="form-group"><label class="form-label">个人简介</label><textarea class="form-input" id="df-bio">${item.bio || ''}</textarea></div>
-        <div class="form-group"><label class="form-label">任职时间</label><input class="form-input" id="df-since" value="${item.since || ''}" placeholder="如：2025年3月"></div>
       `;
     }
 
@@ -750,124 +789,167 @@ function openDetail(path, idx) {
       ${isRep ? `<div style="margin-top: 10px;"><button class="btn btn-sm btn-danger" style="width:100%;" onclick="deleteRep(${idx})">删除</button></div>` : ''}
     `;
   } else {
-    // VIEW mode: show detail card
+    // ── VIEW mode ──
+    // 设计：关联成员后，整张卡片展开成员的完整档案（avatar/bio/职业/兴趣等），
+    //       角色信息退化为顶部的一个 chip + 一句 desc；不再叠加角色侧手填的
+    //       jd/bio/since（避免重复维护、数据冲突）。
+    //       未关联或 rep / stale 的情况走简单卡（沿用历史格式）。
 
-    // ── B 战役：如果有关联成员且成员池已加载，优先用成员的姓名/头像/简介 ──
     const linkedRecId = item.member_rec_id || '';
-    const linkedMember = linkedRecId && _membersById && _membersById[linkedRecId] ? _membersById[linkedRecId] : null;
+    const fullMember  = linkedRecId ? _membersFullById[linkedRecId] : null;
+    const liteMember  = linkedRecId && _membersById ? _membersById[linkedRecId] : null;
+    const linkedMember = fullMember || liteMember;
+    const isStaleLink  = linkedRecId && !linkedMember && _membersById !== null;
 
     const role = item.role || item.title || '';
     const desc = item.desc || '';
     const jd = item.jd || '';
     const since = item.since || '';
 
-    // 名称：关联成员优先 → item.name → 「空缺」
-    const name = linkedMember
-      ? (linkedMember.name || linkedMember.nickname || item.name || '空缺')
-      : (item.name || '空缺');
-
-    // bio：关联成员优先（用完整 bio，本字段在 picker 里截断了，详情视图想要完整版可以后期改）
-    const bio = linkedMember ? (linkedMember.bio || item.bio || '') : (item.bio || '');
-
-    // 头像：关联成员的 avatar_token → /api/poster；否则 item.avatar URL；都没有 → emoji
-    let avatarContent;
-    if (linkedMember && linkedMember.avatar_token) {
-      avatarContent = `<img src="/api/poster?token=${encodeURIComponent(linkedMember.avatar_token)}" onerror="this.style.display='none';this.parentNode.textContent='${emoji}'" alt="">`;
-    } else if (item.avatar) {
-      avatarContent = `<img src="${item.avatar}" alt="">`;
-    } else {
-      avatarContent = emoji;
-    }
-
-    let detailFields = '';
-
-    // 关联成员卡（如果有）— 给一个明显的"这是谁"的入口
-    if (linkedMember) {
-      const cityHint = (linkedMember.cities || []).join(' / ');
-      const identityHint = (linkedMember.identity || []).join(' · ');
-      const memberMeta = [cityHint, identityHint].filter(Boolean).join('  ·  ');
-      detailFields += `
-        <div class="view-member">
-          <div class="view-member-info">
-            <div class="view-member-name">🔗 关联成员主页</div>
-            ${memberMeta ? `<div class="view-member-meta">${escTeamHtml(memberMeta)}</div>` : ''}
-          </div>
-          <a class="view-member-link" href="/community/${encodeURIComponent(linkedRecId)}" target="_blank" rel="noopener">查看主页 →</a>
-        </div>
-      `;
-    } else if (linkedRecId && _membersById !== null) {
-      // stale link 提示
-      detailFields += `<div class="detail-field" style="color:var(--danger);font-size:12px">⚠️ 关联的成员（${escTeamHtml(linkedRecId)}）已不在成员池中</div>`;
-    }
-
-    if (desc) detailFields += `<div class="detail-field"><div class="detail-label">职责描述</div><div class="detail-value">${desc}</div></div>`;
-    if (isVolunteer && item.keywords && item.keywords.length) {
-      detailFields += `<div class="detail-field"><div class="detail-label">关键词</div><div class="detail-value">${item.keywords.map(k => `<span class="keyword-tag" style="font-size:12px;padding:3px 8px;">${k}</span>`).join(' ')}</div></div>`;
-    }
-    if (jd) detailFields += `<div class="detail-field"><div class="detail-label">岗位职责</div><div class="detail-value">${jd.replace(/\n/g,'<br>')}</div></div>`;
-    if (bio) detailFields += `<div class="detail-field"><div class="detail-label">${linkedMember ? '个人简介（来自成员主页）' : '个人简介'}</div><div class="detail-value">${escTeamHtml(bio).replace(/\n/g,'<br>')}</div></div>`;
-    if (since) detailFields += `<div class="detail-field"><div class="detail-label">任职时间</div><div class="detail-value">${since}</div></div>`;
-
-    if (isRep) {
-      detailFields = '';
-      if (item.type) detailFields += `<div class="detail-field"><div class="detail-label">代表类型</div><div class="detail-value">${item.type}</div></div>`;
-      if (desc) detailFields += `<div class="detail-field"><div class="detail-label">说明</div><div class="detail-value">${desc}</div></div>`;
-    }
-
-    const cvBtn = (item.name === '悠洋')
-      ? `<a href="https://cyc.center/youyang" target="_blank" rel="noopener"
-            style="display:flex;align-items:center;justify-content:center;gap:6px;
-                   width:100%;padding:11px;border-radius:12px;margin-bottom:10px;
-                   background:linear-gradient(135deg,#1c3d2e,#2a5740);
-                   color:#fff;font-size:14px;font-weight:700;text-decoration:none;
-                   box-shadow:0 3px 12px rgba(28,61,46,0.22);">
-           📄 查看简历与作品集 ↗
-         </a>`
-      : '';
-
-    // 「社区层负责人」角色绑定的管理类按钮：修改密码 + 管理成员名单
-    // 用 role 而非 name，未来换人时不用改代码
+    // 「社区层负责人」专属按钮（依 role 判定，换人不用改代码）
     const isCommunityLead = (item.role === '社区层');
 
+    // 「悠洋」简历按钮：用关联成员名 → 否则 item.name（兼容关联前后）
+    const personName = linkedMember ? (linkedMember.name || linkedMember.nickname || '') : (item.name || '');
+
+    const cvBtn = (personName === '悠洋')
+      ? `<a href="https://cyc.center/youyang" target="_blank" rel="noopener" class="action-link-green">📄 查看简历与作品集 ↗</a>`
+      : '';
     const pwdBtn = isCommunityLead
-      ? `<button onclick="openChangePwdModal()"
-            style="display:flex;align-items:center;justify-content:center;gap:6px;
-                   width:100%;padding:11px;border-radius:12px;margin-bottom:10px;
-                   background:linear-gradient(135deg,#d9652a,#b5512a);
-                   color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;
-                   box-shadow:0 3px 12px rgba(217,101,42,0.22);
-                   -webkit-tap-highlight-color:transparent;">
-           🔑 修改活动通告密码
-         </button>`
+      ? `<button onclick="openChangePwdModal()" class="action-btn-orange">🔑 修改活动通告密码</button>`
       : '';
-
     const communityAdminBtn = isCommunityLead
-      ? `<a href="/community/admin" target="_blank" rel="noopener"
-            style="display:flex;align-items:center;justify-content:center;gap:6px;
-                   width:100%;padding:11px;border-radius:12px;margin-bottom:10px;
-                   background:linear-gradient(135deg,#1c3d2e,#2a5740);
-                   color:#fff;font-size:14px;font-weight:700;text-decoration:none;
-                   box-shadow:0 3px 12px rgba(28,61,46,0.22);">
-           👥 管理社区成员名单 ↗
-         </a>`
+      ? `<a href="/community/admin" target="_blank" rel="noopener" class="action-link-green">👥 管理社区成员名单 ↗</a>`
       : '';
 
-    content.innerHTML = `
-      <div style="text-align: center; padding-top: 8px;">
-        <div class="detail-avatar" style="margin: 0 auto 12px;">${avatarContent}</div>
-        <div class="detail-role-badge">${role}</div>
-        <div class="detail-name">${name}</div>
-      </div>
-      <div style="margin-top: 20px;">
-        ${detailFields || '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0;">暂无详细信息</div>'}
-      </div>
-      <div style="margin-top:24px;">
-        ${cvBtn}
-        ${communityAdminBtn}
-        ${pwdBtn}
-        <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
-      </div>
-    `;
+    if (isRep) {
+      // ── 社区代表（无 member 关联）：保持原简单卡 ──
+      let detailFields = '';
+      if (item.type) detailFields += `<div class="detail-field"><div class="detail-label">代表类型</div><div class="detail-value">${escTeamHtml(item.type)}</div></div>`;
+      if (desc) detailFields += `<div class="detail-field"><div class="detail-label">说明</div><div class="detail-value">${escTeamHtml(desc)}</div></div>`;
+      content.innerHTML = `
+        <div style="text-align:center;padding-top:8px;">
+          <div class="detail-avatar" style="margin:0 auto 12px;">${emoji}</div>
+          <div class="detail-role-badge">${escTeamHtml(role)}</div>
+          <div class="detail-name">${escTeamHtml(item.name || '空缺')}</div>
+        </div>
+        <div style="margin-top:20px;">
+          ${detailFields || '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0;">暂无详细信息</div>'}
+        </div>
+        <div class="modal-actions-stack">
+          <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
+        </div>`;
+    } else if (linkedMember) {
+      // ── 已关联成员：展开成员档案卡 ──
+      const avatarHtml = linkedMember.avatar_token
+        ? `<img src="/api/poster?token=${encodeURIComponent(linkedMember.avatar_token)}" onerror="this.style.display='none';this.parentNode.textContent='${emoji}'" alt="">`
+        : emoji;
+
+      const fullName = linkedMember.name || linkedMember.nickname || '（未填姓名）';
+      const subName = (linkedMember.nickname && linkedMember.nickname !== linkedMember.name)
+        ? `“${linkedMember.nickname}”` : '';
+
+      const chipsHtml = [
+        ...(linkedMember.cities || []).map(c => `<span class="member-chip chip-city">📍 ${escTeamHtml(c)}</span>`),
+        ...(linkedMember.identity || []).map(i => `<span class="member-chip chip-identity">${escTeamHtml(i)}</span>`),
+      ].join('');
+
+      // 内容字段：先 desc（来自岗位），再成员的 bio + 丰富字段（仅 fullMember 有）
+      let body = '';
+      if (desc) body += `<div class="member-role-desc">📋 ${escTeamHtml(desc)}</div>`;
+
+      if (fullMember) {
+        if (fullMember.bio) {
+          body += `<div class="member-bio">${escTeamHtml(fullMember.bio).replace(/\n/g,'<br>')}</div>`;
+        }
+        const jobLine = [fullMember.job, fullMember.company].filter(Boolean).join(' · ');
+        const rows = [];
+        if (jobLine)            rows.push(['💼', '职业', jobLine]);
+        if (fullMember.topics)    rows.push(['🎯', '关注话题', fullMember.topics]);
+        if (fullMember.willShare) rows.push(['🎤', '想做的分享', fullMember.willShare]);
+        if (fullMember.interests) rows.push(['❤️', '感兴趣的活动', fullMember.interests]);
+        if (fullMember.mbti)      rows.push(['🧠', 'MBTI', fullMember.mbti]);
+        if (rows.length) {
+          body += '<div class="member-rows">'
+            + rows.map(([icon, label, val]) =>
+                `<div class="member-row">
+                   <span class="member-row-icon">${icon}</span>
+                   <div class="member-row-body">
+                     <div class="member-row-label">${escTeamHtml(label)}</div>
+                     <div class="member-row-val">${escTeamHtml(val).replace(/\n/g,'<br>')}</div>
+                   </div>
+                 </div>`).join('')
+            + '</div>';
+        }
+      } else {
+        // 还在拉完整档案：先用 lite 版的 80 字截断 bio 占位
+        if (liteMember && liteMember.bio) {
+          body += `<div class="member-bio">${escTeamHtml(liteMember.bio)}</div>`;
+        }
+        body += `<div class="member-loading-hint">⏳ 加载完整档案中…</div>`;
+      }
+
+      content.innerHTML = `
+        <div class="member-detail-header">
+          <div class="detail-avatar member-detail-avatar">${avatarHtml}</div>
+          <div class="detail-role-badge">${escTeamHtml(role)}</div>
+          <div class="detail-name">${escTeamHtml(fullName)}</div>
+          ${subName ? `<div class="member-sub-name">${escTeamHtml(subName)}</div>` : ''}
+          ${chipsHtml ? `<div class="member-chip-row">${chipsHtml}</div>` : ''}
+        </div>
+        <div class="member-detail-body">
+          ${body || '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0;">该成员暂未填写个人信息</div>'}
+        </div>
+        <div class="modal-actions-stack">
+          <a class="action-link-green" href="/community/${encodeURIComponent(linkedRecId)}" target="_blank" rel="noopener">查看完整成员主页 →</a>
+          ${cvBtn}
+          ${communityAdminBtn}
+          ${pwdBtn}
+          <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
+        </div>`;
+
+      // 异步拉完整档案（如果还没拿到），拉到后再渲染一次
+      if (!fullMember) {
+        loadFullMember(linkedRecId).then(m => {
+          if (m && document.getElementById('detail-modal').classList.contains('active')) {
+            openDetail(path, idx);
+          }
+        });
+      }
+    } else {
+      // ── 未关联（或 stale）：原简单卡，用手动填的 jd/bio/since/avatar ──
+      const avatarContent = item.avatar
+        ? `<img src="${item.avatar}" alt="">`
+        : emoji;
+
+      let detailFields = '';
+      if (isStaleLink) {
+        detailFields += `<div class="detail-field" style="color:var(--danger);font-size:12px">⚠️ 关联的成员（${escTeamHtml(linkedRecId)}）已不在成员池中。请进入编辑模式重新选择或解除关联。</div>`;
+      }
+      if (desc) detailFields += `<div class="detail-field"><div class="detail-label">职责描述</div><div class="detail-value">${escTeamHtml(desc)}</div></div>`;
+      if (isVolunteer && item.keywords && item.keywords.length) {
+        detailFields += `<div class="detail-field"><div class="detail-label">关键词</div><div class="detail-value">${item.keywords.map(k => `<span class="keyword-tag" style="font-size:12px;padding:3px 8px;">${escTeamHtml(k)}</span>`).join(' ')}</div></div>`;
+      }
+      if (jd) detailFields += `<div class="detail-field"><div class="detail-label">岗位职责</div><div class="detail-value">${escTeamHtml(jd).replace(/\n/g,'<br>')}</div></div>`;
+      if (item.bio) detailFields += `<div class="detail-field"><div class="detail-label">个人简介</div><div class="detail-value">${escTeamHtml(item.bio).replace(/\n/g,'<br>')}</div></div>`;
+      if (since) detailFields += `<div class="detail-field"><div class="detail-label">任职时间</div><div class="detail-value">${escTeamHtml(since)}</div></div>`;
+
+      content.innerHTML = `
+        <div style="text-align:center;padding-top:8px;">
+          <div class="detail-avatar" style="margin:0 auto 12px;">${avatarContent}</div>
+          <div class="detail-role-badge">${escTeamHtml(role)}</div>
+          <div class="detail-name">${escTeamHtml(item.name || '空缺')}</div>
+        </div>
+        <div style="margin-top:20px;">
+          ${detailFields || '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px 0;">暂无详细信息（关联社区成员后将自动展示档案）</div>'}
+        </div>
+        <div class="modal-actions-stack">
+          ${cvBtn}
+          ${communityAdminBtn}
+          ${pwdBtn}
+          <button class="btn btn-sm btn-outline" style="width:100%;" onclick="closeDetail()">关闭</button>
+        </div>`;
+    }
   }
 
   modal.classList.add('active');
