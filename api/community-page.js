@@ -390,6 +390,13 @@ function renderAdminApp() {
     </div>
 
     <p class="cm-edit-tip">完整 41 字段（如电话/学校/性别等）请去飞书后台编辑。</p>
+
+    <!-- 活动记录（编辑模式才显示） -->
+    <div class="cm-edit-rsvps" id="cmEditRsvps" style="display:none">
+      <div class="cm-edit-rsvps-title">活动记录 <span id="cmEditRsvpsCount" class="cm-edit-rsvps-count"></span></div>
+      <div class="cm-edit-rsvps-list" id="cmEditRsvpsList"></div>
+    </div>
+
     <p class="cm-edit-err" id="cmEditErr"></p>
 
     <div class="cm-edit-actions">
@@ -571,6 +578,7 @@ function cmStartCreate() {
   _editingId = null;
   $('cmEditTitle').textContent = '＋ 新建成员';
   $('cmMergeBtn').style.display = 'none';   // 新建模式不显示「合并」
+  $('cmEditRsvps').style.display = 'none';  // 新建无 RSVP 可看
   ['name','nickname','bio','job','company','willShare','interests','topics','mbti','wechat','residentStatus'].forEach(k => $('cmF_'+k).value = '');
   $('cmF_hidden').checked = false;
   $('cmEditErr').textContent = '';
@@ -606,10 +614,48 @@ async function cmStartEdit(rid) {
     $('cmF_residentStatus').value = m.residentStatus || '';
     $('cmF_hidden').checked = !!m.hidden;
     $('cmEditErr').textContent = '';
+    cmRenderEditRsvps(data.rsvps || []);
     setTimeout(() => $('cmF_name').focus(), 50);
   } catch (err) {
     $('cmEditErr').textContent = '加载失败：' + err.message;
   }
+}
+
+/** 编辑模式下渲染该成员的活动记录 */
+function cmRenderEditRsvps(rsvps) {
+  const wrap = $('cmEditRsvps');
+  if (!rsvps || !rsvps.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  // 按日期倒序（活动日期优先，否则注册时间）
+  rsvps.sort((a, b) => {
+    const da = a.activity_date || '0';
+    const db = b.activity_date || '0';
+    if (da !== db) return da < db ? 1 : -1;
+    return (b.registered_at || 0) - (a.registered_at || 0);
+  });
+
+  // 角色优先级标签 & 配色
+  const roleStyle = r => {
+    if (r === '活动发起者') return 'host';
+    if (r === '嘉宾')      return 'speaker';
+    if (r === '活动参与者') return 'attend';
+    return 'other';
+  };
+
+  $('cmEditRsvpsCount').textContent = '· 共 ' + rsvps.length + ' 条';
+  $('cmEditRsvpsList').innerHTML = rsvps.map(r => {
+    const date = r.activity_date || '';
+    const link = r.activity_rec_id ? '/events/' + escapeHtml(r.activity_rec_id) : '#';
+    const roles = (r.roles || []).map(x => '<span class="cm-edit-rsvp-role role-' + roleStyle(x) + '">' + escapeHtml(x) + '</span>').join('');
+    return '<a class="cm-edit-rsvp-row" href="' + link + '" target="_blank" rel="noopener">'
+      + '<span class="cm-edit-rsvp-date">' + escapeHtml(date) + '</span>'
+      + '<span class="cm-edit-rsvp-title">' + escapeHtml(r.activity_title) + '</span>'
+      + '<span class="cm-edit-rsvp-roles">' + roles + '</span>'
+    + '</a>';
+  }).join('');
+  wrap.style.display = '';
 }
 
 function cmCloseEdit() {

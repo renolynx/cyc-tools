@@ -445,6 +445,18 @@ export async function ensureMemberByWechat(name, wechat, bio) {
 }
 
 /**
+ * 拆分嘉宾名输入：处理"strayn, 张铌"/"a；b"/"a、b"/"a/b" 这种把多人塞一行的情况
+ * 不拆空格（很多英文名 / 拼音带空格，瞎拆会错）
+ *   返回归一化的 name 数组；输入纯文本，输出 string[]
+ */
+export function splitSpeakerNames(raw) {
+  const s = (raw || '').trim();
+  if (!s) return [];
+  // 仅按明显标点拆：英中逗号、英中分号、顿号、斜杠
+  return s.split(/[,，;；、/]+/).map(x => x.trim()).filter(Boolean);
+}
+
+/**
  * 嘉宾匹配：先匹配称呼，回退姓名（用于详情页 / RSVP 嘉宾联动）
  * 在已拉好的成员列表里同步匹配，避免 N 次 fetchAllMembers
  *   规则：nickname 精确 → name 精确 → nickname 包含

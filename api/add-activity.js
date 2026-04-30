@@ -6,8 +6,23 @@
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
 import { kvDel, isKvConfigured } from './_kv.js';
-import { replaceSpeakerRsvps }                              from './_rsvp.js';
-import { fetchAllMembers, autoCreateMember, matchSpeaker }  from './_member.js';
+import { replaceSpeakerRsvps }                                                  from './_rsvp.js';
+import { fetchAllMembers, autoCreateMember, matchSpeaker, splitSpeakerNames }  from './_member.js';
+
+/** 把 spk 数组里每个 entry 的 name 按标点拆开，膨胀成多个 entry
+ *  bio 跟到第一个；其他人 bio 设空（共享 bio 没法判断归谁）
+ */
+function expandSpeakers(sp) {
+  const out = [];
+  for (const s of (sp || [])) {
+    if (!s) continue;
+    const names = splitSpeakerNames(s.name);
+    if (!names.length) continue;
+    out.push({ name: names[0], bio: s.bio || '' });
+    for (let i = 1; i < names.length; i++) out.push({ name: names[i], bio: '' });
+  }
+  return out;
+}
 
 /** 上传海报到飞书云文档，返回 file_token */
 async function uploadPoster(poster, token, appToken) {
@@ -125,9 +140,11 @@ export default async function handler(req, res) {
       const namesMatched  = [];
       const namesCreated  = [];
       const namesFailed   = [];
-      if (sp.length) {
+      // 拆分多人塞一行的情况（"a, b" / "a;b" / "a、b" / "a/b"）
+      const expanded = expandSpeakers(sp);
+      if (expanded.length) {
         const allMembers = await fetchAllMembers();
-        for (const s of sp) {
+        for (const s of expanded) {
           if (!s.name) continue;
           let m = matchSpeaker(allMembers, s.name);
           if (m) {

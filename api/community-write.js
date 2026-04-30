@@ -26,6 +26,7 @@ import {
   inferMemberActivityCities,
   matchSpeaker,
   autoCreateMember,
+  splitSpeakerNames,
 } from './_member.js';
 import { fetchAllActivities }                       from './_activity.js';
 import { replaceSpeakerRsvps,
@@ -84,11 +85,31 @@ async function handleUpdate(req, res) {
 
 async function handleGet(req, res) {
   // 取单条完整记录（含私密）给编辑表单 prefill 用
+  // 同时返回 RSVP 记录（关联活动 ID/标题/日期），让 admin 看到 ta 发起 / 嘉宾 / 参与过哪些活动
   const id = req.body.record_id;
   if (!id) return res.status(400).json({ error: '缺 record_id' });
-  const m = await fetchMember(id);
+  const [m, rsvps, allActs] = await Promise.all([
+    fetchMember(id),
+    fetchRsvpsByMember(id),
+    fetchAllActivities().catch(() => []),
+  ]);
   if (!m) return res.status(404).json({ error: '成员不存在' });
-  return res.status(200).json({ success: true, member: m });
+
+  // 给每条 RSVP 拼上活动标题 / 日期（活动表是权威，RSVP 表里冗余字段不可信）
+  const actMap = new Map(allActs.map(a => [a.record_id, a]));
+  const rsvpsEnriched = rsvps.map(r => {
+    const a = actMap.get(r.activity_rec_id);
+    return {
+      record_id:        r.record_id,
+      activity_rec_id:  r.activity_rec_id,
+      activity_title:   a?.title || r.activity_title || '(活动已删除)',
+      activity_date:    a?.date  || '',
+      roles:            r.roles || [],
+      registered_at:    r.registered_at || 0,
+    };
+  });
+
+  return res.status(200).json({ success: true, member: m, rsvps: rsvpsEnriched });
 }
 
 /**
@@ -129,7 +150,16 @@ async function handleBackfillSpeakers(req, res) {
   for (const a of slice) {
     const speakers = [];
     const namesMatched = [], namesCreated = [], namesFailed = [];
-    for (const s of a.spk) {
+    // 拆分多人塞一行的情况（"a, b" / "a;b" / "a、b" / "a/b"）
+    const expanded = [];
+    for (const s of (a.spk || [])) {
+      if (!s) continue;
+      const parts = splitSpeakerNames(s.name);
+      if (!parts.length) continue;
+      expanded.push({ name: parts[0], bio: s.bio || '' });
+      for (let i = 1; i < parts.length; i++) expanded.push({ name: parts[i], bio: '' });
+    }
+    for (const s of expanded) {
       if (!s || !s.name) continue;
       let m = matchSpeaker(allMembers, s.name);
       if (m) {

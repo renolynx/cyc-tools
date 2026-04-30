@@ -2063,6 +2063,81 @@ body.event-page {
   margin-top: 14px;
   line-height: 1.55;
 }
+
+/* ── 活动记录 section（编辑卡内）── */
+.cm-edit-rsvps {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+}
+.cm-edit-rsvps-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.cm-edit-rsvps-count {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 11px;
+}
+.cm-edit-rsvps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.cm-edit-rsvp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.6);
+  text-decoration: none;
+  color: inherit;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.cm-edit-rsvp-row:hover { background: rgba(28,61,46,0.08); }
+.cm-edit-rsvp-date {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 70px;
+}
+.cm-edit-rsvp-title {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cm-edit-rsvp-roles {
+  flex-shrink: 0;
+  display: flex;
+  gap: 3px;
+}
+.cm-edit-rsvp-role {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.cm-edit-rsvp-role.role-host    { background: rgba(217,101,42,0.15); color: var(--orange); }
+.cm-edit-rsvp-role.role-speaker { background: rgba(217,101,42,0.10); color: var(--orange); }
+.cm-edit-rsvp-role.role-attend  { background: rgba(28,61,46,0.10);  color: var(--green); }
+.cm-edit-rsvp-role.role-other   { background: rgba(0,0,0,0.06);     color: var(--muted); }
 .cm-edit-err {
   font-size: 12px;
   color: #c0392b;
