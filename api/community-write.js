@@ -35,7 +35,7 @@ import { fetchAllActivities }                       from './_activity.js';
 import { replaceSpeakerRsvps,
          fetchRsvpsByMember,
          updateRsvpMemberLink }                     from './_rsvp.js';
-import { invalidate, invalidateActivities, kvDel, isKvConfigured } from './_kv.js';
+import { invalidate, invalidateActivities, kvDel, isKvConfigured, appendAdminLog, readAdminLog } from './_kv.js';
 
 /**
  * 拉所有成员 + 给每条加 inferredCities 字段（活动反推）
@@ -680,18 +680,103 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: '密码错误' });
   }
 
-  if (action === 'search')             return handleSearch(req, res);
-  if (action === 'get')                return handleGet(req, res);
-  if (action === 'create')             return handleCreate(req, res);
-  if (action === 'update')             return handleUpdate(req, res);
-  if (action === 'backfill-speakers')  return handleBackfillSpeakers(req, res);
-  if (action === 'merge-preview')      return handleMergePreview(req, res);
-  if (action === 'merge')              return handleMerge(req, res);
-  if (action === 'clear-cache')        return handleClearCache(req, res);
-  if (action === 'list-activity-types')   return handleListActivityTypes(req, res);
-  if (action === 'strip-activity-types')  return handleStripActivityTypes(req, res);
-  if (action === 'set-activity-types')    return handleSetActivityTypes(req, res);
-  if (action === 'resync-rsvp-names')     return handleResyncRsvpNames(req, res);
+  // 路由表 + 自动日志：写 action 走 dispatchAndLog；只读 action 直接 invoke
+  const HANDLERS = {
+    'search':                handleSearch,
+    'get':                   handleGet,
+    'merge-preview':         handleMergePreview,
+    'list-activity-types':   handleListActivityTypes,
+    'get-admin-log':         handleGetAdminLog,
+    // 写 action（自动 log）：
+    'create':                handleCreate,
+    'update':                handleUpdate,
+    'merge':                 handleMerge,
+    'backfill-speakers':     handleBackfillSpeakers,
+    'clear-cache':           handleClearCache,
+    'strip-activity-types':  handleStripActivityTypes,
+    'set-activity-types':    handleSetActivityTypes,
+    'resync-rsvp-names':     handleResyncRsvpNames,
+  };
 
-  return res.status(400).json({ error: `unknown action: ${action}` });
+  const handlerFn = HANDLERS[action];
+  if (!handlerFn) return res.status(400).json({ error: `unknown action: ${action}` });
+
+  if (WRITE_ACTIONS.has(action)) return dispatchAndLog(action, req, res, handlerFn);
+  return handlerFn(req, res);
+}
+
+// ─────────── 写 action 自动日志 wrapper ───────────
+
+const WRITE_ACTIONS = new Set([
+  'create', 'update', 'merge', 'backfill-speakers',
+  'strip-activity-types', 'set-activity-types',
+  'resync-rsvp-names', 'clear-cache',
+]);
+
+/** 拦截 res.json 拿到 payload，再写一条 admin_log；失败/异常都记 */
+async function dispatchAndLog(action, req, res, handlerFn) {
+  let payload = null;
+  const realJson = res.json.bind(res);
+  res.json = (body) => { payload = body; return realJson(body); };
+  let threw = null;
+  try {
+    await handlerFn(req, res);
+  } catch (err) {
+    threw = err;
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  }
+  // 异步 log 不阻塞响应
+  try {
+    const params = { ...(req.body || {}) };
+    delete params.password;
+    await appendAdminLog({
+      action,
+      success: !threw && !!(payload && payload.success),
+      error:   threw ? threw.message : (payload?.error || null),
+      params:  redact(params),
+      summary: summarize(action, payload),
+    });
+  } catch {}
+  if (threw) throw threw;
+}
+
+/** 把 params 里太长 / 没必要 log 的字段截短，避免 KV 单值膨胀 */
+function redact(params) {
+  const out = { ...params };
+  if (Array.isArray(out.strip)) out.strip = out.strip.slice(0, 10);
+  if (Array.isArray(out.types)) out.types = out.types.slice(0, 10);
+  if (out.data && typeof out.data === 'object') {
+    out.data = Object.fromEntries(
+      Object.entries(out.data).map(([k, v]) =>
+        [k, typeof v === 'string' && v.length > 80 ? v.slice(0, 80) + '…' : v]
+      )
+    );
+  }
+  if (out.field_overrides && typeof out.field_overrides === 'object') {
+    out.field_overrides = Object.keys(out.field_overrides);   // 只记字段名不记值
+  }
+  return out;
+}
+
+/** 一句话人类可读摘要 */
+function summarize(action, p) {
+  if (!p) return '';
+  switch (action) {
+    case 'create':                return `新建 ${p.record_id || ''}`;
+    case 'update':                return `更新 ${p.record_id || ''}`;
+    case 'merge':                 return `合并 → ${p.target_id || ''}（重链 ${p.rsvp_updated || 0} 条 RSVP）`;
+    case 'backfill-speakers':     return `回扫嘉宾 ${p.range?.[0]}-${p.range?.[1]}/${p.total} · 匹配 ${p.summary?.matched} 新建 ${p.summary?.created}`;
+    case 'strip-activity-types':  return `${p.dryRun ? 'dry-run' : '执行'} 影响 ${p.affected || 0} 个活动`;
+    case 'set-activity-types':    return `打标 ${p.record_id} → [${(p.types || []).join('+')}]`;
+    case 'resync-rsvp-names':     return `${p.dryRun ? 'dry-run' : '执行'} 修齐 ${p.fixed ?? p.mismatched ?? 0} 条 RSVP name`;
+    case 'clear-cache':           return '清 KV cache';
+    default:                      return '';
+  }
+}
+
+/** GET /api/community-write {action:'get-admin-log', limit?:100} */
+async function handleGetAdminLog(req, res) {
+  const limit = Math.min(500, Math.max(1, Number(req.body?.limit || 100)));
+  const log = await readAdminLog(limit);
+  return res.status(200).json({ success: true, count: log.length, log });
 }

@@ -135,6 +135,45 @@ export async function invalidate(scope, ...args) {
   await Promise.all(keys.map(k => kvDel(k))).catch(() => {});
 }
 
+// ─────────── Admin 操作日志 ───────────
+// 写操作（合并 / 批量打标 / strip / clear-cache 等）都 append 一条到这个
+// 环形数组，保留最近 ADMIN_LOG_MAX 条。出问题时可以追溯什么时候、谁、
+// 改了什么、结果成功还是失败。
+//
+// 存一个 KV key 装 JSON 数组（不用 LPUSH 因为 _kv.js 只用 GET/SET 不引入
+// list 命令；admin 写操作并发量低，先写后读的 race 可接受）
+
+const ADMIN_LOG_KEY = 'admin_log:current';
+const ADMIN_LOG_MAX = 500;
+
+/** entry: { action, success?, error?, summary?, params? } */
+export async function appendAdminLog(entry) {
+  if (!isKvConfigured()) return;
+  try {
+    const cur = await kvGet(ADMIN_LOG_KEY);
+    const list = cur ? JSON.parse(cur) : [];
+    list.unshift({ ts: Date.now(), ...entry });
+    if (list.length > ADMIN_LOG_MAX) list.length = ADMIN_LOG_MAX;
+    await kvSet(ADMIN_LOG_KEY, JSON.stringify(list));
+  } catch (err) {
+    // 日志写失败不应该影响主操作
+    console.warn('[appendAdminLog] failed:', err.message);
+  }
+}
+
+/** 取最近 N 条；最新在前 */
+export async function readAdminLog(limit = 100) {
+  if (!isKvConfigured()) return [];
+  try {
+    const cur = await kvGet(ADMIN_LOG_KEY);
+    if (!cur) return [];
+    const list = JSON.parse(cur);
+    return list.slice(0, Math.max(1, Math.min(limit, ADMIN_LOG_MAX)));
+  } catch {
+    return [];
+  }
+}
+
 /** 多个 record id 的活动一次性清（strip-types backfill 等批量场景，避免重复清通用 key） */
 export async function invalidateActivities(ids) {
   if (!isKvConfigured() || !ids || !ids.length) return;
