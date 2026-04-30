@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>我的时间线 · CYC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="社区的回忆 — 来到 CYC 后发生的一切">
+
+  <style>
+    /* ─────────────────────────────────────────
+     *  Daybreak OS — me/timeline
+     *  延续 cyc.center 视觉系统（绿/橙/沙）+ 日出渐变 + 玻璃质感
+     *  iOS 16 widget 范式：Stack（堆叠）/ Lineup（队列）
+     * ───────────────────────────────────────── */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:    #1c3d2e;
+      --green2:   #2a5740;
+      --orange:   #d9652a;
+      --orange2:  #b5512a;
+      --sand:     #f2ede6;
+      --sand-warm:#fff3e3;
+      --daybreak: #ffd9b5;     /* 晨曦 */
+      --night:    #2d2438;     /* 夜尽 */
+      --glass:    rgba(255,255,255,0.55);
+      --stroke:   rgba(0,0,0,0.08);
+      --text:     #1a1a1a;
+      --muted:    #6b6b6b;
+      --r:        16px;
+      --r-lg:     22px;
+    }
+
+    html, body { width: 100%; overflow-x: hidden; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                   "Hiragino Sans GB", "SF Pro Display", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%,
+          rgba(255,180,120,0.55) 0%,
+          rgba(255,180,120,0) 60%),
+        linear-gradient(180deg, var(--daybreak) 0%, var(--sand) 50%, var(--sand) 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      padding-bottom: 96px;        /* 留 activity bar 空间 */
+    }
+
+    /* 漂浮的太阳光圈（装饰） */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -180px; left: 50%;
+      transform: translateX(-50%);
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(255,200,100,0.65), transparent 65%);
+      filter: blur(20px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Page container ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 48px 0 24px;
+      flex-wrap: wrap;
+    }
+    .page-header h1 {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+    .page-header h1 em {
+      font-style: normal;
+      color: var(--orange);
+    }
+    .back-link {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      margin-bottom: 6px;
+    }
+    .back-link:hover { color: var(--green); }
+    .greeting {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.5;
+      max-width: 240px;
+    }
+    .greeting strong { color: var(--green); font-weight: 700; }
+
+    /* ── Section labels ── */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1; min-width: 40px;
+      height: 1px;
+      background: linear-gradient(to right, rgba(0,0,0,0.12), transparent);
+      margin-left: 8px;
+    }
+
+    /* ─────────────────────────────────────────
+     *  HERO — Stack 模式
+     * ───────────────────────────────────────── */
+    .hero-stack {
+      position: relative;
+      padding: 16px 0 60px;
+      isolation: isolate;        /* 让卡片阴影不外溢到 scrubber */
+    }
+
+    .stack-wrap {
+      position: relative;
+      height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stack {
+      position: relative;
+      width: 220px;
+      height: 280px;
+      cursor: pointer;
+    }
+
+    /* 中间叠加的引言胶囊 */
+    .stack-quote {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+      border-radius: 100px;
+      border: 0.5px solid rgba(255,255,255,0.7);
+      box-shadow:
+        0 8px 32px rgba(28,61,46,0.18),
+        0 0 0 0.5px rgba(28,61,46,0.06);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      pointer-events: none;
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  opacity 0.35s ease;
+    }
+    .stack:hover ~ .stack-quote,
+    .stack-wrap:hover .stack-quote {
+      transform: translate(-50%, calc(-50% - 180px)) scale(0.94);
+      opacity: 0.92;
+    }
+
+    /* Polaroid 单卡 */
+    .stack-card {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 200px; height: 240px;
+      transform-origin: center bottom;
+      transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+      z-index: var(--z, 1);
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 12px 24px rgba(60, 30, 10, 0.18));
+    }
+
+    /* hover：散开成扇形 */
+    .stack-wrap:hover .stack-card {
+      transform: translate(calc(-50% + var(--tx, 0px)), -50%) rotate(var(--hover-rot, 0deg));
+    }
+
+    .polaroid {
+      width: 100%; height: 100%;
+      background: #fff;
+      border-radius: 4px;
+      padding: 10px 10px 14px;
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 0 0.5px rgba(0,0,0,0.05);
+    }
+    .polaroid-photo {
+      flex: 1;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      filter: saturate(1.05);
+      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.04);
+    }
+    .polaroid-cap {
+      padding-top: 10px;
+      text-align: center;
+      font-family: 'Caveat', 'Permanent Marker', "Marker Felt", "PingFang SC", cursive;
+    }
+    .polaroid-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #2a2a2a;
+      letter-spacing: 0;
+      line-height: 1.2;
+    }
+    .polaroid-date {
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-top: 1px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─────────────────────────────────────────
+     *  LINEUP — 月度队列
+     * ───────────────────────────────────────── */
+    .lineup {
+      padding: 36px 0;
+    }
+    .month-section {
+      margin-bottom: 36px;
+      scroll-margin-top: 60px;
+    }
+    .month-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 0 2px;
+    }
+    .month-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: -0.01em;
+    }
+    .month-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--orange);
+      background: rgba(217,101,42,0.10);
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+    }
+    .month-strip {
+      display: flex;
+      gap: 10px;
+      padding: 4px 2px 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(28,61,46,0.15) transparent;
+    }
+    .month-strip::-webkit-scrollbar { height: 4px; }
+    .month-strip::-webkit-scrollbar-thumb { background: rgba(28,61,46,0.15); border-radius: 4px; }
+
+    .strip-item {
+      flex-shrink: 0;
+      width: 124px;
+      scroll-snap-align: start;
+      cursor: pointer;
+      transition: transform 0.18s ease;
+    }
+    .strip-item:active { transform: scale(0.96); }
+    .strip-photo {
+      width: 124px; height: 124px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      box-shadow: 0 4px 14px rgba(60,30,10,0.12);
+      filter: saturate(1.05);
+      position: relative;
+      overflow: hidden;
+    }
+    .strip-photo::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 40%, rgba(0,0,0,0.08) 100%);
+      pointer-events: none;
+    }
+    .strip-title {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+      padding: 0 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ─────────────────────────────────────────
+     *  SCRUBBER — 右侧时间轴
+     * ───────────────────────────────────────── */
+    .scrubber {
+      position: fixed;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 30;
+      padding: 14px 8px;
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+      border: 0.5px solid rgba(255,255,255,0.6);
+      border-radius: 100px;
+      box-shadow:
+        0 6px 24px rgba(60,30,10,0.10),
+        0 0 0 0.5px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .scrubber-dot {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 22px;
+      cursor: pointer;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dot-bullet {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(28,61,46,0.30);
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .dot-label {
+      position: absolute;
+      right: 32px;
+      padding: 4px 9px;
+      background: var(--green);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 100px;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      transform: translateX(8px);
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 2px 8px rgba(28,61,46,0.25);
+    }
+    .scrubber-dot:hover .dot-bullet,
+    .scrubber-dot.is-active .dot-bullet {
+      background: var(--orange);
+      transform: scale(1.6);
+      box-shadow: 0 0 0 4px rgba(217,101,42,0.18);
+    }
+    .scrubber-dot:hover .dot-label,
+    .scrubber-dot.is-active .dot-label {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .scrubber-dot.is-active .dot-label { background: var(--orange); }
+
+    /* ─────────────────────────────────────────
+     *  ACTIVITY BAR — 底部
+     * ───────────────────────────────────────── */
+    .activity-bar {
+      position: fixed;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      max-width: calc(100vw - 32px);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px 12px 14px;
+      background: rgba(28,36,56,0.85);
+      color: rgba(255,255,255,0.92);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border-radius: 100px;
+      border: 0.5px solid rgba(255,255,255,0.12);
+      box-shadow:
+        0 8px 32px rgba(28,36,56,0.32),
+        0 0 0 0.5px rgba(0,0,0,0.18);
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    .activity-pulse {
+      display: flex; gap: 3px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .activity-pulse .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffb976, #ff7e3e);
+      animation: pulseGlow 1.4s ease-in-out infinite;
+    }
+    .activity-pulse .dot:nth-child(2) { animation-delay: 0.2s; }
+    .activity-pulse .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulseGlow {
+      0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
+      40%           { opacity: 1;    transform: scale(1.15); box-shadow: 0 0 8px rgba(255,180,120,0.7); }
+    }
+    .activity-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .activity-progress {
+      width: 56px; height: 3px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 100px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .activity-progress-fill {
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,180,120,0.9), transparent);
+      animation: progSweep 2.2s linear infinite;
+    }
+    @keyframes progSweep {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ─────────────────────────────────────────
+     *  RESPONSIVE
+     * ───────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .page-header { padding: 32px 0 16px; }
+      .page-header h1 { font-size: 26px; }
+      .greeting { font-size: 11.5px; max-width: 50%; }
+      .stack-wrap { height: 360px; }
+      .stack { width: 180px; height: 230px; }
+      .stack-card { width: 160px; height: 200px; }
+      .polaroid-photo { font-size: 44px; }
+      .scrubber {
+        right: 10px;
+        padding: 10px 6px;
+      }
+      .scrubber-dot { width: 22px; height: 18px; }
+      .activity-bar { font-size: 11.5px; padding: 10px 14px 10px 12px; }
+      .activity-progress { display: none; }
+    }
+    @media (max-width: 420px) {
+      .scrubber .dot-label { display: none; }   /* 太小屏，hover label 没意义 */
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- ═══════════ Header ═══════════ -->
+    <header class="page-header">
+      <div>
+        <a href="/" class="back-link">← cyc.center</a>
+        <h1>我的<em>时间线</em></h1>
+      </div>
+      <div class="greeting" id="greeting"><!-- JS 填 --></div>
+    </header>
+
+    <!-- ═══════════ Hero — Stack ═══════════ -->
+    <section class="hero-stack">
+      <div class="section-label">✨ 社区的回忆</div>
+      <div class="stack-wrap">
+        <div class="stack" id="stack"><!-- JS 填 8 张 polaroid --></div>
+        <div class="stack-quote">来到社区后，发生了好多事</div>
+      </div>
+    </section>
+
+    <!-- ═══════════ Lineup — 月度 ═══════════ -->
+    <section class="lineup">
+      <div class="section-label">📅 时光机 · LINEUP</div>
+      <div id="months"><!-- JS 填 月份 sections --></div>
+    </section>
+
+  </div>
+
+  <!-- ═══════════ Right Scrubber ═══════════ -->
+  <aside class="scrubber" id="scrubber"><!-- JS 填 dots --></aside>
+
+  <!-- ═══════════ Bottom Activity Bar ═══════════ -->
+  <div class="activity-bar" role="status" aria-live="polite">
+    <div class="activity-pulse">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+    <div class="activity-text" id="activity-text">AI 正在整理社区回忆…</div>
+    <div class="activity-progress"><div class="activity-progress-fill"></div></div>
+  </div>
+
+  <script>
+    /* ─────────────────────────────────────────
+     *  Mock 数据
+     *  TODO 接真实数据：
+     *    HERO_PICS  ← /api/member?id=<self> .activities (按权重精选 8 条)
+     *    MONTHS     ← 同上，按 YYYY-MM 分组倒序
+     *    GREETING   ← 加入 CYC 的天数（first RSVP timestamp）
+     * ───────────────────────────────────────── */
+    const HERO_PICS = [
+      { grad: ['#ff9966','#ff5e62'], emoji: '🌊', title: '苍洱海边野餐',  date: '5月12日' },
+      { grad: ['#a8e063','#56ab2f'], emoji: '🥾', title: '苍山徒步',       date: '4月28日' },
+      { grad: ['#fcb045','#fd1d1d'], emoji: '🎤', title: 'Open Mic 之夜', date: '4月15日' },
+      { grad: ['#667eea','#764ba2'], emoji: '📖', title: '新书共读',       date: '4月3日'  },
+      { grad: ['#f093fb','#f5576c'], emoji: '🎭', title: '即兴戏剧工作坊', date: '3月22日' },
+      { grad: ['#4facfe','#00f2fe'], emoji: '🌅', title: '日出冥想',       date: '3月10日' },
+      { grad: ['#fa709a','#fee140'], emoji: '🎂', title: '生日派对',       date: '2月14日' },
+      { grad: ['#fdfbfb','#ebedee'], emoji: '🎬', title: '冬日深夜电影',   date: '1月28日' },
+    ];
+
+    const MONTHS = [
+      { label: '2025 · 5月', items: [
+        { grad: ['#ff9966','#ff5e62'], emoji: '🌊', title: '苍洱野餐' },
+        { grad: ['#56ab2f','#a8e063'], emoji: '🥾', title: '徒步' },
+        { grad: ['#667eea','#764ba2'], emoji: '🎨', title: '艺术沙龙' },
+        { grad: ['#fa709a','#fee140'], emoji: '🍰', title: '伴月烘焙' },
+        { grad: ['#43e97b','#38f9d7'], emoji: '🌱', title: '种植日' },
+      ]},
+      { label: '2025 · 4月', items: [
+        { grad: ['#fcb045','#fd1d1d'], emoji: '🎤', title: 'Open Mic' },
+        { grad: ['#667eea','#764ba2'], emoji: '📖', title: '新书共读' },
+        { grad: ['#f093fb','#f5576c'], emoji: '🎭', title: '即兴戏剧' },
+        { grad: ['#4facfe','#00f2fe'], emoji: '🌊', title: '看海' },
+      ]},
+      { label: '2025 · 3月', items: [
+        { grad: ['#fa709a','#fee140'], emoji: '🌅', title: '日出冥想' },
+        { grad: ['#a18cd1','#fbc2eb'], emoji: '🎵', title: '音乐分享' },
+        { grad: ['#ffecd2','#fcb69f'], emoji: '☕', title: '咖啡品鉴' },
+        { grad: ['#84fab0','#8fd3f4'], emoji: '🧘', title: '瑜伽'    },
+        { grad: ['#d299c2','#fef9d7'], emoji: '🌸', title: '春日漫步' },
+        { grad: ['#89f7fe','#66a6ff'], emoji: '💧', title: '湖边游泳' },
+      ]},
+      { label: '2025 · 2月', items: [
+        { grad: ['#fa709a','#fee140'], emoji: '🎂', title: '生日派对' },
+        { grad: ['#ff9a9e','#fad0c4'], emoji: '💝', title: '情人节' },
+        { grad: ['#a1c4fd','#c2e9fb'], emoji: '🎲', title: '桌游夜' },
+      ]},
+      { label: '2025 · 1月', items: [
+        { grad: ['#fdfbfb','#ebedee'], emoji: '🎬', title: '深夜电影' },
+        { grad: ['#fbc2eb','#a6c1ee'], emoji: '🎉', title: '元旦派对' },
+        { grad: ['#fee140','#fa709a'], emoji: '🥟', title: '年夜饺子' },
+        { grad: ['#a18cd1','#fbc2eb'], emoji: '✍️', title: '新年写字' },
+      ]},
+      { label: '2024 · 12月', items: [
+        { grad: ['#f6d365','#fda085'], emoji: '🎄', title: '圣诞树' },
+        { grad: ['#84fab0','#8fd3f4'], emoji: '🎁', title: '礼物交换' },
+        { grad: ['#a1c4fd','#c2e9fb'], emoji: '⛄', title: '冬日散步' },
+      ]},
+      { label: '2024 · 11月', items: [
+        { grad: ['#fa709a','#fee140'], emoji: '🍂', title: '秋叶' },
+        { grad: ['#fcb69f','#ffecd2'], emoji: '🎃', title: '万圣节' },
+        { grad: ['#d4fc79','#96e6a1'], emoji: '🌾', title: '稻田丰收' },
+      ]},
+    ];
+
+    /* ─── 问候语 + 加入天数 ─── */
+    function setGreeting() {
+      const h = new Date().getHours();
+      const greet =
+        h < 6  ? '夜深了' :
+        h < 11 ? '早安'   :
+        h < 14 ? '午安'   :
+        h < 18 ? '下午好' :
+        h < 22 ? '晚上好' : '深夜了';
+      // mock 天数；TODO: 拿成员第一次 RSVP 时间算
+      const days = 142;
+      document.getElementById('greeting').innerHTML =
+        `${greet}，你已经在 CYC<br>度过了 <strong>${days}</strong> 天`;
+    }
+
+    /* ─── 渲染 hero stack ─── */
+    function renderStack() {
+      const el = document.getElementById('stack');
+      // 8 张的旋转 + 散开偏移（fan-out）
+      const layout = [
+        { rot: -12, hoverRot: -28, tx: -260 },
+        { rot:  -8, hoverRot: -20, tx: -185 },
+        { rot:  -5, hoverRot: -13, tx: -110 },
+        { rot:  -2, hoverRot:  -5, tx:  -40 },
+        { rot:   2, hoverRot:   5, tx:   30 },
+        { rot:   5, hoverRot:  13, tx:  100 },
+        { rot:   8, hoverRot:  20, tx:  175 },
+        { rot:  12, hoverRot:  28, tx:  250 },
+      ];
+      HERO_PICS.forEach((p, i) => {
+        const L = layout[i] || layout[0];
+        const card = document.createElement('div');
+        card.className = 'stack-card';
+        card.style.setProperty('--rot', L.rot + 'deg');
+        card.style.setProperty('--hover-rot', L.hoverRot + 'deg');
+        card.style.setProperty('--tx', L.tx + 'px');
+        card.style.setProperty('--z', i + 1);
+        card.innerHTML = `
+          <div class="polaroid">
+            <div class="polaroid-photo" style="background: linear-gradient(135deg, ${p.grad[0]}, ${p.grad[1]})">
+              <span>${p.emoji}</span>
+            </div>
+            <div class="polaroid-cap">
+              <div class="polaroid-title">${p.title}</div>
+              <div class="polaroid-date">${p.date}</div>
+            </div>
+          </div>`;
+        el.appendChild(card);
+      });
+    }
+
+    /* ─── 渲染月度 lineup ─── */
+    function renderMonths() {
+      const el = document.getElementById('months');
+      MONTHS.forEach((m, mi) => {
+        const sec = document.createElement('section');
+        sec.className = 'month-section';
+        sec.id = 'month-' + mi;
+        sec.innerHTML = `
+          <div class="month-label">
+            <span class="month-name">${m.label}</span>
+            <span class="month-count">${m.items.length} 张</span>
+          </div>
+          <div class="month-strip">
+            ${m.items.map(it => `
+              <div class="strip-item">
+                <div class="strip-photo" style="background: linear-gradient(135deg, ${it.grad[0]}, ${it.grad[1]})">
+                  <span>${it.emoji}</span>
+                </div>
+                <div class="strip-title">${it.title}</div>
+              </div>`).join('')}
+          </div>`;
+        el.appendChild(sec);
+      });
+    }
+
+    /* ─── 渲染 scrubber ─── */
+    function renderScrubber() {
+      const el = document.getElementById('scrubber');
+      MONTHS.forEach((m, mi) => {
+        const dot = document.createElement('a');
+        dot.className = 'scrubber-dot';
+        dot.href = '#month-' + mi;
+        dot.dataset.target = 'month-' + mi;
+        // 标签只取月份部分（"2025 · 5月" → "5月"），节省空间
+        const short = (m.label.split(' · ')[1] || m.label);
+        dot.innerHTML = `
+          <span class="dot-bullet"></span>
+          <span class="dot-label">${m.label}</span>`;
+        el.appendChild(dot);
+      });
+
+      // 点击平滑滚动
+      el.querySelectorAll('.scrubber-dot').forEach(d => {
+        d.addEventListener('click', e => {
+          e.preventDefault();
+          const t = document.getElementById(d.dataset.target);
+          if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
+      // 滚动联动：当前月份 dot 高亮
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          if (en.isIntersecting) {
+            el.querySelectorAll('.scrubber-dot').forEach(d => d.classList.remove('is-active'));
+            const dot = el.querySelector(`[data-target="${en.target.id}"]`);
+            if (dot) dot.classList.add('is-active');
+          }
+        });
+      }, { rootMargin: '-30% 0px -55% 0px', threshold: 0 });
+      document.querySelectorAll('.month-section').forEach(s => obs.observe(s));
+    }
+
+    /* ─── Activity bar 文案轮播 ─── */
+    //   纯前端假动效 — 给"AI 正在整理"一种活着的感觉
+    //   接真实进度时，把 setInterval 换成根据后端推进度更新
+    function loopActivity() {
+      const phrases = [
+        'AI 正在整理社区回忆…',
+        '正在按时间脉络梳理活动…',
+        '正在挑选你最有代表性的瞬间…',
+        '正在配对照片与回忆…',
+        '快好了，再过一会就能呈现给你…',
+      ];
+      const el = document.getElementById('activity-text');
+      let i = 0;
+      setInterval(() => {
+        i = (i + 1) % phrases.length;
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.textContent = phrases[i];
+          el.style.opacity = '0.92';
+        }, 220);
+      }, 3200);
+      el.style.transition = 'opacity 0.22s ease';
+    }
+
+    /* ─── 启动 ─── */
+    setGreeting();
+    renderStack();
+    renderMonths();
+    renderScrubber();
+    loopActivity();
+  </script>
+
+</body>
+</html>
