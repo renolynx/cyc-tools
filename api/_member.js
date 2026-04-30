@@ -224,6 +224,29 @@ export async function fetchMember(rec_id) {
 }
 
 /**
+ * 聚合每个成员在 RSVP 里出现的角色 + 计数
+ * 返回 Map<member_rec_id, { '活动发起者': N, '嘉宾': N, '活动参与者': N, ... }>
+ *
+ * 不缓存：调用方一般同时调 inferMemberActivityCities，已用一次 fetchAllRsvps；
+ * 这里再走一次也是命中那次缓存的 rsvp:all（10min TTL）
+ */
+export async function aggregateMemberRoles() {
+  let rsvps;
+  try { rsvps = await fetchAllRsvps(); }
+  catch { return new Map(); }
+  const result = new Map();
+  for (const r of rsvps) {
+    if (!r.member_rec_id) continue;
+    if (!result.has(r.member_rec_id)) result.set(r.member_rec_id, {});
+    const stats = result.get(r.member_rec_id);
+    for (const role of (r.roles || [])) {
+      stats[role] = (stats[role] || 0) + 1;
+    }
+  }
+  return result;
+}
+
+/**
  * 根据"ta 报过的活动地点"反推每个成员的相关城市
  * 解决：很多成员的「现在所在据点」字段是空的，但他们其实参加过本地活动
  * 返回 Map<member_rec_id, Set<city>>
@@ -303,18 +326,21 @@ export async function fetchMembersByCity(city, options = {}) {
     ]).catch(() => {});
   }
 
-  const [all, inferredMap] = await Promise.all([
+  const [all, inferredMap, roleMap] = await Promise.all([
     fetchAllMembers(),
     inferMemberActivityCities(),
+    aggregateMemberRoles(),
   ]);
 
-  const filtered = all.filter(m => {
-    if (m.hidden) return false;
-    if (m.cities.includes(city)) return true;     // 1. 据点
-    const inf = inferredMap.get(m.record_id);
-    if (inf && inf.has(city)) return true;        // 2. 活动反推
-    return false;
-  });
+  const filtered = all
+    .filter(m => {
+      if (m.hidden) return false;
+      if (m.cities.includes(city)) return true;     // 1. 据点
+      const inf = inferredMap.get(m.record_id);
+      if (inf && inf.has(city)) return true;        // 2. 活动反推
+      return false;
+    })
+    .map(m => ({ ...m, roleStats: roleMap.get(m.record_id) || {} }));
 
   if (isKvConfigured()) {
     try { await kvSet(cacheKey, JSON.stringify(filtered), KV_TTL_CITY); } catch (err) {

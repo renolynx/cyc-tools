@@ -1792,6 +1792,29 @@ body.event-page {
   padding: 4px 12px;
 }
 
+/* ── 活动角色 chip（从 RSVP 聚合，含计数）── */
+.cm-card-roles {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  justify-content: center;
+  margin: 0 0 6px;
+}
+.cm-admin-item-roles {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-top: 4px;
+}
+.cm-role-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.cm-role-chip.role-host    { background: rgba(217,101,42,0.16); color: var(--orange); }
+.cm-role-chip.role-speaker { background: rgba(217,101,42,0.10); color: var(--orange); }
+.cm-role-chip.role-attend  { background: rgba(28,61,46,0.10);  color: var(--green); }
+.cm-role-chip.role-other   { background: rgba(0,0,0,0.06);     color: var(--muted); }
+
 /* 详情页滑入动画（让导航感觉像 drawer） */
 .cm-detail {
   animation: cmDetailIn 0.32s cubic-bezier(0.32,0.72,0,1);

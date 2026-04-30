@@ -54,6 +54,31 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n) + '…' : s;
 }
 
+/** 把 roleStats {'活动发起者':3, '嘉宾':1, '活动参与者':5} 渲染成 chip 行
+ *  优先级：活动发起者 → 嘉宾 → 活动参与者 → 其他
+ */
+function renderRoleChips(stats) {
+  if (!stats || typeof stats !== 'object') return '';
+  const order = [
+    { role: '活动发起者', cls: 'host',    short: '发起' },
+    { role: '嘉宾',       cls: 'speaker', short: '嘉宾' },
+    { role: '活动参与者', cls: 'attend',  short: '参与' },
+  ];
+  const known = new Set(order.map(o => o.role));
+  const chips = [];
+  for (const o of order) {
+    const n = stats[o.role];
+    if (n) chips.push(`<span class="cm-role-chip role-${o.cls}">${o.short} ×${n}</span>`);
+  }
+  // 任何不在 known 里的角色（罕见，飞书表里手动加的怪角色）也显示
+  for (const [role, n] of Object.entries(stats)) {
+    if (!known.has(role) && n) {
+      chips.push(`<span class="cm-role-chip role-other">${escapeHtml(role)} ×${n}</span>`);
+    }
+  }
+  return chips.join('');
+}
+
 // ─────────── 列表页 ───────────
 
 function renderList(city, members) {
@@ -73,10 +98,12 @@ function renderList(city, members) {
         const bio  = truncate(m.bio, 50);
         const job  = truncate(m.job || m.company, 30);
         const identityTags = (m.identity || []).slice(0, 3);
+        const roleChips = renderRoleChips(m.roleStats);
         return `<a class="cm-card" href="/community/${escapeHtml(m.record_id)}">
   <div class="cm-card-ava">${ava ? `<img src="${ava}" alt="" loading="lazy">` : '<span>👤</span>'}</div>
   <div class="cm-card-name">${escapeHtml(name)}</div>
   ${identityTags.length ? `<div class="cm-card-tags">${identityTags.map(t => `<span class="cm-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+  ${roleChips ? `<div class="cm-card-roles">${roleChips}</div>` : ''}
   ${job ? `<div class="cm-card-job">${escapeHtml(job)}</div>` : ''}
   ${hub ? `<div class="cm-card-meta">📍 ${escapeHtml(hub)}</div>` : ''}
   ${bio ? `<div class="cm-card-bio">${escapeHtml(bio)}</div>` : ''}
@@ -562,14 +589,38 @@ function cmRender() {
       ? '📍 ' + escapeHtml(hub)
       : (inferred ? '🎯 ' + escapeHtml(inferred) + '（活动参与）' : '');
     const job = (m.job || m.company || '').slice(0, 40);
+    const roleChips = renderRoleChipsClient(m.roleStats);
     return \`<div class="cm-admin-item" data-rid="\${escapeHtml(m.record_id)}">
       <div class="cm-admin-item-main">
         <div class="cm-admin-item-name">\${escapeHtml(display)}\${m.hidden ? ' <span class="cm-hidden-tag">已隐藏</span>' : ''}</div>
         <div class="cm-admin-item-meta">\${meta}\${meta && job ? ' · ' : ''}\${escapeHtml(job)}</div>
+        \${roleChips ? '<div class="cm-admin-item-roles">' + roleChips + '</div>' : ''}
       </div>
       <button class="cm-admin-edit" onclick="cmStartEdit('\${escapeHtml(m.record_id)}')">编辑</button>
     </div>\`;
   }).join('') + (pool.length > 200 ? \`<div class="cm-admin-empty">还有 \${pool.length - 200} 位未显示，请继续搜索缩小范围</div>\` : '');
+}
+
+/** 客户端 role chip 渲染（admin 列表用）— 与服务端 renderRoleChips 同逻辑 */
+function renderRoleChipsClient(stats) {
+  if (!stats || typeof stats !== 'object') return '';
+  const order = [
+    { role: '活动发起者', cls: 'host',    short: '发起' },
+    { role: '嘉宾',       cls: 'speaker', short: '嘉宾' },
+    { role: '活动参与者', cls: 'attend',  short: '参与' },
+  ];
+  const known = new Set(order.map(o => o.role));
+  const chips = [];
+  for (const o of order) {
+    const n = stats[o.role];
+    if (n) chips.push('<span class="cm-role-chip role-' + o.cls + '">' + o.short + ' ×' + n + '</span>');
+  }
+  for (const [role, n] of Object.entries(stats)) {
+    if (!known.has(role) && n) {
+      chips.push('<span class="cm-role-chip role-other">' + escapeHtml(role) + ' ×' + n + '</span>');
+    }
+  }
+  return chips.join('');
 }
 
 // ─────────── 创建 / 编辑 ───────────
