@@ -445,24 +445,25 @@ export async function ensureMemberByWechat(name, wechat, bio) {
 }
 
 /**
- * 嘉宾匹配：先匹配称呼，回退姓名
- * 用于活动详情页"嘉宾"卡 → 链 profile
+ * 嘉宾匹配：先匹配称呼，回退姓名（用于详情页 / RSVP 嘉宾联动）
+ * 在已拉好的成员列表里同步匹配，避免 N 次 fetchAllMembers
+ *   规则：nickname 精确 → name 精确 → nickname 包含
  */
-export async function findMemberByName(name) {
-  const all = await fetchAllMembers();
+export function matchSpeaker(allMembers, name) {
   const target = String(name || '').trim();
   if (!target) return null;
+  return (
+    allMembers.find(m => m.nickname && m.nickname.trim() === target) ||
+    allMembers.find(m => m.name && m.name.trim() === target) ||
+    allMembers.find(m => m.nickname && m.nickname.includes(target)) ||
+    null
+  );
+}
 
-  // 1. 称呼精确等
-  let hit = all.find(m => m.nickname && m.nickname.trim() === target);
-  if (hit) return hit;
-  // 2. 姓名精确等
-  hit = all.find(m => m.name && m.name.trim() === target);
-  if (hit) return hit;
-  // 3. 称呼包含
-  hit = all.find(m => m.nickname && m.nickname.includes(target));
-  if (hit) return hit;
-  return null;
+/** findMemberByName 的便捷异步版（自己拉表）；若已有 allMembers 优先用 matchSpeaker */
+export async function findMemberByName(name) {
+  const all = await fetchAllMembers();
+  return matchSpeaker(all, name);
 }
 
 // ─────────── 写入 ───────────

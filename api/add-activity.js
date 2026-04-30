@@ -6,22 +6,8 @@
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
 import { kvDel, isKvConfigured } from './_kv.js';
-import { replaceSpeakerRsvps }                  from './_rsvp.js';
-import { fetchAllMembers, autoCreateMember }    from './_member.js';
-
-/** 在已拉好的成员列表里匹配单个嘉宾名字（避免 N 次 fetchAllMembers）
- *  规则同 _member.findMemberByName：先 nickname 精确，再 name 精确，再 nickname 包含
- */
-function matchSpeaker(allMembers, name) {
-  const target = String(name || '').trim();
-  if (!target) return null;
-  return (
-    allMembers.find(m => m.nickname && m.nickname.trim() === target) ||
-    allMembers.find(m => m.name && m.name.trim() === target) ||
-    allMembers.find(m => m.nickname && m.nickname.includes(target)) ||
-    null
-  );
-}
+import { replaceSpeakerRsvps }                              from './_rsvp.js';
+import { fetchAllMembers, autoCreateMember, matchSpeaker }  from './_member.js';
 
 /** 上传海报到飞书云文档，返回 file_token */
 async function uploadPoster(poster, token, appToken) {
