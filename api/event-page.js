@@ -501,7 +501,10 @@ async function submitTypesEdit() {
   const btn = document.getElementById('typesEditSubmit');
   errEl.textContent = ''; errEl.style.color = '';
   if (!pwd) { errEl.style.color = '#c0392b'; errEl.textContent = '请输入管理密码'; return; }
-  btn.disabled = true; btn.textContent = '保存中…';
+  btn.disabled = true; btn.textContent = '保存中…（约 5-10 秒）';
+  // 显眼的进度提示
+  errEl.style.color = 'var(--muted)';
+  errEl.textContent = '⏳ 写入飞书 + 清缓存中，请稍等…';
   try {
     const res = await fetch('/api/community-write', {
       method: 'POST',
@@ -516,9 +519,14 @@ async function submitTypesEdit() {
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || '保存失败');
     if (Array.isArray(data.all_known_types)) _typesKnown = data.all_known_types;
+    btn.textContent = '✓ 已保存';
     errEl.style.color = 'var(--green)';
-    errEl.textContent = '✓ 已保存，刷新页面看效果';
-    setTimeout(() => location.reload(), 800);
+    errEl.textContent = '✓ 已保存，正在跳到最新页面…';
+    // 关键：location.reload() 会命中 Vercel Edge cache（s-maxage=300），看不到新值。
+    //       带 query param 强制 cache miss，重新 SSR 拉飞书最新数据。
+    setTimeout(() => {
+      location.href = location.pathname + '?_=' + Date.now();
+    }, 1200);
   } catch (err) {
     errEl.style.color = '#c0392b';
     errEl.textContent = '失败：' + err.message;
