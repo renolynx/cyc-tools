@@ -6,207 +6,466 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="社区的回忆 — 来到 CYC 后发生的一切">
 
-  <!-- Daybreak OS — Daybook layer fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet">
-
   <style>
     /* ──────────────────────────────────────────────
-     *  Daybook layer · /me/timeline
-     *  严格按 daybreak-os v2 规范实现
-     *  - canvas: near-white     - surface: white + halo
-     *  - 单一 coral 强调（仅 temporal/active/verb 语义）
-     *  - 间距 4/8/12/16/24/32/48/64
-     *  - 半径 9999/24/16/50% 四档
-     *  - 字重 400/600/700
-     *  - 字号 12/14/16/20/28/40
-     *  - 禁纯 #fff / #000 / 第二强调色 / 装饰用色
+     *  /me/timeline · Daybook layer
+     *  按 DESIGN.md（cyc.center 本地化）严格落地：
+     *
+     *    - canvas: var(--cyc-sand) #f2ede6  ← 不替换为近白
+     *    - 三 blob 背景（橙 / 绿 / tan）—— 不可省略
+     *    - surface = 暖白 #fefcfa + halo 阴影（带微绿）
+     *    - 单一 cyc-orange，仅 temporal/active/verb 语义
+     *    - 文字 AAA 色阶（#1a1a1a … #757575）
+     *    - 字重 400 / 600 / 700（禁 500）
+     *    - 间距 4/8/12/16/24/32/48/64
+     *    - 半径 9999/24/16/10/6/50%
+     *    - 字体：系统 fallback，不 import Google Fonts
+     *
+     *  daybreak-os SKILL.md 提供 *how to think*，本文件实现的是 cyc.center
+     *  本地化版本（DESIGN.md），两份文档冲突时 DESIGN.md 优先。
      * ────────────────────────────────────────────── */
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* Daybook canvas + surface */
-      --db-canvas:        oklch(0.985 0 0);
-      --db-surface:       oklch(1 0 0);
-      --db-text-primary:  oklch(0.15 0 0);
-      --db-text-secondary:oklch(0.55 0 0);
-      --db-text-tertiary: oklch(0.75 0 0);
-      --db-fill-empty:    oklch(0.94 0 0);
+      /* ── Brand palette (the unchangeable core) ── */
+      --cyc-green:    #1c3d2e;
+      --cyc-green-2:  #2a5740;
+      --cyc-orange:   #d9652a;   /* temporal/active accent — 大字号或 fill */
+      --cyc-warning:  #b04a18;   /* AAA 暗化版 — 小字号橙色文字用 */
+      --cyc-sand:     #f2ede6;
+      --cyc-tan:      #c8a96e;
 
-      /* The ONE accent — temporal/active/verb only */
-      --db-accent:        oklch(0.62 0.22 30);
-      --db-accent-soft:   oklch(0.62 0.22 30 / 0.12);
+      /* ── Neutral text (AAA on sand) ── */
+      --cyc-text:         #1a1a1a;   /* body, 11.8:1 ✅ */
+      --cyc-text-strong:  #0d0d0d;   /* 标题, 14:1 ✅ */
+      --cyc-text-muted:   #4d4d4d;   /* secondary, 7.4:1 ✅ — 替代旧 #6b6b6b */
+      --cyc-text-subtle:  #5c5c5c;   /* 5.9:1, 仅 ≥18px 或 ≥600 */
+      --cyc-text-faint:   #757575;   /* 3.5:1, 仅 placeholder/装饰 */
 
-      /* Radii — only four */
-      --r-pill:           9999px;
-      --r-card:           24px;
-      --r-inner:          16px;
-      --r-dot:            50%;
+      /* ── Surfaces ── */
+      --cyc-surface-glass:        rgba(255, 255, 255, 0.75);
+      --cyc-surface-glass-strong: rgba(255, 255, 255, 0.88);
+      --cyc-surface-glass-light:  rgba(255, 255, 255, 0.60);
+      --cyc-surface-pure:         #fefcfa;   /* warm off-white (不是纯白 #fff) */
+      --cyc-surface-tinted:       rgba(28, 61, 46, 0.04);
+
+      --cyc-border-glass: rgba(255, 255, 255, 0.6);
+      --cyc-stroke:       rgba(0, 0, 0, 0.08);
+      --cyc-stroke-soft:  rgba(0, 0, 0, 0.05);
+      --cyc-inset-shine:  rgba(255, 255, 255, 0.7);
+
+      /* ── Spacing scale (only these) ── */
+      --sp-1:  4px;
+      --sp-2:  8px;
+      --sp-3:  12px;
+      --sp-4:  16px;
+      --sp-6:  24px;
+      --sp-8:  32px;
+      --sp-12: 48px;
+      --sp-16: 64px;
+
+      /* ── Radius (only these) ── */
+      --r-pill:    9999px;
+      --r-card:    16px;
+      --r-card-lg: 24px;
+      --r-inner:   10px;
+      --r-tight:   6px;
+      --r-dot:     50%;
+
+      /* ── Typography ── */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC',
+                   'Inter Variable', 'Inter', 'Helvetica Neue', sans-serif;
+
+      /* ── Motion ── */
+      --ease-out-iox:  cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+      --dur-instant:   100ms;
+      --dur-fast:      150ms;
+      --dur-base:      240ms;
+      --dur-slow:      320ms;
     }
 
     html { -webkit-text-size-adjust: 100%; }
 
     body {
-      font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
-                   "PingFang SC", system-ui, sans-serif;
-      background: var(--db-canvas);
-      color: var(--db-text-primary);
+      font-family: var(--font-sans);
+      background: var(--cyc-sand);
+      color: var(--cyc-text);
       font-size: 16px;
       font-weight: 400;
-      line-height: 1.5;
-      letter-spacing: 0;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       min-height: 100vh;
-      padding-bottom: 96px;   /* room for activity bar */
+      padding-bottom: 110px;       /* room for activity bar */
       overflow-x: hidden;
     }
 
-    /* ─── Page container ─── */
-    .page {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 32px 16px 48px;
+    /* ──────────────────────────────────────────────
+     *  Three Blobs — cyc.center 大理感的视觉签名（不可省略）
+     * ────────────────────────────────────────────── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob.b1 {
+      width: 380px; height: 380px; opacity: 0.22;
+      background: radial-gradient(circle, var(--cyc-orange), transparent 70%);
+      top: -100px; right: -60px;
+    }
+    .blob.b2 {
+      width: 320px; height: 320px; opacity: 0.20;
+      background: radial-gradient(circle, var(--cyc-green), transparent 70%);
+      bottom: 60px; left: -80px;
+    }
+    .blob.b3 {
+      width: 220px; height: 220px; opacity: 0.18;
+      background: radial-gradient(circle, var(--cyc-tan), transparent 70%);
+      top: 50%; left: 50%;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .blob { opacity: 0.10; filter: blur(60px); }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
 
-    /* ─── Header ─── */
-    .page-header {
+    /* ──────────────────────────────────────────────
+     *  Topbar (sticky iOS-style glass)
+     * ────────────────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 48px;
+      gap: var(--sp-4);
+      height: 56px;
+      padding: 0 var(--sp-4);
+      background: var(--cyc-surface-glass-strong);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+      border-bottom: 0.5px solid var(--cyc-stroke);
     }
-
-    .back-link {
+    .topbar-back {
       font-size: 12px;
       font-weight: 600;
-      color: var(--db-text-tertiary);
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+      color: var(--cyc-text-muted);
       text-decoration: none;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      flex-shrink: 0;
     }
-    .back-link:hover { color: var(--db-text-secondary); }
-
-    .page-title {
-      font-size: 28px;
+    .topbar-back:hover { color: var(--cyc-text-strong); }
+    .topbar-title {
+      font-size: 15px;
       font-weight: 700;
-      color: var(--db-text-primary);
+      color: var(--cyc-text-strong);
       letter-spacing: -0.01em;
-      line-height: 1.2;
     }
-
-    /* ──────────────────────────────────────────────
-     *  Pattern 4 · Identity Card
-     * ────────────────────────────────────────────── */
-    .identity-card {
-      display: flex;
-      flex-direction: column;
+    .topbar-identity {
+      display: inline-flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 48px;
+      gap: var(--sp-2);
+      padding: 4px var(--sp-3) 4px 4px;
+      background: var(--cyc-surface-glass);
+      border: 0.5px solid var(--cyc-border-glass);
+      border-radius: var(--r-pill);
+      cursor: pointer;
+      min-height: 32px;
+      transition: background var(--dur-fast);
+      font-family: inherit;
     }
-
-    .mood-frame {
-      width: 96px;
-      height: 96px;
-      background: var(--db-surface);
+    .topbar-identity:hover { background: var(--cyc-surface-glass-strong); }
+    .topbar-identity-avatar {
+      width: 24px; height: 24px;
       border-radius: var(--r-dot);
-      padding: 16px;
-      box-shadow:
-        0 8px 24px -8px oklch(0 0 0 / 0.06),
-        0 0 32px oklch(0 0 0 / 0.04);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .mood-svg { width: 100%; height: 100%; display: block; }
-
-    .identity-name {
-      font-size: 20px;
+      background: var(--cyc-green);
+      color: var(--cyc-sand);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
       font-weight: 700;
-      color: var(--db-text-primary);
-      letter-spacing: -0.01em;
+      letter-spacing: 0;
+    }
+    .topbar-identity-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cyc-text-strong);
+      max-width: 80px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .identity-metric {
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--db-text-secondary);
-      letter-spacing: 0;
-      text-align: center;
+    /* ── Page container ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: var(--sp-8) var(--sp-4) var(--sp-12);
     }
-    /* coral on temporal anchor only */
-    .identity-metric .accent {
-      color: var(--db-accent);
-      font-weight: 600;
-    }
+
+    .hidden { display: none !important; }
 
     /* ──────────────────────────────────────────────
-     *  Surface (halo shadow — Daybook signature)
+     *  Section labels & buttons
      * ────────────────────────────────────────────── */
-    .surface {
-      background: var(--db-surface);
-      border-radius: var(--r-card);
-      padding: 32px 24px;
-      margin-bottom: 32px;
-      box-shadow:
-        0 8px 24px -8px oklch(0 0 0 / 0.08),
-        0 0 48px oklch(0 0 0 / 0.04);
-    }
-
     .surface-eyebrow {
       font-size: 12px;
       font-weight: 700;
-      color: var(--db-text-tertiary);
+      color: var(--cyc-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      margin-bottom: 16px;
+      margin-bottom: var(--sp-3);
     }
     .surface-title {
       font-size: 20px;
       font-weight: 700;
-      color: var(--db-text-primary);
+      color: var(--cyc-text-strong);
       letter-spacing: -0.01em;
+      line-height: 1.3;
+      margin-bottom: var(--sp-6);
+    }
+    .surface-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-6);
+    }
+    .surface-head .surface-title { margin-bottom: 0; }
+
+    /* Buttons */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+      background: linear-gradient(135deg, var(--cyc-green), var(--cyc-green-2));
+      color: var(--cyc-sand);
+      border: none;
+      border-radius: var(--r-pill);
+      padding: 12px var(--sp-6);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(28, 61, 46, 0.25);
+      font-family: inherit;
+      min-height: 44px;
+      transition: opacity var(--dur-fast), transform var(--dur-instant), box-shadow var(--dur-fast);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(28, 61, 46, 0.20);
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+      background: var(--cyc-surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--cyc-border-glass);
+      border-radius: var(--r-pill);
+      padding: 8px var(--sp-4);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyc-green);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      font-family: inherit;
+      min-height: 44px;
+      transition: background var(--dur-fast);
+    }
+    .btn-secondary:hover { background: var(--cyc-surface-glass-strong); }
+    .btn-secondary:active { transform: scale(0.98); }
+
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+      background: linear-gradient(135deg, var(--cyc-green), var(--cyc-green-2));
+      color: var(--cyc-sand);
+      border: none;
+      border-radius: var(--r-pill);
+      padding: 8px var(--sp-4);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0;
+      cursor: pointer;
+      box-shadow: 0 3px 12px rgba(28, 61, 46, 0.18);
+      font-family: inherit;
+      min-height: 36px;
+      transition: transform var(--dur-instant);
+      white-space: nowrap;
+    }
+    .btn-add:active { transform: scale(0.97); }
+
+    /* ──────────────────────────────────────────────
+     *  Mood Mascot Frame  (Daybook 5-state, cyc-green on white circle)
+     * ────────────────────────────────────────────── */
+    .mood-frame {
+      width: 64px; height: 64px;
+      flex-shrink: 0;
+      background: var(--cyc-surface-pure);
+      border-radius: var(--r-dot);
+      padding: 12px;
+      box-shadow:
+        0 4px 12px -2px rgba(28, 61, 46, 0.10),
+        0 0 24px rgba(28, 61, 46, 0.04);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mood-frame--lg {
+      width: 96px; height: 96px;
+      padding: 18px;
+      box-shadow:
+        0 8px 24px -8px rgba(28, 61, 46, 0.12),
+        0 0 48px rgba(28, 61, 46, 0.06);
+    }
+    .mood-svg { width: 100%; height: 100%; display: block; }
+
+    /* ──────────────────────────────────────────────
+     *  ONBOARDING (未关联身份)
+     * ────────────────────────────────────────────── */
+    .onboarding {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 220px);
+    }
+    .welcome-card {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      padding: var(--sp-12) var(--sp-8);
+    }
+    .welcome-card .mood-frame--lg {
+      margin: 0 auto var(--sp-6);
+    }
+    .welcome-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.02em;
       line-height: 1.2;
-      margin-bottom: 32px;
+      margin-bottom: var(--sp-3);
+    }
+    .welcome-sub {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--cyc-text-muted);
+      line-height: 1.6;
+      margin-bottom: var(--sp-8);
+    }
+    .welcome-tip {
+      margin-top: var(--sp-6);
+      font-size: 12px;
+      color: var(--cyc-text-faint);
+      letter-spacing: 0;
     }
 
     /* ──────────────────────────────────────────────
-     *  Pattern 1 · Artifact — Polaroid
-     *  - white frame, 8/8/32 padding (不等距是规范关键)
-     *  - photo aspect 1:1
-     *  - tilt ±8° max
+     *  Identity Card (已关联状态顶部 — 沙底直接放，不套 surface)
+     * ────────────────────────────────────────────── */
+    .identity-card {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-4);
+      padding: var(--sp-2) var(--sp-2) var(--sp-6);
+      margin-bottom: var(--sp-6);
+    }
+    .identity-info { flex: 1; min-width: 0; }
+    .identity-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+    .identity-metric {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--cyc-text-muted);
+      letter-spacing: 0;
+      line-height: 1.5;
+    }
+    /* coral 仅用于 temporal anchor — 数字（天数）+ 出席数 */
+    .identity-metric .accent {
+      color: var(--cyc-warning);   /* AAA-darkened orange for body text */
+      font-weight: 600;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Daybook Surface (halo signature — 不混 inset glass)
+     * ────────────────────────────────────────────── */
+    .surface-halo {
+      position: relative;
+      background: var(--cyc-surface-pure);
+      border-radius: var(--r-card-lg);
+      padding: var(--sp-8) var(--sp-6);
+      margin-bottom: var(--sp-6);
+      /* halo: 0 0 N 外晕；阴影微绿（DESIGN.md 第 446 行规定） */
+      box-shadow:
+        0 8px 24px -8px rgba(28, 61, 46, 0.10),
+        0 0 48px rgba(28, 61, 46, 0.04);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Polaroid (Pattern 1 · Artifact)
+     *    DESIGN.md：bg #fefcfa + 8/8/32 padding + 阴影微绿
      * ────────────────────────────────────────────── */
     .polaroid {
       width: 160px;
-      background: var(--db-surface);
+      background: var(--cyc-surface-pure);
       padding: 8px 8px 32px;
       box-shadow:
-        0 2px 4px oklch(0 0 0 / 0.08),
-        0 12px 24px -8px oklch(0 0 0 / 0.12);
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 12px 24px -8px rgba(28, 61, 46, 0.15);
       transform: rotate(var(--tilt, 0deg));
     }
     .polaroid__photo {
       aspect-ratio: 1;
-      background: var(--db-fill-empty);
+      background: var(--cyc-surface-tinted);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 32px;
-      /* placeholder: 灰阶 emoji（真实数据接入时换成 <img>） */
-      filter: grayscale(1) opacity(0.45);
+      overflow: hidden;
+    }
+    .polaroid__photo img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* emoji 占位时灰阶柔化，避免装饰用色 */
+    .polaroid__photo:not(.has-image) {
+      filter: grayscale(1) opacity(0.5);
     }
     .polaroid__cap {
-      padding-top: 12px;
+      padding-top: var(--sp-3);
       text-align: center;
     }
     .polaroid__title {
       font-size: 14px;
       font-weight: 600;
-      color: var(--db-text-primary);
+      color: var(--cyc-text-strong);
       letter-spacing: -0.01em;
       line-height: 1.3;
       white-space: nowrap;
@@ -216,12 +475,14 @@
     .polaroid__date {
       font-size: 12px;
       font-weight: 400;
-      color: var(--db-text-secondary);
-      margin-top: 4px;
+      color: var(--cyc-text-muted);
+      margin-top: var(--sp-1);
       letter-spacing: 0;
     }
 
-    /* ─── Stack mode — 精选回忆 ─── */
+    /* ──────────────────────────────────────────────
+     *  Stack mode (精选 — fan-out hover)
+     * ────────────────────────────────────────────── */
     .stack-wrap {
       position: relative;
       height: 320px;
@@ -240,7 +501,7 @@
       top: 50%; left: 50%;
       transform: translate(-50%, -50%) rotate(var(--tilt, 0deg));
       transform-origin: center bottom;
-      transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: transform 600ms var(--ease-spring);
       z-index: var(--z, 1);
     }
     .stack-wrap:hover .stack .polaroid {
@@ -253,64 +514,59 @@
       transform: translate(-50%, -50%);
       z-index: 50;
       pointer-events: none;
-      background: var(--db-surface);
+      background: var(--cyc-surface-pure);
       border-radius: var(--r-pill);
-      padding: 12px 24px;
+      padding: var(--sp-3) var(--sp-6);
       box-shadow:
-        0 8px 24px -8px oklch(0 0 0 / 0.10),
-        0 0 32px oklch(0 0 0 / 0.05);
+        0 8px 24px -8px rgba(28, 61, 46, 0.12),
+        0 0 32px rgba(28, 61, 46, 0.06);
       font-size: 14px;
       font-weight: 600;
-      color: var(--db-text-primary);
+      color: var(--cyc-text-strong);
       letter-spacing: 0;
       white-space: nowrap;
-      transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1),
-                  opacity 300ms ease;
+      transition: transform 600ms var(--ease-spring), opacity 300ms ease;
     }
     .stack-wrap:hover .stack-quote {
       transform: translate(-50%, calc(-50% - 160px));
       opacity: 0.4;
     }
 
-    /* ─── Lineup mode — 按月队列 ─── */
+    /* ──────────────────────────────────────────────
+     *  Lineup mode (按月分组)
+     * ────────────────────────────────────────────── */
     .month-section {
-      margin-bottom: 48px;
-      scroll-margin-top: 24px;
+      margin-bottom: var(--sp-12);
+      scroll-margin-top: 80px;
     }
     .month-section:last-child { margin-bottom: 0; }
-
     .month-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      padding: 0 8px;
-      margin-bottom: 16px;
+      padding: 0 var(--sp-2);
+      margin-bottom: var(--sp-3);
     }
     .month-name {
       font-size: 20px;
       font-weight: 700;
-      color: var(--db-text-primary);
+      color: var(--cyc-text-strong);
       letter-spacing: -0.01em;
     }
     .month-metric {
       font-size: 12px;
-      font-weight: 400;
-      color: var(--db-text-tertiary);
-      letter-spacing: 0;
+      color: var(--cyc-text-muted);
     }
-
     .lineup-row {
       display: flex;
-      gap: 16px;
+      gap: var(--sp-4);
       overflow-x: auto;
-      padding: 16px 8px 24px;
+      padding: var(--sp-3) var(--sp-2) var(--sp-6);
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      -ms-overflow-style: none;
     }
     .lineup-row::-webkit-scrollbar { display: none; }
-
     .lineup-row .polaroid {
       flex-shrink: 0;
       scroll-snap-align: start;
@@ -319,334 +575,1000 @@
     .lineup-row .polaroid:nth-child(even) { --tilt:  3deg; }
 
     /* ──────────────────────────────────────────────
-     *  Pattern 3 · Scrubber
-     *  - sticky right edge, 36-40px wide
-     *  - month markers Bold UPPERCASE tracked
-     *  - active entry: coral pill
+     *  Empty state
+     * ────────────────────────────────────────────── */
+    .empty-state {
+      padding: var(--sp-12) var(--sp-6);
+      text-align: center;
+    }
+    .empty-state-icon {
+      font-size: 40px;
+      filter: grayscale(1) opacity(0.4);
+      margin-bottom: var(--sp-4);
+    }
+    .empty-state-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--cyc-text-strong);
+      margin-bottom: var(--sp-2);
+      letter-spacing: -0.01em;
+    }
+    .empty-state-sub {
+      font-size: 14px;
+      color: var(--cyc-text-muted);
+      max-width: 320px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Right Scrubber (Pattern 3)
      * ────────────────────────────────────────────── */
     .scrubber {
       position: fixed;
-      right: 16px;
+      right: var(--sp-4);
       top: 96px;
-      bottom: 96px;
+      bottom: 110px;
       width: 36px;
       z-index: 30;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      padding: 8px 0;
+      gap: var(--sp-1);
+      padding: var(--sp-2) 0;
       overflow-y: auto;
       scrollbar-width: none;
-      -ms-overflow-style: none;
     }
     .scrubber::-webkit-scrollbar { display: none; }
-
-    .scrubber__month {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--db-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      text-align: center;
-      margin-top: 12px;
-      padding: 0 4px;
-    }
-    .scrubber__month:first-child { margin-top: 0; }
-
     .scrubber__entry {
       display: block;
       font-size: 12px;
-      font-weight: 400;
-      color: var(--db-text-secondary);
+      font-weight: 600;
+      color: var(--cyc-text-muted);
       text-decoration: none;
       text-align: center;
-      padding: 4px;
-      border-radius: var(--r-inner);
-      transition: background 150ms, color 150ms, font-weight 150ms;
+      padding: var(--sp-1);
+      border-radius: var(--r-tight);
+      transition: background var(--dur-fast), color var(--dur-fast);
       letter-spacing: 0;
     }
-    .scrubber__entry:hover {
-      background: oklch(0.96 0 0);
-    }
+    .scrubber__entry:hover { background: var(--cyc-surface-tinted); }
+    /* coral 用作 active state — 合法 temporal accent */
     .scrubber__entry[data-active] {
-      background: var(--db-accent);
-      color: oklch(0.985 0 0);
-      font-weight: 600;
+      background: var(--cyc-orange);
+      color: var(--cyc-sand);
+      font-weight: 700;
     }
 
     /* ──────────────────────────────────────────────
-     *  Pattern 2 · Persistent Activity Bar
-     *  - bottom anchored, full width minus 16px
-     *  - near-white surface (NOT dark — that's Aurora)
-     *  - single coral pulse dot (temporal/active 语义)
-     *  - plain language subtitle
+     *  Activity Bar (Pattern 2 · Persistent)
+     *  DESIGN.md：玻璃质感（非深色，非纯白）
      * ────────────────────────────────────────────── */
     .activity-bar {
       position: fixed;
-      left: 16px;
-      right: 16px;
-      bottom: calc(16px + env(safe-area-inset-bottom));
+      left: var(--sp-4); right: var(--sp-4);
+      bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
       z-index: 40;
-      max-width: 688px;     /* 720 - 32 */
+      max-width: 688px;
       margin: 0 auto;
-      background: oklch(0.97 0 0);
+      background: var(--cyc-surface-glass-strong);
+      backdrop-filter: blur(40px) saturate(1.6);
+      -webkit-backdrop-filter: blur(40px) saturate(1.6);
+      border: 0.5px solid var(--cyc-border-glass);
       border-radius: var(--r-card);
-      padding: 16px 24px;
+      padding: var(--sp-4) var(--sp-6);
       box-shadow:
-        0 -4px 16px -4px oklch(0 0 0 / 0.06),
-        0 0 32px oklch(0 0 0 / 0.04);
+        0 -4px 16px -4px rgba(28, 61, 46, 0.06),
+        0 0 32px rgba(28, 61, 46, 0.04);
     }
     .activity-bar__header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-1);
     }
     .activity-bar__dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       border-radius: var(--r-dot);
-      background: var(--db-accent);
-      animation: db-pulse 1.6s ease-in-out infinite;
+      background: var(--cyc-orange);   /* active state — 合法 */
+      animation: cyc-pulse 1.6s ease-in-out infinite;
       flex-shrink: 0;
     }
-    @keyframes db-pulse {
+    @keyframes cyc-pulse {
       0%, 100% { opacity: 1; }
       50%      { opacity: 0.4; }
     }
     .activity-bar__label {
       font-size: 14px;
       font-weight: 600;
-      color: var(--db-text-primary);
+      color: var(--cyc-text-strong);
       letter-spacing: 0;
     }
     .activity-bar__sub {
       font-size: 13px;
       font-weight: 400;
-      color: var(--db-text-secondary);
+      color: var(--cyc-text-muted);
       letter-spacing: 0;
       line-height: 1.5;
     }
 
     /* ──────────────────────────────────────────────
-     *  Responsive — small screens
+     *  Modals (bottom-sheet on mobile, centered on desktop)
+     * ────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-sheet {
+      background: var(--cyc-sand);
+      border-radius: var(--r-card-lg) var(--r-card-lg) 0 0;
+      width: 100%;
+      max-width: 520px;
+      max-height: 85vh;
+      min-height: 320px;
+      overflow-y: auto;
+      padding: var(--sp-6) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom));
+      animation: slideUp var(--dur-base) var(--ease-out-iox);
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes fadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    @media (min-width: 600px) {
+      .modal-overlay { align-items: center; padding: var(--sp-6); }
+      .modal-sheet {
+        border-radius: var(--r-card-lg);
+        animation: fadeScale var(--dur-fast) ease;
+      }
+    }
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 2px;
+      margin: 0 auto var(--sp-6);
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.01em;
+      margin-bottom: var(--sp-2);
+    }
+    .modal-sub {
+      font-size: 14px;
+      color: var(--cyc-text-muted);
+      margin-bottom: var(--sp-6);
+      line-height: 1.6;
+    }
+    .modal-actions {
+      display: flex;
+      gap: var(--sp-3);
+      margin-top: var(--sp-6);
+    }
+    .modal-actions > button { flex: 1; }
+
+    /* ── Picker (选自己) ── */
+    .picker-search-wrap { margin-bottom: var(--sp-4); }
+    .picker-search {
+      width: 100%;
+      padding: var(--sp-3) var(--sp-4);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--cyc-stroke);
+      border-radius: var(--r-inner);
+      font-size: 14px;
+      color: var(--cyc-text);
+      outline: none;
+      font-family: inherit;
+      min-height: 44px;
+      transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+    }
+    .picker-search:focus {
+      border-color: var(--cyc-green);
+      box-shadow: 0 0 0 3px rgba(28, 61, 46, 0.10);
+    }
+    .picker-list {
+      min-height: 50vh;
+      max-height: 56vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-1);
+    }
+    .picker-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-3);
+      border-radius: var(--r-inner);
+      cursor: pointer;
+      transition: background var(--dur-fast);
+      min-height: 56px;
+    }
+    .picker-row:hover { background: var(--cyc-surface-tinted); }
+    .picker-row:active { background: rgba(28, 61, 46, 0.08); }
+    .picker-avatar {
+      width: 40px; height: 40px;
+      border-radius: var(--r-dot);
+      background: rgba(28, 61, 46, 0.10);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyc-green);
+      letter-spacing: 0;
+    }
+    .picker-info { flex: 1; min-width: 0; }
+    .picker-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.01em;
+    }
+    .picker-meta {
+      font-size: 12px;
+      color: var(--cyc-text-muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .picker-empty {
+      padding: var(--sp-12) var(--sp-4);
+      text-align: center;
+      color: var(--cyc-text-muted);
+      font-size: 13px;
+    }
+
+    /* ── Verify (4 位微信号) ── */
+    .verify-input-wrap {
+      display: flex;
+      gap: var(--sp-2);
+      justify-content: center;
+      margin-bottom: var(--sp-3);
+    }
+    .verify-input {
+      width: 56px;
+      height: 64px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      background: var(--cyc-surface-pure);
+      border: 1.5px solid var(--cyc-stroke);
+      border-radius: var(--r-card);
+      outline: none;
+      font-family: inherit;
+      color: var(--cyc-text-strong);
+      transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+      letter-spacing: 0;
+    }
+    .verify-input:focus {
+      border-color: var(--cyc-green);
+      box-shadow: 0 0 0 3px rgba(28, 61, 46, 0.10);
+    }
+    .verify-error {
+      font-size: 13px;
+      color: #a93226;       /* AAA danger */
+      text-align: center;
+      min-height: 20px;
+      margin-bottom: var(--sp-3);
+      letter-spacing: 0;
+    }
+
+    /* ── Upload form ── */
+    .upload-file-input { display: none; }
+    .upload-drop {
+      width: 100%;
+      padding: var(--sp-8);
+      background: rgba(28, 61, 46, 0.04);
+      border: 1.5px dashed rgba(28, 61, 46, 0.25);
+      border-radius: var(--r-card);
+      color: var(--cyc-text-muted);
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      font-family: inherit;
+      transition: background var(--dur-fast), border-color var(--dur-fast);
+      margin-bottom: var(--sp-4);
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+    }
+    .upload-drop:hover {
+      background: rgba(28, 61, 46, 0.08);
+      border-color: var(--cyc-green);
+    }
+    .upload-drop-hint {
+      font-size: 12px;
+      color: var(--cyc-text-faint);
+    }
+    .upload-preview {
+      width: 100%;
+      max-height: 240px;
+      object-fit: cover;
+      border-radius: var(--r-card);
+      margin-bottom: var(--sp-4);
+      display: none;
+      background: var(--cyc-surface-tinted);
+    }
+    .upload-preview.has-image { display: block; }
+
+    .form-group { margin-bottom: var(--sp-4); }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      margin-bottom: var(--sp-2);
+      letter-spacing: 0.02em;
+    }
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: var(--sp-3);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--cyc-stroke);
+      border-radius: var(--r-inner);
+      font-size: 14px;
+      color: var(--cyc-text);
+      outline: none;
+      font-family: inherit;
+      min-height: 44px;
+      transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+    }
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--cyc-green);
+      box-shadow: 0 0 0 3px rgba(28, 61, 46, 0.10);
+    }
+
+    .privacy-radio-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-2);
+    }
+    .privacy-radio {
+      position: relative;
+      display: block;
+      padding: var(--sp-3);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--cyc-stroke);
+      border-radius: var(--r-inner);
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--dur-fast);
+    }
+    .privacy-radio input { position: absolute; opacity: 0; pointer-events: none; }
+    .privacy-radio-icon { font-size: 20px; margin-bottom: var(--sp-1); }
+    .privacy-radio-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyc-text-strong);
+    }
+    .privacy-radio-sub {
+      font-size: 11px;
+      color: var(--cyc-text-muted);
+      margin-top: 2px;
+      letter-spacing: 0;
+    }
+    .privacy-radio:has(input:checked) {
+      background: rgba(28, 61, 46, 0.06);
+      border-color: var(--cyc-green);
+      box-shadow: 0 0 0 2px rgba(28, 61, 46, 0.08);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Responsive
      * ────────────────────────────────────────────── */
     @media (max-width: 640px) {
-      .page { padding: 24px 16px 32px; }
-      .page-header { margin-bottom: 32px; }
-      .identity-card { margin-bottom: 32px; gap: 12px; }
-      .mood-frame { width: 80px; height: 80px; padding: 12px; }
-      .surface { padding: 24px 16px; }
+      .page { padding: var(--sp-6) var(--sp-4) var(--sp-8); }
+      .page-header { margin-bottom: var(--sp-8); }
+      .surface-halo { padding: var(--sp-6) var(--sp-4); }
+      .welcome-title { font-size: 24px; }
       .stack-wrap { height: 280px; }
       .stack { width: 180px; height: 200px; }
       .polaroid { width: 140px; }
-      .scrubber { right: 8px; width: 32px; }
+      .scrubber { right: var(--sp-2); width: 32px; }
     }
     @media (max-width: 420px) {
-      .scrubber { display: none; } /* 太挤 — 留给 sticky 顶部条之类，先隐藏 */
+      .scrubber { display: none; }
     }
   </style>
 </head>
+
 <body>
+
+  <!-- 三个 blob — DESIGN.md 标记 "不可省略" -->
+  <div class="blob b1" aria-hidden="true"></div>
+  <div class="blob b2" aria-hidden="true"></div>
+  <div class="blob b3" aria-hidden="true"></div>
+
+  <!-- ═══════════ Topbar ═══════════ -->
+  <header class="topbar">
+    <a href="/" class="topbar-back">cyc.center</a>
+    <div class="topbar-title">我的时间线</div>
+    <div id="topbar-identity-slot"></div>
+  </header>
 
   <main class="page">
 
-    <!-- ═══════════ Header ═══════════ -->
-    <header class="page-header">
-      <a href="/" class="back-link">cyc.center</a>
-      <h1 class="page-title">我的时间线</h1>
-    </header>
-
-    <!-- ═══════════ Identity Card ═══════════ -->
-    <section class="identity-card">
-      <div class="mood-frame">
-        <!-- Self-Mood Mascot · 默认 content 状态（pure black on white） -->
-        <svg class="mood-svg" viewBox="0 0 64 64" aria-label="content">
-          <circle cx="22" cy="26" r="2.5" fill="oklch(0.15 0 0)"/>
-          <circle cx="42" cy="26" r="2.5" fill="oklch(0.15 0 0)"/>
-          <path d="M 22 38 Q 32 46 42 38"
-                stroke="oklch(0.15 0 0)" stroke-width="2.5"
-                fill="none" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="identity-name">玖玖</div>
-      <div class="identity-metric">
-        在 CYC 度过了 <span class="accent">142</span> 天 · 出席 23 次
+    <!-- ═══════════ 状态 1 · 未关联身份 ═══════════ -->
+    <section class="onboarding hidden" id="onboarding">
+      <div class="surface-halo welcome-card">
+        <div class="mood-frame mood-frame--lg" id="welcome-mood"></div>
+        <h2 class="welcome-title">先告诉我你是谁</h2>
+        <p class="welcome-sub">
+          选自己的卡片，开始上传你的社区回忆。<br>
+          公开的照片会汇入社区共同记忆。
+        </p>
+        <button class="btn-primary" onclick="openPicker()">从社区里选自己 →</button>
+        <p class="welcome-tip">这是一个测试页面 · 数据暂存在浏览器本地</p>
       </div>
     </section>
 
-    <!-- ═══════════ Memory Hero — Stack ═══════════ -->
-    <section class="surface" aria-label="精选回忆">
-      <div class="surface-eyebrow">今年最难忘的</div>
-      <h2 class="surface-title">社区的回忆</h2>
-      <div class="stack-wrap">
-        <div class="stack" id="stack"><!-- JS --></div>
-        <div class="stack-quote">来到社区后，发生了好多事</div>
-      </div>
-    </section>
+    <!-- ═══════════ 状态 2 · 已关联 ═══════════ -->
+    <section class="bound hidden" id="bound">
 
-    <!-- ═══════════ Timeline — Lineup ═══════════ -->
-    <section class="surface" aria-label="完整时光">
-      <div class="surface-eyebrow">逐月翻阅</div>
-      <h2 class="surface-title">全部时光</h2>
-      <div id="months"><!-- JS --></div>
+      <!-- Identity Card -->
+      <div class="identity-card">
+        <div class="mood-frame" id="identity-mood"></div>
+        <div class="identity-info">
+          <div class="identity-name" id="identity-name">玖玖</div>
+          <div class="identity-metric" id="identity-metric">
+            在 CYC 度过了 <span class="accent">142</span> 天 · 已贡献 <span class="accent">0</span> 张
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero · Stack（最近 8 张精选） -->
+      <section class="surface-halo" aria-label="精选回忆">
+        <div class="surface-eyebrow">今年最难忘的</div>
+        <h2 class="surface-title">你的回忆</h2>
+        <div class="stack-wrap" id="stack-wrap">
+          <div class="stack" id="stack"></div>
+          <div class="stack-quote">来到社区后，发生了好多事</div>
+        </div>
+        <div class="empty-state hidden" id="hero-empty">
+          <div class="empty-state-icon">📷</div>
+          <div class="empty-state-title">还没有上传过回忆</div>
+          <div class="empty-state-sub">点击下面"添加照片"分享你的第一张吧。</div>
+        </div>
+      </section>
+
+      <!-- Lineup · 按月分组 -->
+      <section class="surface-halo" aria-label="完整时光">
+        <div class="surface-head">
+          <div>
+            <div class="surface-eyebrow">逐月翻阅</div>
+            <h2 class="surface-title">全部时光</h2>
+          </div>
+          <button class="btn-add" onclick="openUpload()">+ 添加照片</button>
+        </div>
+        <div id="months"></div>
+        <div class="empty-state hidden" id="lineup-empty">
+          <div class="empty-state-icon">🌿</div>
+          <div class="empty-state-title">这里还很空</div>
+          <div class="empty-state-sub">点上方"添加照片"开始记录。<br>上传到公开的照片会成为社区共同回忆的一部分。</div>
+        </div>
+      </section>
+
     </section>
 
   </main>
 
   <!-- ═══════════ Right Scrubber ═══════════ -->
-  <nav class="scrubber" id="scrubber" aria-label="时间轴导航"><!-- JS --></nav>
+  <nav class="scrubber" id="scrubber" aria-label="时间轴导航"></nav>
 
-  <!-- ═══════════ Bottom Activity Bar ═══════════ -->
+  <!-- ═══════════ Activity Bar ═══════════ -->
   <aside class="activity-bar" role="status" aria-live="polite">
     <div class="activity-bar__header">
       <span class="activity-bar__dot" aria-hidden="true"></span>
-      <span class="activity-bar__label" id="ab-label">Recalling</span>
+      <span class="activity-bar__label" id="ab-label">Listening</span>
     </div>
-    <p class="activity-bar__sub" id="ab-sub">
-      Going through your year — give it a sec.
-    </p>
+    <p class="activity-bar__sub" id="ab-sub">准备好接收下一张照片。</p>
   </aside>
+
+  <!-- ═══════════ Picker Modal ═══════════ -->
+  <div class="modal-overlay" id="picker-modal" onclick="if(event.target===this)closePicker()">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">选自己的卡片</h3>
+      <p class="modal-sub">从社区成员里找到自己 — 下一步会让你确认身份。</p>
+      <div class="picker-search-wrap">
+        <input type="text" class="picker-search" id="picker-search"
+               placeholder="搜索姓名 / 称呼 / 城市..."
+               autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="picker-list" id="picker-list"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closePicker()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Verify Modal ═══════════ -->
+  <div class="modal-overlay" id="verify-modal">
+    <div class="modal-sheet" style="max-width: 380px;">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">确认是你</h3>
+      <p class="modal-sub">为防误选，请输入你<strong style="color:var(--cyc-text-strong)">微信号最后 4 位</strong>。<br>
+        <span style="font-size:12px;color:var(--cyc-text-faint);">mock 阶段：任意 4 位均通过</span>
+      </p>
+      <div class="verify-input-wrap">
+        <input type="text" class="verify-input" maxlength="1" data-i="0" inputmode="text" autocomplete="off">
+        <input type="text" class="verify-input" maxlength="1" data-i="1" inputmode="text" autocomplete="off">
+        <input type="text" class="verify-input" maxlength="1" data-i="2" inputmode="text" autocomplete="off">
+        <input type="text" class="verify-input" maxlength="1" data-i="3" inputmode="text" autocomplete="off">
+      </div>
+      <div class="verify-error" id="verify-error"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="cancelVerify()">返回选择</button>
+        <button class="btn-primary" onclick="submitVerify()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Upload Modal ═══════════ -->
+  <div class="modal-overlay" id="upload-modal" onclick="if(event.target===this)closeUpload()">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">添加一张回忆</h3>
+      <p class="modal-sub">上传到你的时间线。选"公开"后，这张照片会汇入社区集体回忆。</p>
+
+      <input type="file" id="upload-file-input" class="upload-file-input" accept="image/*">
+      <button type="button" class="upload-drop" id="upload-drop">
+        <span style="font-size: 28px; opacity: 0.5;">📷</span>
+        <span>点击选择照片</span>
+        <span class="upload-drop-hint">浏览器内会压缩到 1600px 宽 · JPEG</span>
+      </button>
+      <img class="upload-preview" id="upload-preview" alt="预览">
+
+      <div class="form-group">
+        <label class="form-label">标题</label>
+        <input type="text" class="form-input" id="upload-title" placeholder="一句话回忆">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input type="date" class="form-input" id="upload-date">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">关联活动（可选）</label>
+        <select class="form-select" id="upload-activity">
+          <option value="">— 无 —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">隐私</label>
+        <div class="privacy-radio-group">
+          <label class="privacy-radio">
+            <input type="radio" name="privacy" value="self">
+            <div class="privacy-radio-icon">🔒</div>
+            <div class="privacy-radio-label">仅自己</div>
+            <div class="privacy-radio-sub">只在我的页面</div>
+          </label>
+          <label class="privacy-radio">
+            <input type="radio" name="privacy" value="public" checked>
+            <div class="privacy-radio-icon">🌿</div>
+            <div class="privacy-radio-label">公开</div>
+            <div class="privacy-radio-sub">汇入社区回忆</div>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeUpload()">取消</button>
+        <button class="btn-primary" id="upload-submit" onclick="submitUpload()" disabled>上传</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     /* ──────────────────────────────────────────────
-     *  Mock 数据
-     *  TODO 接真实数据：
-     *    HERO_PICS  ← /api/member?id=<self> .activities 中精选 8 条
-     *                 （按"代表性"评分：参与角色权重、活动 cover quality）
-     *    MONTHS     ← 同接口，按 YYYY-MM 分组倒序
-     *    days       ← max(0, today - first_rsvp_at)
-     *    out_count  ← rsvps.length
+     *  /me/timeline · App logic (path A · mock 后端)
+     *
+     *  TODO（path B 接后端）：
+     *    [1] MOCK_MEMBERS    → fetch('/api/members') 已有
+     *    [2] MOCK_ACTIVITIES → fetch('/api/get-activities') 已有
+     *    [3] submitVerify    → POST /api/identity-verify {rec_id, code4}
+     *                          后端用成员的 _phone/_wechat 末 4 位匹配
+     *    [4] submitUpload    → 1) PUT @vercel/blob 拿 url
+     *                          2) POST /api/photo-upload 写飞书新表 cyc-photos
+     *    [5] hero/lineup     → fetch('/api/photos?member_rec_id=<self>')
      * ────────────────────────────────────────────── */
-    const HERO_PICS = [
-      { emoji: '🌊', title: '海边野餐',     date: '5月12日' },
-      { emoji: '🥾', title: '苍山徒步',     date: '4月28日' },
-      { emoji: '🎤', title: 'Open Mic',     date: '4月15日' },
-      { emoji: '📖', title: '新书共读',     date: '4月3日'  },
-      { emoji: '🎭', title: '即兴戏剧',     date: '3月22日' },
-      { emoji: '🌅', title: '日出冥想',     date: '3月10日' },
-      { emoji: '🎂', title: '生日派对',     date: '2月14日' },
-      { emoji: '🎬', title: '深夜电影',     date: '1月28日' },
+
+    /* ─── localStorage keys ─── */
+    const KEY_IDENTITY = 'cyc-me-identity';
+    const KEY_PHOTOS   = 'cyc-me-photos';
+
+    /* ─── Mock 成员（path B 替换为 fetch /api/members） ─── */
+    const MOCK_MEMBERS = [
+      { rec_id: 'rec_jj',   name: '玖玖',   nickname: '',       cities: ['大理'], identity: ['创始人','设计师'] },
+      { rec_id: 'rec_yy',   name: '悠洋',   nickname: '',       cities: ['大理'], identity: ['社区主理'] },
+      { rec_id: 'rec_demi', name: 'Demian', nickname: '',       cities: ['上海'], identity: ['Praxis 主理'] },
+      { rec_id: 'rec_fr',   name: '方荣',   nickname: '',       cities: ['大理'], identity: ['治理'] },
+      { rec_id: 'rec_yx',   name: '月汐',   nickname: '',       cities: ['大理'], identity: ['物业'] },
+      { rec_id: 'rec_qf',   name: '千帆',   nickname: '',       cities: ['大理'], identity: ['运营'] },
+      { rec_id: 'rec_lh',   name: '梁欢',   nickname: '',       cities: ['大理'], identity: ['店长'] },
+      { rec_id: 'rec_yb',   name: '鸭脖',   nickname: '',       cities: ['大理'], identity: ['新媒体'] },
+      { rec_id: 'rec_e1',   name: '小麦',   nickname: 'wheat',  cities: ['大理'], identity: ['手作人'] },
+      { rec_id: 'rec_e2',   name: '阿野',   nickname: '',       cities: ['大理'], identity: ['咖啡店主'] },
+      { rec_id: 'rec_e3',   name: 'Cici',   nickname: '',       cities: ['上海'], identity: ['数字游民'] },
+      { rec_id: 'rec_e4',   name: '十月',   nickname: '',       cities: ['大理'], identity: ['民宿主理'] },
     ];
 
-    const MONTHS = [
-      { ym: '2025-05', label: '2025 · 5月', short: 'May', items: [
-        { emoji: '🌊', title: '苍洱野餐',  day: 12 },
-        { emoji: '🥾', title: '徒步',      day: 5  },
-        { emoji: '🎨', title: '艺术沙龙',  day: 3  },
-      ]},
-      { ym: '2025-04', label: '2025 · 4月', short: 'Apr', items: [
-        { emoji: '🎤', title: 'Open Mic',  day: 28 },
-        { emoji: '📖', title: '新书共读',  day: 15 },
-        { emoji: '🎭', title: '即兴戏剧',  day: 8  },
-        { emoji: '🌊', title: '看海',      day: 3  },
-      ]},
-      { ym: '2025-03', label: '2025 · 3月', short: 'Mar', items: [
-        { emoji: '🌅', title: '日出冥想',  day: 30 },
-        { emoji: '🎵', title: '音乐分享',  day: 22 },
-        { emoji: '☕', title: '咖啡品鉴',  day: 18 },
-        { emoji: '🧘', title: '瑜伽',      day: 10 },
-        { emoji: '🌸', title: '春日漫步',  day: 5  },
-      ]},
-      { ym: '2025-02', label: '2025 · 2月', short: 'Feb', items: [
-        { emoji: '🎂', title: '生日派对',  day: 14 },
-        { emoji: '💝', title: '情人节',    day: 14 },
-        { emoji: '🎲', title: '桌游夜',    day: 7  },
-      ]},
-      { ym: '2025-01', label: '2025 · 1月', short: 'Jan', items: [
-        { emoji: '🎬', title: '深夜电影',  day: 28 },
-        { emoji: '🎉', title: '元旦派对',  day: 1  },
-        { emoji: '🥟', title: '年夜饺子',  day: 23 },
-      ]},
-      { ym: '2024-12', label: '2024 · 12月', short: 'Dec', items: [
-        { emoji: '🎄', title: '圣诞树',    day: 24 },
-        { emoji: '🎁', title: '礼物交换',  day: 21 },
-        { emoji: '⛄', title: '冬日散步',  day: 8  },
-      ]},
-      { ym: '2024-11', label: '2024 · 11月', short: 'Nov', items: [
-        { emoji: '🍂', title: '秋叶',      day: 18 },
-        { emoji: '🎃', title: '万圣节',    day: 1  },
-      ]},
+    /* ─── Mock 活动（path B 替换为 fetch /api/get-activities） ─── */
+    const MOCK_ACTIVITIES = [
+      { id: 'act_1', title: '苍洱海边野餐',   date: '2025-05-12' },
+      { id: 'act_2', title: '苍山徒步',       date: '2025-04-28' },
+      { id: 'act_3', title: 'Open Mic 之夜',  date: '2025-04-15' },
+      { id: 'act_4', title: '新书共读',       date: '2025-04-03' },
+      { id: 'act_5', title: '即兴戏剧工作坊', date: '2025-03-22' },
+      { id: 'act_6', title: '日出冥想',       date: '2025-03-10' },
     ];
 
-    /* ─── 工具：随机但可重现的 tilt（基于 index 哈希，避免每次 render 抖） ─── */
-    function tiltFor(seed) {
-      const s = (seed * 9301 + 49297) % 233280;
-      // 范围 ±8°（规范：tilt range ±8°）
-      return ((s / 233280) * 16 - 8).toFixed(2) + 'deg';
+    /* ─── State ─── */
+    let _identity = null;
+    let _photos = [];
+    let _selectedForVerify = null;
+    let _uploadDataUrl = null;
+
+    /* ─── Mascot SVG (5 态, cyc-green 单色) ─── */
+    const MOOD = {
+      delight: { eyes: 'tall', mouth: 'wide-up' },
+      content: { eyes: 'dot',  mouth: 'gentle-up' },   // default
+      neutral: { eyes: 'dot',  mouth: 'flat' },
+      down:    { eyes: 'dot',  mouth: 'gentle-down' },
+      sad:     { eyes: 'tall', mouth: 'frown' },
+    };
+    function moodSvg(state = 'content') {
+      const s = MOOD[state] || MOOD.content;
+      const C = '#1c3d2e';   // var(--cyc-green) — DESIGN.md 规定单色绿
+      const eyes = s.eyes === 'tall'
+        ? `<ellipse cx="22" cy="26" rx="2" ry="3.5" fill="${C}"/>
+           <ellipse cx="42" cy="26" rx="2" ry="3.5" fill="${C}"/>`
+        : `<circle cx="22" cy="26" r="2.5" fill="${C}"/>
+           <circle cx="42" cy="26" r="2.5" fill="${C}"/>`;
+      let mouth;
+      switch (s.mouth) {
+        case 'wide-up':     mouth = `<path d="M 18 36 Q 32 50 46 36" stroke="${C}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`; break;
+        case 'gentle-up':   mouth = `<path d="M 22 38 Q 32 46 42 38" stroke="${C}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`; break;
+        case 'flat':        mouth = `<line x1="22" y1="40" x2="42" y2="40" stroke="${C}" stroke-width="2.5" stroke-linecap="round"/>`; break;
+        case 'gentle-down': mouth = `<path d="M 22 42 Q 32 36 42 42" stroke="${C}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`; break;
+        case 'frown':       mouth = `<path d="M 24 44 Q 32 38 40 44" stroke="${C}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`; break;
+      }
+      return `<svg class="mood-svg" viewBox="0 0 64 64" aria-label="${state}">${eyes}${mouth}</svg>`;
     }
 
-    /* ─── Stack（精选 8 张） ─── */
-    function renderStack() {
-      const el = document.getElementById('stack');
-      // fan-out 横向位置（hover 时散开，从 -200 到 +200 均匀分布）
-      const fanX = [-220, -160, -100, -36, 36, 100, 160, 220];
-      const fanTilts = [-8, -6, -4, -2, 2, 4, 6, 8];
+    /* ─── Util ─── */
+    function escHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function fmtDate(d) {
+      if (!d) return '';
+      const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return d;
+      const yr = (new Date()).getFullYear();
+      return Number(m[1]) === yr
+        ? Number(m[2]) + '月' + Number(m[3]) + '日'
+        : m[1].slice(2) + '年' + Number(m[2]) + '月' + Number(m[3]) + '日';
+    }
+    function loadState() {
+      try { _identity = JSON.parse(localStorage.getItem(KEY_IDENTITY) || 'null'); } catch {}
+      try { _photos = JSON.parse(localStorage.getItem(KEY_PHOTOS)   || '[]'); } catch {}
+      if (!Array.isArray(_photos)) _photos = [];
+    }
+    function saveIdentity() {
+      if (_identity) localStorage.setItem(KEY_IDENTITY, JSON.stringify(_identity));
+      else localStorage.removeItem(KEY_IDENTITY);
+    }
+    function savePhotos() { localStorage.setItem(KEY_PHOTOS, JSON.stringify(_photos)); }
 
-      HERO_PICS.forEach((p, i) => {
+    /* ──────────────────────────────────────────────
+     *  Init / state machine
+     * ────────────────────────────────────────────── */
+    function init() {
+      loadState();
+      if (_identity) showBound();
+      else showOnboarding();
+      loopActivity();
+    }
+
+    function showOnboarding() {
+      document.getElementById('onboarding').classList.remove('hidden');
+      document.getElementById('bound').classList.add('hidden');
+      document.getElementById('topbar-identity-slot').innerHTML = '';
+      document.getElementById('welcome-mood').innerHTML = moodSvg('content');
+      setActivity('Listening', '准备好认出你 — 选自己的卡片即可。');
+    }
+
+    function showBound() {
+      document.getElementById('onboarding').classList.add('hidden');
+      document.getElementById('bound').classList.remove('hidden');
+      renderTopbarIdentity();
+      renderIdentity();
+      renderHero();
+      renderLineup();
+      renderScrubber();
+      populateActivityOptions();
+      setActivity(_photos.length ? 'Recalling' : 'Listening',
+                  _photos.length ? '在整理你的社区记忆。' : '准备好接收你的第一张照片。');
+    }
+
+    /* ─── Topbar identity chip ─── */
+    function renderTopbarIdentity() {
+      const slot = document.getElementById('topbar-identity-slot');
+      const initial = _identity.name.slice(0, 1);
+      slot.innerHTML = `
+        <button class="topbar-identity" onclick="logoutIdentity()" aria-label="退出当前身份">
+          <span class="topbar-identity-avatar">${escHtml(initial)}</span>
+          <span class="topbar-identity-name">${escHtml(_identity.name)}</span>
+        </button>`;
+    }
+    function logoutIdentity() {
+      if (!confirm('退出当前身份？已上传的照片会保留在浏览器本地。')) return;
+      _identity = null;
+      saveIdentity();
+      showOnboarding();
+    }
+
+    /* ─── Identity card ─── */
+    function renderIdentity() {
+      document.getElementById('identity-name').textContent = _identity.name;
+      const days  = computeDays();
+      const count = _photos.length;
+      document.getElementById('identity-metric').innerHTML =
+        `在 CYC 度过了 <span class="accent">${days}</span> 天 · 已贡献 <span class="accent">${count}</span> 张`;
+      // mascot 跟着行为变：有上传 = content；空 = neutral
+      const moodState = count > 0 ? 'content' : 'neutral';
+      document.getElementById('identity-mood').innerHTML = moodSvg(moodState);
+    }
+    function computeDays() {
+      // mock：从最早一张照片日期算到今天；都没有就给固定 100
+      // path B：从成员第一次 RSVP 的 registered_at 算
+      if (!_photos.length) return 100;
+      const earliest = Math.min(..._photos.map(p => Date.parse(p.date) || Date.now()));
+      const days = Math.floor((Date.now() - earliest) / (1000 * 60 * 60 * 24));
+      return Math.max(0, days);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Picker (选自己)
+     * ────────────────────────────────────────────── */
+    function openPicker() {
+      document.getElementById('picker-modal').classList.add('active');
+      document.getElementById('picker-search').value = '';
+      renderPicker('');
+      setTimeout(() => document.getElementById('picker-search').focus(), 250);
+    }
+    function closePicker() {
+      document.getElementById('picker-modal').classList.remove('active');
+    }
+    document.getElementById('picker-search').addEventListener('input', e => {
+      renderPicker(e.target.value.trim().toLowerCase());
+    });
+
+    function renderPicker(filter) {
+      const list = MOCK_MEMBERS.filter(m => {
+        if (!filter) return true;
+        const hay = (m.name + ' ' + (m.nickname || '') + ' ' + (m.cities || []).join(' ') + ' ' + (m.identity || []).join(' ')).toLowerCase();
+        return hay.includes(filter);
+      });
+      const el = document.getElementById('picker-list');
+      if (!list.length) {
+        el.innerHTML = '<div class="picker-empty">没有匹配的成员</div>';
+        return;
+      }
+      el.innerHTML = list.map(m => {
+        const initials = m.name.slice(0, 1);
+        const meta = [(m.cities || []).join(' / '), (m.identity || []).join(' · ')].filter(Boolean).join('  ·  ');
+        return `
+          <div class="picker-row" onclick="selectMember('${m.rec_id}')">
+            <div class="picker-avatar">${escHtml(initials)}</div>
+            <div class="picker-info">
+              <div class="picker-name">${escHtml(m.name)}${m.nickname ? ` <span style="color:var(--cyc-text-muted);font-weight:400">"${escHtml(m.nickname)}"</span>` : ''}</div>
+              ${meta ? `<div class="picker-meta">${escHtml(meta)}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function selectMember(rec_id) {
+      _selectedForVerify = MOCK_MEMBERS.find(m => m.rec_id === rec_id);
+      closePicker();
+      setTimeout(() => openVerify(), 220);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Verify (4 位微信号)
+     * ────────────────────────────────────────────── */
+    function openVerify() {
+      document.getElementById('verify-modal').classList.add('active');
+      document.querySelectorAll('.verify-input').forEach(i => { i.value = ''; });
+      document.getElementById('verify-error').textContent = '';
+      setTimeout(() => document.querySelector('.verify-input[data-i="0"]').focus(), 250);
+    }
+    function cancelVerify() {
+      document.getElementById('verify-modal').classList.remove('active');
+      setTimeout(openPicker, 220);
+    }
+
+    document.querySelectorAll('.verify-input').forEach(input => {
+      input.addEventListener('input', () => {
+        const i = parseInt(input.dataset.i);
+        if (input.value.length === 1) {
+          const next = document.querySelector(`.verify-input[data-i="${i + 1}"]`);
+          if (next) next.focus();
+        }
+      });
+      input.addEventListener('keydown', e => {
+        const i = parseInt(input.dataset.i);
+        if (e.key === 'Backspace' && !input.value && i > 0) {
+          const prev = document.querySelector(`.verify-input[data-i="${i - 1}"]`);
+          if (prev) prev.focus();
+        }
+        if (e.key === 'Enter') submitVerify();
+      });
+    });
+
+    function submitVerify() {
+      const code = [...document.querySelectorAll('.verify-input')].map(i => i.value).join('');
+      if (code.length !== 4) {
+        document.getElementById('verify-error').textContent = '请填完 4 位';
+        return;
+      }
+      // mock：任意 4 位通过；path B 改为 POST /api/identity-verify
+      _identity = {
+        rec_id: _selectedForVerify.rec_id,
+        name:   _selectedForVerify.name,
+        nickname: _selectedForVerify.nickname || '',
+      };
+      saveIdentity();
+      document.getElementById('verify-modal').classList.remove('active');
+      showBound();
+      setActivity('Welcome', `欢迎，${_identity.name}。现在你可以开始上传回忆了。`);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Hero · Stack render
+     * ────────────────────────────────────────────── */
+    function renderHero() {
+      const stackEl = document.getElementById('stack');
+      const wrapEl  = document.getElementById('stack-wrap');
+      const emptyEl = document.getElementById('hero-empty');
+      stackEl.innerHTML = '';
+
+      const sorted = [..._photos].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+      const top = sorted.slice(0, 8);
+
+      if (!top.length) {
+        wrapEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      wrapEl.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+
+      const layouts = computeFanLayout(top.length);
+      top.forEach((p, i) => {
+        const L = layouts[i];
         const card = document.createElement('div');
         card.className = 'polaroid';
-        card.style.setProperty('--tilt', tiltFor(i + 1));
-        card.style.setProperty('--fanX', fanX[i] + 'px');
-        card.style.setProperty('--fanTilt', fanTilts[i] + 'deg');
+        card.style.setProperty('--tilt',     L.tilt + 'deg');
+        card.style.setProperty('--fanX',     L.fanX + 'px');
+        card.style.setProperty('--fanTilt',  L.fanTilt + 'deg');
         card.style.setProperty('--z', i + 1);
-        card.innerHTML = `
-          <div class="polaroid__photo"><span>${p.emoji}</span></div>
-          <div class="polaroid__cap">
-            <div class="polaroid__title">${p.title}</div>
-            <div class="polaroid__date">${p.date}</div>
-          </div>`;
-        el.appendChild(card);
+        card.innerHTML = polaroidContent(p);
+        stackEl.appendChild(card);
       });
     }
+    function computeFanLayout(n) {
+      // tilt 范围 ±8°（DESIGN.md / SKILL.md hard rule #9）
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const t = n === 1 ? 0 : (i / (n - 1)) * 16 - 8;
+        const fx = n === 1 ? 0 : (i / (n - 1)) * 440 - 220;
+        out.push({
+          tilt:    Math.round(t  * 100) / 100,
+          fanX:    Math.round(fx),
+          fanTilt: Math.round(t  * 2 * 100) / 100,
+        });
+      }
+      return out;
+    }
+    function polaroidContent(p) {
+      const photoCls = p.dataUrl ? 'has-image' : '';
+      const photoHtml = p.dataUrl
+        ? `<img src="${p.dataUrl}" alt="${escHtml(p.title)}">`
+        : '<span>📷</span>';
+      return `
+        <div class="polaroid__photo ${photoCls}">${photoHtml}</div>
+        <div class="polaroid__cap">
+          <div class="polaroid__title">${escHtml(p.title || '未命名')}</div>
+          <div class="polaroid__date">${fmtDate(p.date)}</div>
+        </div>`;
+    }
 
-    /* ─── Lineup（按月分组） ─── */
-    function renderMonths() {
+    /* ──────────────────────────────────────────────
+     *  Lineup · 按月分组
+     * ────────────────────────────────────────────── */
+    function renderLineup() {
       const el = document.getElementById('months');
-      MONTHS.forEach((m, mi) => {
+      const emptyEl = document.getElementById('lineup-empty');
+      el.innerHTML = '';
+
+      if (!_photos.length) {
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+
+      const groups = {};
+      for (const p of _photos) {
+        const ym = (p.date || '').slice(0, 7) || 'unknown';
+        (groups[ym] = groups[ym] || []).push(p);
+      }
+      const months = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+      months.forEach((ym, mi) => {
+        const items = groups[ym].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+        const [y, m] = ym.split('-');
+        const label = ym === 'unknown' ? '未注明日期' : `${y} · ${parseInt(m)}月`;
         const sec = document.createElement('section');
         sec.className = 'month-section';
         sec.id = 'month-' + mi;
-        const itemsHtml = m.items.map((it, i) => `
-          <div class="polaroid">
-            <div class="polaroid__photo"><span>${it.emoji}</span></div>
-            <div class="polaroid__cap">
-              <div class="polaroid__title">${it.title}</div>
-              <div class="polaroid__date">${it.day} 日</div>
-            </div>
-          </div>`).join('');
+        sec.dataset.ym = ym;
         sec.innerHTML = `
           <div class="month-head">
-            <div class="month-name">${m.label}</div>
-            <div class="month-metric">${m.items.length} 场</div>
+            <div class="month-name">${escHtml(label)}</div>
+            <div class="month-metric">${items.length} 张</div>
           </div>
-          <div class="lineup-row">${itemsHtml}</div>`;
+          <div class="lineup-row">
+            ${items.map(p => `<div class="polaroid">${polaroidContent(p)}</div>`).join('')}
+          </div>`;
         el.appendChild(sec);
       });
     }
 
-    /* ─── Scrubber（右侧时间尺） ─── */
+    /* ─── Scrubber ─── */
     function renderScrubber() {
       const el = document.getElementById('scrubber');
-      let html = '';
-      MONTHS.forEach((m, mi) => {
-        html += `<div class="scrubber__month">${m.short}</div>`;
-        // 每月只列一个 entry — 月份本身（点击跳到该月 section）
-        // 真实数据接入后可展开为每天日期
-        html += `<a class="scrubber__entry" data-target="month-${mi}" href="#month-${mi}">${mi === 0 ? '·' : '·'}</a>`;
-      });
-      el.innerHTML = html;
+      el.innerHTML = '';
+      const sections = document.querySelectorAll('.month-section');
+      if (!sections.length) return;
 
-      // 平滑滚动
-      el.querySelectorAll('.scrubber__entry').forEach(a => {
+      sections.forEach(sec => {
+        const ym = sec.dataset.ym;
+        const m = ym && ym !== 'unknown' ? ym.split('-')[1] : '?';
+        const label = ym === 'unknown' ? '?' : (parseInt(m) + '月');
+        const a = document.createElement('a');
+        a.className = 'scrubber__entry';
+        a.href = '#' + sec.id;
+        a.dataset.target = sec.id;
+        a.textContent = label;
         a.addEventListener('click', e => {
           e.preventDefault();
-          const t = document.getElementById(a.dataset.target);
-          if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
+        el.appendChild(a);
       });
 
-      // 联动高亮
       const obs = new IntersectionObserver(entries => {
         entries.forEach(en => {
           if (en.isIntersecting) {
@@ -656,32 +1578,141 @@
           }
         });
       }, { rootMargin: '-30% 0px -55% 0px' });
-      document.querySelectorAll('.month-section').forEach(s => obs.observe(s));
+      sections.forEach(s => obs.observe(s));
     }
 
-    /* ─── Activity Bar 文案轮播（朴素，不抒情） ─── */
-    function loopActivity() {
-      // 规范要求 plain language，reduces user anxiety
-      const phrases = [
-        ['Recalling',  'Going through your year — give it a sec.'],
-        ['Sorting',    'Putting the moments in order.'],
-        ['Selecting',  'Picking the ones that mattered most.'],
-      ];
-      const lab = document.getElementById('ab-label');
-      const sub = document.getElementById('ab-sub');
-      let i = 0;
-      setInterval(() => {
-        i = (i + 1) % phrases.length;
-        lab.textContent = phrases[i][0];
-        sub.textContent = phrases[i][1];
-      }, 3600);
+    /* ──────────────────────────────────────────────
+     *  Upload (mock — 存 localStorage 的 dataURL)
+     * ────────────────────────────────────────────── */
+    function openUpload() {
+      const m = document.getElementById('upload-modal');
+      m.classList.add('active');
+      // reset
+      document.getElementById('upload-file-input').value = '';
+      document.getElementById('upload-preview').classList.remove('has-image');
+      document.getElementById('upload-preview').src = '';
+      document.getElementById('upload-title').value = '';
+      document.getElementById('upload-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('upload-activity').value = '';
+      const pubRadio = document.querySelector('input[name="privacy"][value="public"]');
+      if (pubRadio) pubRadio.checked = true;
+      document.getElementById('upload-submit').disabled = true;
+      _uploadDataUrl = null;
     }
+    function closeUpload() {
+      document.getElementById('upload-modal').classList.remove('active');
+    }
+
+    function populateActivityOptions() {
+      const sel = document.getElementById('upload-activity');
+      sel.innerHTML = '<option value="">— 无 —</option>'
+        + MOCK_ACTIVITIES.map(a =>
+            `<option value="${a.id}">${escHtml(a.title)}（${fmtDate(a.date)}）</option>`).join('');
+    }
+
+    document.getElementById('upload-drop').addEventListener('click', () => {
+      document.getElementById('upload-file-input').click();
+    });
+    document.getElementById('upload-file-input').addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      setActivity('Compressing', '正在压缩照片…');
+      try {
+        const dataUrl = await compressImage(file, 1600, 0.85);
+        _uploadDataUrl = dataUrl;
+        const img = document.getElementById('upload-preview');
+        img.src = dataUrl;
+        img.classList.add('has-image');
+        document.getElementById('upload-submit').disabled = false;
+        setActivity('Ready', '照片已就绪 — 填好信息点上传。');
+      } catch (err) {
+        setActivity('Error', '压缩失败：' + (err.message || err));
+      }
+    });
+
+    function compressImage(file, maxWidth, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            if (w > maxWidth) {
+              h = h * (maxWidth / w);
+              w = maxWidth;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = () => reject(new Error('图片解析失败'));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function submitUpload() {
+      if (!_uploadDataUrl) return;
+      const title = document.getElementById('upload-title').value.trim() || '未命名';
+      const date  = document.getElementById('upload-date').value || new Date().toISOString().slice(0, 10);
+      const activity_id = document.getElementById('upload-activity').value;
+      const privacy = (document.querySelector('input[name="privacy"]:checked') || {}).value || 'public';
+
+      const photo = {
+        id: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        dataUrl: _uploadDataUrl,
+        title, date, activity_id, privacy,
+        uploaded_at: Date.now(),
+      };
+      _photos.push(photo);
+      try {
+        savePhotos();
+      } catch (err) {
+        // localStorage 配额可能溢出（dataURL 大）
+        setActivity('Error', '本地存满了 — 暂不能再加。后端打通后改用云端就没问题。');
+        return;
+      }
+      closeUpload();
+      renderHero();
+      renderLineup();
+      renderScrubber();
+      renderIdentity();
+      setActivity('Saved', '本地存了一张 — 后端打通后会同步到飞书。');
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Activity bar — idle 是终态，不递归 schedule
+     * ────────────────────────────────────────────── */
+    let _activityResetTimer;
+    function applyActivityDom(label, sub) {
+      document.getElementById('ab-label').textContent = label;
+      document.getElementById('ab-sub').textContent   = sub;
+    }
+    function setActivity(label, sub) {
+      applyActivityDom(label, sub);
+      clearTimeout(_activityResetTimer);
+      // 5s 后回到 idle 文案（idle 不会再 schedule timer）
+      _activityResetTimer = setTimeout(applyIdleActivity, 5000);
+    }
+    function applyIdleActivity() {
+      let label, sub;
+      if (_identity) {
+        if (_photos.length) { label = 'Recalling'; sub = '在整理你的社区记忆。'; }
+        else                { label = 'Listening'; sub = '准备好接收你的第一张照片。'; }
+      } else {
+        label = 'Listening'; sub = '准备好认出你 — 选自己的卡片即可。';
+      }
+      applyActivityDom(label, sub);
+    }
+    function loopActivity() { applyIdleActivity(); }
 
     /* ─── 启动 ─── */
-    renderStack();
-    renderMonths();
-    renderScrubber();
-    loopActivity();
+    init();
   </script>
 
 </body>
