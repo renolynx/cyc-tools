@@ -141,7 +141,16 @@ export function parseMember(record, locMap = {}, locNameMap = {}) {
     // ⚠️ 私密：仅供服务端 RSVP 匹配 / admin 编辑使用
     //    任何对外 SSR / JSON API 必须 strip 这些字段
     _wechat:      getText(f['微信号']),
+    _phone:       getText(f['电话号码']),
   };
+}
+
+/** 微信号是 placeholder（用户没真填，常常意味着"同手机号"）*/
+function isPlaceholderWechat(wx) {
+  if (!wx) return true;
+  const s = String(wx).trim().toLowerCase();
+  if (!s) return true;
+  return ['同手机号','同电话','同上','无','none','-','/','．','.'].some(p => s === p.toLowerCase());
 }
 
 /** 把私密字段从 Member 对象剥掉（对外渲染前必须调） */
@@ -249,6 +258,10 @@ export async function searchMembers(query, opts = {}) {
 
 /**
  * 微信号精确匹配（大小写不敏感、trim）
+ * 智能处理:
+ *   - 微信号字段有真值 → 严格只比对 微信号
+ *   - 微信号字段是 placeholder（"同手机号"/"同上"/空）→ 比对 电话号码 字段
+ *
  * RSVP 报名时优先调这个 → 唯一性最高
  */
 export async function findMemberByWechat(wechat) {
@@ -256,17 +269,36 @@ export async function findMemberByWechat(wechat) {
   const target = String(wechat).trim().toLowerCase();
   if (!target) return null;
   const all = await fetchAllMembers();
-  return all.find(m => (m._wechat || '').trim().toLowerCase() === target) || null;
+
+  // 1. 真实 微信号 严格匹配
+  let hit = all.find(m => {
+    const wx = (m._wechat || '').trim();
+    if (isPlaceholderWechat(wx)) return false;
+    return wx.toLowerCase() === target;
+  });
+  if (hit) return hit;
+
+  // 2. 微信号是 placeholder → 比对 电话号码
+  hit = all.find(m => {
+    const wx = (m._wechat || '').trim();
+    if (!isPlaceholderWechat(wx)) return false;
+    return (m._phone || '').trim() === target;
+  });
+  return hit || null;
 }
 
-/** 自动创建最小成员记录（默认隐藏） */
+/**
+ * 自动创建最小成员记录
+ * 默认 hidden=false：报名了 = 行为意义上的活跃成员，应当自然进入公开目录
+ * （即使信息不全也展示。Admin 觉得不该公开可手动打勾。）
+ */
 export async function autoCreateMember(data) {
   if (!data || !data.name || !data.wechat) throw new Error('autoCreateMember 需要 name + wechat');
 
   const fields = {
     '姓名':   data.name,
     '微信号':  data.wechat,
-    '在社群成员列表中隐藏': true,
+    '在社群成员列表中隐藏': false,  // 默认公开，admin 想隐再打勾
     '来自渠道': data.source || '活动报名自动建',
   };
   if (data.bio) fields['个人介绍'] = data.bio;
