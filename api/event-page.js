@@ -249,6 +249,20 @@ async function submitRsvp() {
   if (!name)   { errEl.textContent = '请填写姓名'; return; }
   if (!wechat) { errEl.textContent = '请填写微信号'; return; }
 
+  // 客户端兜底去重（同浏览器同会话同活动同微信号）
+  try {
+    const seenKey = 'rsvp_done:' + ACT_REC_ID;
+    const prev = sessionStorage.getItem(seenKey);
+    if (prev === wechat) {
+      errEl.classList.add('ok');
+      errEl.textContent = '✓ 你刚才已经报过名了，不用重复';
+      btn.disabled = true;
+      btn.textContent = '已报名';
+      setTimeout(closeRsvpModal, 1500);
+      return;
+    }
+  } catch {}
+
   btn.disabled = true;
   btn.textContent = '提交中...';
   try {
@@ -260,10 +274,17 @@ async function submitRsvp() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '报名失败');
 
+    // 标记已报，下次同会话直接拦
+    try { sessionStorage.setItem('rsvp_done:' + ACT_REC_ID, wechat); } catch {}
+
     errEl.classList.add('ok');
     errEl.textContent = data.already_registered ? '✓ 你已经报名过这个活动' : '✓ 报名成功！我们会通过微信联系你';
     btn.textContent = '已成功';
-    setTimeout(() => { closeRsvpModal(); location.reload(); }, 1600);
+    setTimeout(() => {
+      closeRsvpModal();
+      // 加 query param 绕开 Vercel Edge cache（s-maxage=300）
+      window.location.href = window.location.pathname + '?_=' + Date.now();
+    }, 1500);
   } catch (err) {
     errEl.textContent = err.message;
     btn.disabled = false;

@@ -93,11 +93,32 @@ export async function fetchRsvpsForActivity(activity_rec_id) {
   return filtered;
 }
 
-/** 同活动同微信号去重检查 */
+/** 同活动同微信号去重检查
+ * 双层：先查 KV mark（强一致，避开飞书 search 索引延迟）
+ * 没命中再查飞书 search（最终一致）
+ */
 export async function findExistingRsvp(activity_rec_id, wechat) {
   if (!activity_rec_id || !wechat) return null;
+
+  // KV mark 优先：写入时同步打了 mark，立即生效
+  if (isKvConfigured()) {
+    try {
+      const mark = await kvGet(seenKey(activity_rec_id, wechat));
+      if (mark) {
+        // mark 存的是 record_id；找不到 record 但已知报过 → 仍返回标记对象
+        return { record_id: mark, name: '', wechat, _from_mark: true };
+      }
+    } catch {}
+  }
+
+  // KV 没 mark → 飞书 search（可能延迟几秒看不到刚写的记录）
   const list = await fetchRsvpsForActivity(activity_rec_id);
   return list.find(r => r.wechat === wechat) || null;
+}
+
+/** KV 防重 key（避开飞书 search 索引延迟） */
+function seenKey(activity_rec_id, wechat) {
+  return `rsvp_seen:${activity_rec_id}:${wechat}`;
 }
 
 // ─────────── 写入 ───────────
@@ -132,10 +153,16 @@ export async function addRsvp(data) {
   const result = await res.json();
   if (result.code !== 0) throw new Error(`RSVP 写入失败 (${result.code}): ${result.msg}`);
 
-  // 失效该活动缓存
+  const newRecordId = result.data.record.record_id;
+
+  // 1. 失效该活动报名列表缓存
+  // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）
   if (isKvConfigured()) {
-    try { await kvDel('rsvp:activity:' + data.activity_rec_id); } catch {}
+    await Promise.all([
+      kvDel('rsvp:activity:' + data.activity_rec_id),
+      kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400),  // 1 天 TTL
+    ]).catch(() => {});
   }
 
-  return { success: true, record_id: result.data.record.record_id };
+  return { success: true, record_id: newRecordId };
 }
