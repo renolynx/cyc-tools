@@ -203,8 +203,10 @@ function renderDetail(member, rsvps, fromActivityId, topTypes = []) {
     // 优先用活动表的实际日期；活动已删除等情况回退到注册时间
     const date = r.activity_date
       || (r.registered_at ? new Date(r.registered_at).toISOString().slice(0,10) : '');
+    const types = (r.activity_types || []).slice(0, 3);
     return `<a class="cm-rsvp-row" href="/events/${escapeHtml(r.activity_rec_id)}">
   <span class="cm-rsvp-title">${escapeHtml(r.activity_title || '未命名活动')}</span>
+  ${types.length ? `<span class="cm-rsvp-types">${types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</span>` : ''}
   <span class="cm-rsvp-meta">
     <span class="cm-rsvp-role">${escapeHtml(role)}</span>
     ${date ? `<span class="cm-rsvp-date">${date}</span>` : ''}
@@ -1078,6 +1080,7 @@ export default async function handler(req, res) {
         ...r,
         activity_title: a?.title || r.activity_title || '',
         activity_date:  a?.date  || '',
+        activity_types: a?.types || [],
       };
     });
 

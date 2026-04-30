@@ -1784,6 +1784,10 @@ body.event-page {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   margin-right: 10px;
 }
+.cm-rsvp-types {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  flex-shrink: 0; margin-right: 10px;
+}
 .cm-rsvp-meta {
   display: flex; align-items: center; gap: 8px;
   flex-shrink: 0;
