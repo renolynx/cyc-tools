@@ -560,6 +560,12 @@ async function fetchFromFeishu() {
   }
 }
 
+// ── 进页面后自动拉一次本周飞书活动 ──
+// 之前用户必须手动点「☁️ 从飞书读取本周活动」，反直觉；改成首次加载就抓
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => fetchFromFeishu(), 200);
+});
+
 // ── Status pills ──
 const STATUS_CLASS = {'筹备酝酿中':'sp-active','确认举办':'sp-orange','办完了！':'sp-done'};
 function updStatus(id, val, btn) {
