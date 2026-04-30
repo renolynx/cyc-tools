@@ -357,7 +357,7 @@ function doLogout() {
   document.getElementById('login-screen').style.display = 'flex';
 }
 
-/** 拉单个成员的完整档案（详情卡用 — bio 完整 + 职业 / 兴趣 / 身份等丰富字段）
+/** 拉单个成员的完整档案（详情卡用 — bio 完整 + 职业 / 兴趣 / 身份 / 活动记录）
  *  缓存到 _membersFullById；同一 id 并发请求合并到一个 Promise
  *  失败返回 null（调用方 fallback 到精简版） */
 async function loadFullMember(rec_id) {
@@ -385,6 +385,51 @@ async function loadFullMember(rec_id) {
     }
   })();
   return _loadingFull[rec_id];
+}
+
+/** 批量预热：登录后一次性把所有「已关联到角色」的成员档案都拉下来缓存。
+ *  这样用户后续点角色卡基本秒开，不用每次等 200-500ms 单独拉。
+ *  接口支持 ?id=rec1,rec2,...（最多 30 个，飞书 fetchMember 30min KV 缓存）。 */
+async function preloadLinkedMembers() {
+  const ids = new Set();
+  const collect = obj => obj && obj.member_rec_id && ids.add(obj.member_rec_id);
+  if (data.cyc) {
+    (data.cyc.triangle || []).forEach(collect);
+    (data.cyc.ops || []).forEach(collect);
+    (data.cyc.volunteers || []).forEach(collect);
+  }
+  if (data.praxis) {
+    collect(data.praxis.lead);
+    (data.praxis.volunteers || []).forEach(collect);
+  }
+  if (!ids.size) return;
+
+  const idList = [...ids];
+  const pwd = sessionStorage.getItem('cyc-team-pwd');
+  if (!pwd) return;
+
+  try {
+    const res = await fetch('/api/member?id=' + encodeURIComponent(idList.join(',')), {
+      headers: { 'Authorization': 'Bearer ' + pwd },
+    });
+    if (!res.ok) return;
+    const json = await res.json();
+    const list = Array.isArray(json.members) ? json.members
+               : (json.member ? [json.member] : []);
+    for (const m of list) _membersFullById[m.record_id] = m;
+  } catch (err) {
+    console.warn('[preloadLinkedMembers]', err.message);
+  }
+}
+
+/** 'YYYY-MM-DD' → 友好显示（今年的省年份）；空串保持空 */
+function fmtActDate(d) {
+  if (!d) return '';
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return d;
+  const yr = (new Date()).getFullYear();
+  if (Number(m[1]) === yr) return Number(m[2]) + '月' + Number(m[3]) + '日';
+  return m[1].slice(2) + '年' + Number(m[2]) + '月' + Number(m[3]) + '日';
 }
 
 /** 拉成员池（懒加载，登录后预热一次；picker 打开时若未就绪再触发） */
@@ -423,8 +468,13 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   if (sessionStorage.getItem('cyc-team-edit') === '1') { editMode = true; applyEditMode(); }
   loadData(); render();
-  // 后台预热成员池（不阻塞 UI；详情卡渲染时若已就绪可直接拿用）
-  loadMembers().then(() => render());
+  // 后台预热：先拉成员池（picker 用的精简版）→ 紧接着批量拉所有已关联角色的
+  // 完整档案（详情卡用）。两层都不阻塞 UI；用户点角色时多半已经命中缓存。
+  loadMembers().then(async () => {
+    render();
+    await preloadLinkedMembers();
+    render();   // 完整档案到位后再渲染一次，让卡片名字 / 头像同步到位
+  });
 }
 
 document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -880,6 +930,33 @@ function openDetail(path, idx) {
                    </div>
                  </div>`).join('')
             + '</div>';
+        }
+
+        // 活动参与记录（最近 8 条；超过 8 给"主页查看全部"链接）
+        const acts = fullMember.activities || [];
+        if (acts.length) {
+          body += '<div class="member-activities-section">';
+          body += `<div class="member-section-label">📅 活动参与（共 ${acts.length} 条）</div>`;
+          body += '<div class="member-activities-list">';
+          for (const act of acts.slice(0, 8)) {
+            const dateStr = fmtActDate(act.date);
+            const rolesStr = (act.roles || []).join(' / ');
+            body += '<a class="member-activity-item" href="/events/' + encodeURIComponent(act.id) + '" target="_blank" rel="noopener">'
+              +   '<div class="member-activity-title">' + escTeamHtml(act.title || '（未命名活动）') + '</div>'
+              +   '<div class="member-activity-meta">'
+              +     (dateStr  ? '<span class="member-activity-date">' + dateStr + '</span>' : '')
+              +     (rolesStr ? '<span class="member-activity-role">' + escTeamHtml(rolesStr) + '</span>' : '')
+              +     (act.loc  ? '<span class="member-activity-loc">📍 ' + escTeamHtml(act.loc) + '</span>' : '')
+              +   '</div>'
+              + '</a>';
+          }
+          body += '</div>';
+          if (acts.length > 8) {
+            body += '<div class="member-activities-more">还有 ' + (acts.length - 8) + ' 条 — '
+              +   '<a href="/community/' + encodeURIComponent(linkedRecId) + '" target="_blank" rel="noopener">主页查看全部</a>'
+              + '</div>';
+          }
+          body += '</div>';
         }
       } else {
         // 还在拉完整档案：先用 lite 版的 80 字截断 bio 占位
