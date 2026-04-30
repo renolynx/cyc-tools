@@ -135,7 +135,8 @@ export function parseMember(record, locMap = {}, locNameMap = {}) {
     willShare:    getText(f['愿意做的分享']),
     interests:    getText(f['感兴趣的活动']),
     mbti:         getText(f['MBTI']),
-    identity:     getMultiSelect(f['社群身份']),
+    // 飞书表里历史「游客」值过于宽泛、对成员卡片表达没价值（任何人路过都算），UI 一律不渲染
+    identity:     getMultiSelect(f['社群身份']).filter(v => v !== '游客'),
     contribution: getMultiSelect(f['愿意做出的贡献（选择)']),
     residentStatus: getSelect(f['据点入住状态']),
     hubIds, hubs, cities,

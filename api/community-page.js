@@ -15,6 +15,7 @@
 import { applyCors, checkFeishuEnv } from './_feishu.js';
 import { fetchMember, fetchMembersByCity, stripPrivate } from './_member.js';
 import { fetchRsvpsByMember }                            from './_rsvp.js';
+import { fetchAllActivities }                            from './_activity.js';
 
 const SITE_URL  = 'https://cyc.center';
 const SITE_NAME = 'CYC 链岛青年社区';
@@ -189,7 +190,9 @@ function renderDetail(member, rsvps, fromActivityId) {
 
   const rsvpRow = r => {
     const role = r.roles[0] || '参与者';
-    const date = r.registered_at ? new Date(r.registered_at).toISOString().slice(0,10) : '';
+    // 优先用活动表的实际日期；活动已删除等情况回退到注册时间
+    const date = r.activity_date
+      || (r.registered_at ? new Date(r.registered_at).toISOString().slice(0,10) : '');
     return `<a class="cm-rsvp-row" href="/events/${escapeHtml(r.activity_rec_id)}">
   <span class="cm-rsvp-title">${escapeHtml(r.activity_title || '未命名活动')}</span>
   <span class="cm-rsvp-meta">
@@ -989,13 +992,27 @@ export default async function handler(req, res) {
       }));
     }
 
-    // 反向查 ta 参加过的活动
+    // 反向查 ta 参加过的活动 + 拼上活动真实日期（注册时间通常是 backfill 当天，对用户没意义）
     let rsvps = [];
     try { rsvps = await fetchRsvpsByMember(id); }
     catch (err) { console.warn('[community-page] member rsvps fetch failed:', err.message); }
 
+    let acts = [];
+    try { acts = await fetchAllActivities(); }
+    catch (err) { console.warn('[community-page] activities fetch failed:', err.message); }
+
+    const actMap = new Map(acts.map(a => [a.record_id, a]));
+    const rsvpsEnriched = rsvps.map(r => {
+      const a = actMap.get(r.activity_rec_id);
+      return {
+        ...r,
+        activity_title: a?.title || r.activity_title || '',
+        activity_date:  a?.date  || '',
+      };
+    });
+
     res.setHeader('Cache-Control', EDGE_CACHE);
-    return res.status(200).send(renderDetail(stripPrivate(member), rsvps, req.query.from));
+    return res.status(200).send(renderDetail(stripPrivate(member), rsvpsEnriched, req.query.from));
   }
 
   // 3. 列表页
