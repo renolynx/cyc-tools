@@ -10,7 +10,7 @@
  */
 
 import { getAccessToken } from './_feishu.js';
-import { kvGet, kvSet, kvDel, isKvConfigured } from './_kv.js';
+import { kvGet, kvSet, kvDel, isKvConfigured, invalidate } from './_kv.js';
 import { fetchAllActivities } from './_activity.js';
 import { fetchAllRsvps }       from './_rsvp.js';
 
@@ -508,6 +508,8 @@ export async function autoCreateMember(data) {
   );
   const result = await res.json();
   if (result.code !== 0) throw new Error(`成员自动创建失败 (${result.code}): ${result.msg}`);
+  // 之前漏清成员列表 cache —— 自动建后公开页 / admin 列表要 30min 才看到新人
+  await invalidate('member', result.data.record.record_id);
   return result.data.record.record_id;
 }
 
@@ -606,15 +608,7 @@ export async function deleteMember(record_id) {
     throw new Error(`成员删除失败 (${data.code}): ${data.msg}`);
   }
 
-  if (isKvConfigured()) {
-    await Promise.all([
-      kvDel('member:' + record_id),
-      kvDel('rsvp:member:' + record_id),
-      kvDel('members:大理'),
-      kvDel('members:上海'),
-      kvDel('member_activity_cities'),
-    ]).catch(() => {});
-  }
+  await invalidate('member', record_id);
   return { success: true };
 }
 
@@ -654,15 +648,8 @@ export async function writeMember(memberData, recordId) {
   const data = await res.json();
   if (data.code !== 0) throw new Error(`成员${recordId?'更新':'写入'}失败 (${data.code}): ${data.msg}`);
 
-  // 失效相关缓存
-  if (isKvConfigured()) {
-    const newId = data.data.record.record_id;
-    await Promise.all([
-      kvDel('member:' + newId),
-      kvDel('members:大理'),
-      kvDel('members:上海'),
-    ]).catch(() => {});
-  }
+  // 失效相关缓存（含 member_activity_cities，writeMember 之前漏清）
+  await invalidate('member', data.data.record.record_id);
 
   return {
     success:   true,

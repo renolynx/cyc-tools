@@ -5,7 +5,7 @@
 
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
-import { kvDel, isKvConfigured } from './_kv.js';
+import { invalidate } from './_kv.js';
 import { replaceSpeakerRsvps }                                                  from './_rsvp.js';
 import { fetchAllMembers, autoCreateMember, matchSpeaker, splitSpeakerNames }  from './_member.js';
 
@@ -145,14 +145,8 @@ export default async function handler(req, res) {
 
     const newRecordId = recordData.data.record.record_id;
 
-    // 失效相关 KV 缓存（让 /events 立刻反映新数据）
-    if (isKvConfigured()) {
-      await Promise.all([
-        kvDel('event:' + newRecordId),
-        kvDel('events:upcoming'),
-        kvDel('sitemap:acts'),
-      ]).catch(e => console.error('[add-activity] cache invalidate failed:', e));
-    }
+    // 失效相关 KV 缓存（含 members:* — 活动改变会影响成员列表的城市反推/topTypes）
+    await invalidate('activity', newRecordId);
 
     // 嘉宾联动：自动写「角色=活动发起者」的 RSVP 记录（失败不阻塞主流程）
     // 即使 sp 为空也调用，确保编辑活动后删掉嘉宾时旧 RSVP 也跟着清掉

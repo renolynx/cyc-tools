@@ -68,3 +68,83 @@ export async function kvSet(key, value, ttlSec) {
   if (data.error) throw new Error(`KV SET 错误: ${data.error}`);
   return true;
 }
+
+// ─────────── 缓存失效（集中管理）───────────
+// 写操作不再各自维护要清的 key 列表，调 invalidate(scope, ...args) 即可
+// 加新 cache key 时只需在这里登记一次，所有调用方自动跟上。
+//
+// 设计思路：写操作的影响面是"扇出"的——
+//   - 改活动 → event 详情、活动列表、sitemap、成员列表（inferredCities/topTypes）
+//   - 改成员 → member 详情、成员列表、活动反推城市表、ta 的 RSVP cache
+//   - 改 RSVP → 活动 RSVP cache、全表 cache、城市反推、成员列表（角色聚合变）
+// 都涉及 members:* 因为成员列表用的聚合（roleStats/topTypes/lastActiveAt）依赖
+// 一切上游写操作。简化心智：写操作宁清多别漏清。
+
+const SCOPES = {
+  // 写一条活动后清（poster 也算 — 单独一个 file_token cache 不在这里）
+  activity: (id) => [
+    id ? 'event:' + id : null,
+    'events:upcoming',
+    'sitemap:acts',
+    'members:大理',          // 活动 types/loc 变 → 成员列表聚合可能变
+    'members:上海',
+    'member_activity_cities',
+  ],
+
+  // 写一条成员后清
+  member: (id) => [
+    id ? 'member:' + id : null,
+    id ? 'rsvp:member:' + id : null,
+    'members:大理',
+    'members:上海',
+    'member_activity_cities',
+  ],
+
+  // 写一条 RSVP 后清；activityId / memberId 都可选但建议都传
+  rsvp: (activityId, memberId) => [
+    'rsvp:all',
+    activityId ? 'rsvp:activity:' + activityId : null,
+    memberId   ? 'rsvp:member:'   + memberId   : null,
+    'member_activity_cities',
+    'members:大理',
+    'members:上海',
+  ],
+
+  // admin 兜底（schema 改动后强制刷新；clear-cache action 用）
+  all: () => [
+    'members:大理',
+    'members:上海',
+    'rsvp:all',
+    'member_activity_cities',
+  ],
+};
+
+/** 按 scope 清相关 KV cache key
+ *  invalidate('activity', id) / invalidate('member', id) / invalidate('rsvp', aid, mid) / invalidate('all')
+ *  所有失败 silent ignore（cache 失效是 best-effort，不应阻塞主流程）
+ */
+export async function invalidate(scope, ...args) {
+  if (!isKvConfigured()) return;
+  const fn = SCOPES[scope];
+  if (!fn) {
+    console.warn('[invalidate] unknown scope:', scope);
+    return;
+  }
+  const keys = fn(...args).filter(Boolean);
+  if (!keys.length) return;
+  await Promise.all(keys.map(k => kvDel(k))).catch(() => {});
+}
+
+/** 多个 record id 的活动一次性清（strip-types backfill 等批量场景，避免重复清通用 key） */
+export async function invalidateActivities(ids) {
+  if (!isKvConfigured() || !ids || !ids.length) return;
+  const keys = [
+    'events:upcoming',
+    'sitemap:acts',
+    'members:大理',
+    'members:上海',
+    'member_activity_cities',
+    ...ids.map(id => 'event:' + id),
+  ];
+  await Promise.all(keys.map(k => kvDel(k))).catch(() => {});
+}

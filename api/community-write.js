@@ -35,7 +35,7 @@ import { fetchAllActivities }                       from './_activity.js';
 import { replaceSpeakerRsvps,
          fetchRsvpsByMember,
          updateRsvpMemberLink }                     from './_rsvp.js';
-import { kvDel, isKvConfigured }                    from './_kv.js';
+import { invalidate, invalidateActivities, kvDel, isKvConfigured } from './_kv.js';
 
 /**
  * 拉所有成员 + 给每条加 inferredCities 字段（活动反推）
@@ -252,14 +252,8 @@ async function handleBackfillSpeakers(req, res) {
  */
 async function handleClearCache(req, res) {
   if (!isKvConfigured()) return res.status(200).json({ success: true, kv: 'not configured' });
-  const keys = [
-    'members:大理',
-    'members:上海',
-    'rsvp:all',
-    'member_activity_cities',
-  ];
-  await Promise.all(keys.map(k => kvDel(k))).catch(() => {});
-  return res.status(200).json({ success: true, cleared: keys });
+  await invalidate('all');
+  return res.status(200).json({ success: true, cleared: 'all (scope=all)' });
 }
 
 // ─────────── 活动类型分布排查（admin 用）───────────
@@ -382,17 +376,7 @@ async function handleStripActivityTypes(req, res) {
     }
   }
 
-  // 失效活动 KV cache
-  if (isKvConfigured()) {
-    const ops = [
-      kvDel('events:upcoming'),
-      kvDel('sitemap:acts'),
-      kvDel('members:大理'),  // top types 也会变
-      kvDel('members:上海'),
-    ];
-    for (const id of affectedIds) ops.push(kvDel('event:' + id));
-    await Promise.all(ops).catch(() => {});
-  }
+  await invalidateActivities(affectedIds);
 
   return res.status(200).json({
     success: true,
@@ -434,16 +418,7 @@ async function handleSetActivityTypes(req, res) {
   const data = await r.json();
   if (data.code !== 0) return res.status(500).json({ error: `飞书写入失败 (${data.code}): ${data.msg}` });
 
-  // 失效相关 KV cache
-  if (isKvConfigured()) {
-    await Promise.all([
-      kvDel('event:' + record_id),
-      kvDel('events:upcoming'),
-      kvDel('sitemap:acts'),
-      kvDel('members:大理'),
-      kvDel('members:上海'),
-    ]).catch(() => {});
-  }
+  await invalidate('activity', record_id);
 
   // 顺手返回全站 types union 给前端做候选 chip
   let allKnownTypes = [];
@@ -513,11 +488,11 @@ async function handleResyncRsvpNames(req, res) {
     }
   }
 
-  // 失效相关 cache
+  // 失效：只清 rsvp:all + 每个 rsvp:member:{id}（name 改不影响成员列表排序）
+  // 不全清 members:* —— 避免不必要的列表重算
   if (isKvConfigured()) {
-    const ops = [kvDel('rsvp:all')];
-    for (const c of candidates) ops.push(kvDel('rsvp:member:' + c.member_id));
-    // 不知具体活动 ID 全清 rsvp:activity:* 太重；让 5min TTL 自然过期
+    const memberIds = [...new Set(candidates.map(c => c.member_id).filter(Boolean))];
+    const ops = [kvDel('rsvp:all'), ...memberIds.map(id => kvDel('rsvp:member:' + id))];
     await Promise.all(ops).catch(() => {});
   }
 
@@ -676,21 +651,12 @@ async function handleMerge(req, res) {
     console.warn('[merge] delete source failed:', err.message);
   }
 
-  // 清缓存：rsvp:* 涉及的，rsvp:member:source/target，rsvp:all
-  if (isKvConfigured()) {
-    const ops = [
-      kvDel('rsvp:all'),
-      kvDel('rsvp:member:' + source_id),
-      kvDel('rsvp:member:' + target_id),
-      kvDel('member:' + source_id),
-      kvDel('member:' + target_id),
-      kvDel('members:大理'),
-      kvDel('members:上海'),
-      kvDel('member_activity_cities'),
-    ];
-    for (const aid of affectedActivityIds) ops.push(kvDel('rsvp:activity:' + aid));
-    await Promise.all(ops).catch(() => {});
-  }
+  // 清缓存：合并涉及两个成员 + 多个活动的 RSVP cache
+  await Promise.all([
+    invalidate('member', source_id),
+    invalidate('member', target_id),
+    ...[...affectedActivityIds].map(aid => invalidate('rsvp', aid)),
+  ]).catch(() => {});
 
   return res.status(200).json({
     success: true,

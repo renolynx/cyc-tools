@@ -6,7 +6,7 @@
  */
 
 import { getAccessToken } from './_feishu.js';
-import { kvGet, kvSet, kvDel, isKvConfigured } from './_kv.js';
+import { kvGet, kvSet, kvDel, isKvConfigured, invalidate } from './_kv.js';
 
 const APP_TOKEN = process.env.FEISHU_MEMBER_APP_TOKEN;
 const TABLE_ID  = process.env.FEISHU_RSVP_TABLE_ID;
@@ -249,17 +249,10 @@ export async function deleteRsvp(record_id) {
     throw new Error(`RSVP 删除失败 (${data.code}): ${data.msg}`);
   }
 
-  // 清缓存 + KV mark
-  if (isKvConfigured()) {
-    const ops = [
-      kvDel('rsvp:all'),
-      kvDel('member_activity_cities'),
-      kvDel('members:大理'),
-      kvDel('members:上海'),
-    ];
-    if (recordActivityId) ops.push(kvDel('rsvp:activity:' + recordActivityId));
-    if (recordActivityId && recordWechat) ops.push(kvDel(seenKey(recordActivityId, recordWechat)));
-    await Promise.all(ops).catch(() => {});
+  // 清缓存（通用 scope 一行解决；KV mark 是单独的防重逻辑，仍需手动清）
+  await invalidate('rsvp', recordActivityId);
+  if (isKvConfigured() && recordActivityId && recordWechat) {
+    try { await kvDel(seenKey(recordActivityId, recordWechat)); } catch {}
   }
   return { success: true, cleared_wechat: !!recordWechat };
 }
@@ -343,18 +336,11 @@ export async function addRsvp(data) {
 
   const newRecordId = result.data.record.record_id;
 
-  // 1. 失效相关缓存
+  // 1. 失效相关缓存（含 members:* 因为推断的城市/角色可能变）
+  await invalidate('rsvp', data.activity_rec_id, data.member_rec_id);
   // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）—— 仅当 wechat 非空时
-  if (isKvConfigured()) {
-    const ops = [
-      kvDel('rsvp:activity:' + data.activity_rec_id),
-      kvDel('rsvp:all'),
-      kvDel('member_activity_cities'),
-      kvDel('members:大理'),  // 推断的城市可能变 → 列表缓存也清
-      kvDel('members:上海'),
-    ];
-    if (data.wechat) ops.push(kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400));
-    await Promise.all(ops).catch(() => {});
+  if (data.wechat && isKvConfigured()) {
+    try { await kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400); } catch {}
   }
 
   return { success: true, record_id: newRecordId };
