@@ -498,6 +498,12 @@
         0 2px 4px rgba(0, 0, 0, 0.08),
         0 12px 24px -8px rgba(28, 61, 46, 0.15);
       transform: rotate(var(--tilt, 0deg));
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .polaroid:focus-visible {
+      outline: 2px solid var(--cyc-green);
+      outline-offset: 4px;
     }
     .polaroid__photo {
       aspect-ratio: 1;
@@ -1030,6 +1036,62 @@
     }
 
     /* ──────────────────────────────────────────────
+     *  Photo detail modal — 点击 polaroid 打开
+     * ────────────────────────────────────────────── */
+    .photo-detail-image {
+      width: 100%;
+      max-height: 52vh;
+      background: var(--cyc-surface-tinted);
+      border-radius: var(--r-card);
+      margin-bottom: var(--sp-6);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .photo-detail-image img {
+      max-width: 100%;
+      max-height: 52vh;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* 删除按钮（红，但 AAA 暗化版） */
+    .btn-danger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+      background: rgba(169, 50, 38, 0.06);
+      color: #a93226;
+      border: 1px solid rgba(169, 50, 38, 0.18);
+      border-radius: var(--r-pill);
+      padding: 8px var(--sp-4);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      min-height: 44px;
+      transition: background var(--dur-fast);
+    }
+    .btn-danger:hover  { background: rgba(169, 50, 38, 0.12); }
+    .btn-danger:active { transform: scale(0.98); }
+
+    /* photo-detail modal 底部 actions：删除靠左，取消/保存靠右 */
+    .modal-actions--split {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--sp-3);
+      margin-top: var(--sp-6);
+    }
+    .modal-actions--split > .modal-actions-right {
+      display: flex;
+      gap: var(--sp-3);
+    }
+    .modal-actions--split > .modal-actions-right > button { flex: 0 1 auto; }
+
+    /* ──────────────────────────────────────────────
      *  Responsive
      * ────────────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -1242,6 +1304,60 @@
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeUpload()">取消</button>
         <button class="btn-primary" id="upload-submit" onclick="submitUpload()" disabled>上传</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Photo Detail / Edit Modal ═══════════ -->
+  <div class="modal-overlay" id="photo-modal" onclick="if(event.target===this)closePhotoDetail()">
+    <div class="modal-sheet" style="max-width: 580px;">
+      <div class="modal-handle"></div>
+
+      <div class="photo-detail-image">
+        <img id="pd-image" alt="">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">标题</label>
+        <input type="text" class="form-input" id="pd-title" placeholder="一句话回忆">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input type="date" class="form-input" id="pd-date">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">关联活动（可选）</label>
+        <select class="form-select" id="pd-activity">
+          <option value="">— 无 —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">隐私</label>
+        <div class="privacy-radio-group">
+          <label class="privacy-radio">
+            <input type="radio" name="pd-privacy" value="self">
+            <div class="privacy-radio-icon">🔒</div>
+            <div class="privacy-radio-label">仅自己</div>
+            <div class="privacy-radio-sub">只在我的页面</div>
+          </label>
+          <label class="privacy-radio">
+            <input type="radio" name="pd-privacy" value="public">
+            <div class="privacy-radio-icon">🌿</div>
+            <div class="privacy-radio-label">公开</div>
+            <div class="privacy-radio-sub">汇入社区回忆</div>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions--split">
+        <button class="btn-danger" onclick="deletePhoto()">删除</button>
+        <div class="modal-actions-right">
+          <button class="btn-secondary" onclick="closePhotoDetail()">取消</button>
+          <button class="btn-primary" onclick="savePhotoEdit()">保存</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1598,6 +1714,10 @@
         const L = layouts[i];
         const card = document.createElement('div');
         card.className = 'polaroid';
+        card.dataset.photoId = p.id;            // 用于事件委托打开详情
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', '查看回忆：' + (p.title || '未命名'));
         card.style.setProperty('--tilt',     L.tilt + 'deg');
         card.style.setProperty('--fanX',     L.fanX + 'px');
         card.style.setProperty('--fanTilt',  L.fanTilt + 'deg');
@@ -1668,7 +1788,13 @@
             <div class="month-metric">${items.length} 张</div>
           </div>
           <div class="lineup-row">
-            ${items.map(p => `<div class="polaroid">${polaroidContent(p)}</div>`).join('')}
+            ${items.map(p => `
+              <div class="polaroid"
+                   data-photo-id="${escHtml(p.id)}"
+                   tabindex="0" role="button"
+                   aria-label="查看回忆：${escHtml(p.title || '未命名')}">
+                ${polaroidContent(p)}
+              </div>`).join('')}
           </div>`;
         el.appendChild(sec);
       });
@@ -1811,6 +1937,90 @@
       renderScrubber();
       renderIdentity();
       setActivity('Saved', '本地存了一张 — 后端打通后会同步到飞书。');
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Photo detail / edit modal
+     *  点 polaroid 打开 — 大图 + 内联 form 编辑
+     * ────────────────────────────────────────────── */
+    let _editingPhotoId = null;
+
+    // 全局事件委托：任意 .polaroid 点击 / 回车 → 打开详情
+    document.body.addEventListener('click', e => {
+      const pol = e.target.closest('.polaroid');
+      if (pol && pol.dataset.photoId) openPhotoDetail(pol.dataset.photoId);
+    });
+    document.body.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const pol = e.target.closest && e.target.closest('.polaroid');
+      if (pol && pol.dataset.photoId) {
+        e.preventDefault();
+        openPhotoDetail(pol.dataset.photoId);
+      }
+    });
+
+    function openPhotoDetail(photoId) {
+      const p = _photos.find(x => x.id === photoId);
+      if (!p) return;
+      _editingPhotoId = photoId;
+
+      document.getElementById('pd-image').src = p.dataUrl || '';
+      document.getElementById('pd-title').value = p.title === '未命名' ? '' : (p.title || '');
+      document.getElementById('pd-date').value  = p.date || '';
+
+      // 关联活动 select 重新填，并选中当前值
+      const sel = document.getElementById('pd-activity');
+      sel.innerHTML = '<option value="">— 无 —</option>'
+        + MOCK_ACTIVITIES.map(a =>
+            `<option value="${a.id}" ${a.id === p.activity_id ? 'selected' : ''}>${escHtml(a.title)}（${fmtDate(a.date)}）</option>`
+          ).join('');
+
+      // 隐私 radio
+      const privacy = p.privacy || 'public';
+      const radio = document.querySelector(`input[name="pd-privacy"][value="${privacy}"]`);
+      if (radio) radio.checked = true;
+
+      document.getElementById('photo-modal').classList.add('active');
+      // 让标题立刻可输入（如果是"未命名"占位用户多半就是来改它的）
+      setTimeout(() => document.getElementById('pd-title').focus(), 280);
+    }
+
+    function closePhotoDetail() {
+      document.getElementById('photo-modal').classList.remove('active');
+      _editingPhotoId = null;
+    }
+
+    function savePhotoEdit() {
+      if (!_editingPhotoId) return;
+      const p = _photos.find(x => x.id === _editingPhotoId);
+      if (!p) return;
+      const newTitle = document.getElementById('pd-title').value.trim();
+      p.title = newTitle || '未命名';
+      p.date  = document.getElementById('pd-date').value || p.date;
+      p.activity_id = document.getElementById('pd-activity').value || '';
+      p.privacy = (document.querySelector('input[name="pd-privacy"]:checked') || {}).value || 'public';
+      savePhotos();
+      renderHero();
+      renderLineup();
+      renderScrubber();
+      renderIdentity();
+      closePhotoDetail();
+      setActivity('Updated', '改好了 — ' + p.title);
+    }
+
+    function deletePhoto() {
+      if (!_editingPhotoId) return;
+      const p = _photos.find(x => x.id === _editingPhotoId);
+      const label = p && p.title ? `"${p.title}"` : '这张';
+      if (!confirm(`删除 ${label}？此操作不可撤销。`)) return;
+      _photos = _photos.filter(x => x.id !== _editingPhotoId);
+      savePhotos();
+      renderHero();
+      renderLineup();
+      renderScrubber();
+      renderIdentity();
+      closePhotoDetail();
+      setActivity('Deleted', '已删除。');
     }
 
     /* ──────────────────────────────────────────────
