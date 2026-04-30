@@ -2016,3 +2016,27 @@ body.event-page {
   .cm-edit-grid { grid-template-columns: 1fr; }
   .cm-edit-wide { grid-column: span 1; }
 }
+
+/* RSVP chip 内的链接（点名字跳成员页） */
+.event-rsvp-chip-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+a.event-rsvp-chip {
+  text-decoration: none;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+}
+.event-rsvp-chip-name.event-rsvp-chip-link {
+  color: var(--green);
+  border-bottom: 1px dashed rgba(28,61,46,0.30);
+  padding-bottom: 1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.event-rsvp-chip-name.event-rsvp-chip-link:hover {
+  color: var(--orange);
+  border-color: var(--orange);
+}

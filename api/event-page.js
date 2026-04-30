@@ -195,11 +195,17 @@ ${jsonLd}
     ${rsvpAttendees.length ? `
       <p class="event-rsvp-count">已 <strong>${rsvpAttendees.length}</strong> 位伙伴报名</p>
       <div class="event-rsvp-list">
-        ${rsvpAttendees.slice(0, 30).map(a => `<div class="event-rsvp-chip${a.bio ? ' has-bio' : ''}" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}" ${a.bio ? `onclick="if(event.target.tagName!=='BUTTON')this.classList.toggle('expanded')"` : ''}>
-          <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
+        ${rsvpAttendees.slice(0, 30).map(a => {
+          const hasMember = !!a.member_rec_id;
+          const nameEl = hasMember
+            ? `<a class="event-rsvp-chip-name event-rsvp-chip-link" href="/community/${escapeHtml(a.member_rec_id)}" onclick="event.stopPropagation()">${escapeHtml(a.name)} ›</a>`
+            : `<span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>`;
+          return `<div class="event-rsvp-chip${a.bio ? ' has-bio' : ''}" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}" ${a.bio ? `onclick="if(!event.target.closest('button,a'))this.classList.toggle('expanded')"` : ''}>
+          ${nameEl}
           <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
           ${a.bio ? `<div class="event-rsvp-chip-bio">${escapeHtml(a.bio)}</div>` : ''}
-        </div>`).join('')}
+        </div>`;
+        }).join('')}
         ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
       </div>
     ` : `<p class="event-rsvp-empty">还没有伙伴报名 · 你来当第一个 →</p>`}
@@ -207,7 +213,10 @@ ${jsonLd}
   </section>` : (rsvpAttendees.length ? `<section class="event-section">
     <h2>当时参加的伙伴</h2>
     <div class="event-rsvp-list">
-      ${rsvpAttendees.map(a => `<div class="event-rsvp-chip is-past">${escapeHtml(a.name)}</div>`).join('')}
+      ${rsvpAttendees.map(a => a.member_rec_id
+        ? `<a class="event-rsvp-chip is-past event-rsvp-chip-link" href="/community/${escapeHtml(a.member_rec_id)}">${escapeHtml(a.name)} ›</a>`
+        : `<div class="event-rsvp-chip is-past">${escapeHtml(a.name)}</div>`
+      ).join('')}
     </div>
   </section>` : '')}
 </main>
