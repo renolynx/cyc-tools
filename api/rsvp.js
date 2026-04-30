@@ -16,7 +16,7 @@
  */
 
 import { applyCors } from './_feishu.js';
-import { fetchRsvpsForActivity, findExistingRsvp, addRsvp, deleteRsvp } from './_rsvp.js';
+import { fetchRsvpsForActivity, findExistingRsvp, addRsvp, deleteRsvp, fetchRsvpByRecordId } from './_rsvp.js';
 import { findMemberByName } from './_member.js';
 import { verifyPassword } from './_password.js';
 
@@ -113,21 +113,54 @@ async function handlePost(req, res) {
   }
 }
 
-// ─────────── DELETE: 删除某条 RSVP（admin 用） ───────────
+// ─────────── DELETE: 删除某条 RSVP ───────────
 //   POST /api/rsvp?action=delete
-//   Body: { record_id, password, activity_rec_id?, wechat? }
-//   activity_rec_id + wechat 用于清相关 KV mark（不传也能删，但 mark 会到 24h 自然过期）
+//   Body: { record_id, auth, activity_rec_id? }
+//
+//   auth 有两种身份：
+//     1. 同步活动密码 → admin 删任意一条
+//     2. 该记录原始的微信号 → 本人取消自己的报名
+//   服务端两种都试，任一通过即可
+//
+//   activity_rec_id 用于清相关 KV mark（选填）
 
 async function handleDelete(req, res) {
-  const { record_id, password, activity_rec_id, wechat } = req.body || {};
+  const { record_id, auth, password, wechat, activity_rec_id } = req.body || {};
   if (!record_id) return res.status(400).json({ error: '缺 record_id' });
 
-  const ok = await verifyPassword(password);
-  if (!ok) return res.status(401).json({ error: '密码错误（用同步活动那个）' });
+  // 兼容老调用：传单独的 password / wechat 也认；新调用统一传 auth
+  const credential = (auth || password || wechat || '').trim();
+  if (!credential) return res.status(400).json({ error: '请输入微信号或管理密码' });
+
+  // 先按 admin 密码试
+  let mode = null;
+  if (await verifyPassword(credential)) {
+    mode = 'admin';
+  } else {
+    // 不是密码 → 按微信号自助取消试
+    try {
+      const record = await fetchRsvpByRecordId(record_id);
+      if (record) {
+        const norm = s => (s || '').trim().toLowerCase();
+        if (norm(credential) === norm(record.wechat) && norm(credential) !== '') {
+          mode = 'self';
+        }
+      }
+    } catch (err) {
+      console.error('[rsvp delete] fetch verify failed:', err.message);
+    }
+  }
+
+  if (!mode) {
+    return res.status(401).json({ error: '验证失败：本人请输微信号，管理员请输同步密码' });
+  }
 
   try {
-    await deleteRsvp(record_id, activity_rec_id, wechat);
-    return res.status(200).json({ success: true, record_id });
+    // 用记录里的真实 wechat 清 KV mark（如能拿到）
+    let realWechat = wechat;
+    if (mode === 'self') realWechat = credential;
+    await deleteRsvp(record_id, activity_rec_id, realWechat);
+    return res.status(200).json({ success: true, record_id, mode });
   } catch (err) {
     console.error('[rsvp delete]', err.message);
     return res.status(500).json({ error: err.message });

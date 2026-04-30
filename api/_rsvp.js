@@ -117,6 +117,23 @@ export async function findExistingRsvp(activity_rec_id, wechat) {
   return list.find(r => normalizeWechat(r.wechat) === target) || null;
 }
 
+/** 按 record_id 拉单条 RSVP（用于自助取消验证身份）；找不到返回 null */
+export async function fetchRsvpByRecordId(record_id) {
+  if (!record_id) return null;
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/${record_id}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (res.status === 404) return null;
+  const data = await res.json();
+  if (data.code !== 0) {
+    if (data.code >= 1254000 && data.code < 1255000) return null;
+    throw new Error(`RSVP 读取失败 (${data.code}): ${data.msg}`);
+  }
+  return parseRsvp(data.data.record);
+}
+
 /** 删除某条 RSVP 记录（admin 用，调用方负责密码校验） */
 export async function deleteRsvp(record_id, activity_rec_id, wechat) {
   if (!record_id) throw new Error('缺 record_id');

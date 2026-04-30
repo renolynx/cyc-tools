@@ -217,20 +217,24 @@ ${jsonLd}
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
 
-<!-- 删除报名确认 modal（任何活动都需要：admin 可清脏数据） -->
+<!-- 取消 / 删除报名确认 modal -->
 <div class="rsvp-modal-overlay" id="rsvpDelModal" onclick="if(event.target.id==='rsvpDelModal')closeDelRsvpModal()">
-  <div class="rsvp-modal" style="max-width:380px">
+  <div class="rsvp-modal" style="max-width:400px">
     <div class="rsvp-modal-handle"></div>
-    <div class="rsvp-modal-title" style="color:#c0392b">⚠️ 确认删除报名</div>
-    <p class="rsvp-modal-sub">将删除 <strong id="delRsvpTarget"></strong> 的报名记录。<br>此操作不可撤销，需输入管理密码。</p>
+    <div class="rsvp-modal-title" style="color:#c0392b">取消 / 删除报名</div>
+    <p class="rsvp-modal-sub">将删除 <strong id="delRsvpTarget"></strong> 的报名记录。<br>此操作不可撤销。</p>
 
-    <label class="rsvp-label">管理密码 <span class="rsvp-required">*</span></label>
-    <input class="rsvp-input pwd-mask" id="delRsvpPwd" type="text" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label class="rsvp-label">微信号 或 管理密码 <span class="rsvp-required">*</span></label>
+    <input class="rsvp-input pwd-mask" id="delRsvpAuth" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="rsvp-hint" style="margin-top:4px;font-size:11px;color:var(--muted);line-height:1.5">
+      本人取消请输自己的微信号<br>
+      管理员清理请输同步活动密码
+    </p>
 
     <div class="rsvp-err" id="delRsvpErr"></div>
 
     <div class="rsvp-actions">
-      <button type="button" class="rsvp-cancel" onclick="closeDelRsvpModal()">取消</button>
+      <button type="button" class="rsvp-cancel" onclick="closeDelRsvpModal()">关闭</button>
       <button type="button" class="rsvp-confirm" id="delRsvpSubmit" onclick="submitDelRsvp()" style="background:#c0392b;box-shadow:0 3px 10px rgba(192,57,43,0.30)">确认删除</button>
     </div>
   </div>
@@ -334,13 +338,13 @@ function askDelRsvp(record_id, name) {
   if (!record_id) return;
   _delRsvpId = record_id;
   document.getElementById('delRsvpTarget').textContent = name || '该报名';
-  document.getElementById('delRsvpPwd').value = '';
+  document.getElementById('delRsvpAuth').value = '';
   const errEl = document.getElementById('delRsvpErr');
   errEl.textContent = ''; errEl.classList.remove('ok');
   const btn = document.getElementById('delRsvpSubmit');
   btn.disabled = false; btn.textContent = '确认删除';
   document.getElementById('rsvpDelModal').classList.add('open');
-  setTimeout(() => document.getElementById('delRsvpPwd').focus(), 200);
+  setTimeout(() => document.getElementById('delRsvpAuth').focus(), 200);
 }
 
 function closeDelRsvpModal() {
@@ -349,14 +353,14 @@ function closeDelRsvpModal() {
 }
 
 async function submitDelRsvp() {
-  const pwd = document.getElementById('delRsvpPwd').value.trim();
+  const auth = document.getElementById('delRsvpAuth').value.trim();
   const errEl = document.getElementById('delRsvpErr');
   const btn = document.getElementById('delRsvpSubmit');
   errEl.textContent = ''; errEl.classList.remove('ok');
-  if (!pwd) { errEl.textContent = '请输入管理密码'; return; }
+  if (!auth) { errEl.textContent = '请输入微信号或管理密码'; return; }
   if (!_delRsvpId) { errEl.textContent = '记录 ID 丢失，请刷新重试'; return; }
 
-  btn.disabled = true; btn.textContent = '删除中...';
+  btn.disabled = true; btn.textContent = '验证中...';
   try {
     const res = await fetch('/api/rsvp?action=delete', {
       method: 'POST',
@@ -364,14 +368,17 @@ async function submitDelRsvp() {
       body: JSON.stringify({
         record_id: _delRsvpId,
         activity_rec_id: _ACT_REC_ID,
-        password: pwd,
+        auth,  // 服务端会试 admin 密码 / 本人微信号
       }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '删除失败');
 
+    // 成功 → 同时清掉本会话 sessionStorage 里的报名标记（防"已报名过"误拦）
+    try { sessionStorage.removeItem('rsvp_done:' + _ACT_REC_ID); } catch {}
+
     errEl.classList.add('ok');
-    errEl.textContent = '✓ 已删除';
+    errEl.textContent = data.mode === 'self' ? '✓ 已取消报名' : '✓ 已删除';
     btn.textContent = '已删除';
     setTimeout(() => {
       closeDelRsvpModal();
