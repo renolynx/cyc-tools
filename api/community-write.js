@@ -247,6 +247,55 @@ async function handleClearCache(req, res) {
   return res.status(200).json({ success: true, cleared: keys });
 }
 
+// ─────────── 活动类型分布排查（admin 用）───────────
+
+/**
+ * 列出当前活动表里每个「活动类型」标签覆盖的活动列表
+ * 用于排查脏数据：「为啥这么多活动都被标了 X 标签？」
+ *
+ * Body: { action:'list-activity-types', password }
+ * Response: {
+ *   success, total_activities, untyped, types: [
+ *     { type, count, sample: [{record_id, title, date, types}] }
+ *   ]
+ * }
+ */
+async function handleListActivityTypes(req, res) {
+  let acts;
+  try { acts = await fetchAllActivities(); }
+  catch (err) { return res.status(500).json({ error: '拉活动失败：' + err.message }); }
+
+  const buckets = new Map();   // type → [{record_id, title, date, types}]
+  let untyped = 0;
+  for (const a of acts) {
+    if (!a.types || !a.types.length) { untyped++; continue; }
+    for (const t of a.types) {
+      if (!buckets.has(t)) buckets.set(t, []);
+      buckets.get(t).push({
+        record_id: a.record_id,
+        title:     a.title || '',
+        date:      a.date  || '',
+        types:     a.types,
+      });
+    }
+  }
+
+  const types = [...buckets.entries()]
+    .map(([type, items]) => ({
+      type,
+      count: items.length,
+      sample: items.slice(0, 20),  // 每个标签最多回传 20 个示例避免太大
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  return res.status(200).json({
+    success: true,
+    total_activities: acts.length,
+    untyped,
+    types,
+  });
+}
+
 // ─────────── 合并去重 ───────────
 
 /** admin UI 编辑表单暴露的可合并字段（hidden 不参与；avatar/identity/contribution/hubs 暂不动） */
@@ -423,6 +472,7 @@ export default async function handler(req, res) {
   if (action === 'merge-preview')      return handleMergePreview(req, res);
   if (action === 'merge')              return handleMerge(req, res);
   if (action === 'clear-cache')        return handleClearCache(req, res);
+  if (action === 'list-activity-types') return handleListActivityTypes(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }
