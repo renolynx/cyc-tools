@@ -1409,3 +1409,55 @@ body.event-page {
 }
 .rsvp-confirm:active { transform: scale(0.98); }
 .rsvp-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* RSVP 删除按钮（chip / spk-row 共用） */
+.event-rsvp-del {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  margin-left: 6px;
+  padding: 0; border: none;
+  background: transparent;
+  color: rgba(0,0,0,0.28);
+  font-size: 18px; line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.event-rsvp-del:hover {
+  color: #c0392b;
+  background: rgba(192,57,43,0.10);
+}
+.event-rsvp-del:active {
+  transform: scale(0.88);
+  background: rgba(192,57,43,0.18);
+}
+
+/* spk-row 改 flex 布局，让 × 自动靠右 */
+.event-spk-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.event-spk-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* chip 内 × 也别破坏圆角 */
+.event-rsvp-chip {
+  display: inline-flex;
+  align-items: center;
+}
+.event-rsvp-chip.expanded {
+  flex-wrap: wrap;
+}
+.event-rsvp-chip .event-rsvp-del {
+  margin-left: 2px;
+  margin-right: -4px;  /* 紧贴右内边距 */
+}
+.event-rsvp-chip-bio {
+  flex-basis: 100%;  /* 展开时占整行 */
+}

@@ -178,12 +178,15 @@ ${jsonLd}
     <h2>带领人 / 嘉宾</h2>
     <div class="event-spk">${
       rsvpHosts.length
-        ? rsvpHosts.map(h => `<div class="event-spk-row">${
-            h.member_rec_id
-              ? `<a href="/community/${escapeHtml(h.member_rec_id)}" class="event-spk-link"><strong>${escapeHtml(h.name)}</strong></a>`
-              : `<strong>${escapeHtml(h.name)}</strong>`
-          }${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</div>`).join('')
-        : act.spk.map(s => `<div class="event-spk-row"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</div>`).join('')
+        ? rsvpHosts.map(h => `<div class="event-spk-row" data-rid="${escapeHtml(h.record_id)}" data-name="${escapeHtml(h.name)}">
+            <span class="event-spk-content">${
+              h.member_rec_id
+                ? `<a href="/community/${escapeHtml(h.member_rec_id)}" class="event-spk-link"><strong>${escapeHtml(h.name)}</strong></a>`
+                : `<strong>${escapeHtml(h.name)}</strong>`
+            }${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</span>
+            <button class="event-rsvp-del" onclick="askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
+          </div>`).join('')
+        : act.spk.map(s => `<div class="event-spk-row"><span class="event-spk-content"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</span></div>`).join('')
     }</div>
   </section>` : ''}
 
@@ -192,8 +195,9 @@ ${jsonLd}
     ${rsvpAttendees.length ? `
       <p class="event-rsvp-count">已 <strong>${rsvpAttendees.length}</strong> 位伙伴报名</p>
       <div class="event-rsvp-list">
-        ${rsvpAttendees.slice(0, 30).map(a => `<div class="event-rsvp-chip${a.bio ? ' has-bio' : ''}" ${a.bio ? `onclick="this.classList.toggle('expanded')"` : ''}>
+        ${rsvpAttendees.slice(0, 30).map(a => `<div class="event-rsvp-chip${a.bio ? ' has-bio' : ''}" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}" ${a.bio ? `onclick="if(event.target.tagName!=='BUTTON')this.classList.toggle('expanded')"` : ''}>
           <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
+          <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
           ${a.bio ? `<div class="event-rsvp-chip-bio">${escapeHtml(a.bio)}</div>` : ''}
         </div>`).join('')}
         ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
@@ -212,6 +216,25 @@ ${jsonLd}
   <p class="event-footer-tagline">链接每一座孤岛</p>
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
+
+<!-- 删除报名确认 modal（任何活动都需要：admin 可清脏数据） -->
+<div class="rsvp-modal-overlay" id="rsvpDelModal" onclick="if(event.target.id==='rsvpDelModal')closeDelRsvpModal()">
+  <div class="rsvp-modal" style="max-width:380px">
+    <div class="rsvp-modal-handle"></div>
+    <div class="rsvp-modal-title" style="color:#c0392b">⚠️ 确认删除报名</div>
+    <p class="rsvp-modal-sub">将删除 <strong id="delRsvpTarget"></strong> 的报名记录。<br>此操作不可撤销，需输入管理密码。</p>
+
+    <label class="rsvp-label">管理密码 <span class="rsvp-required">*</span></label>
+    <input class="rsvp-input pwd-mask" id="delRsvpPwd" type="text" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+
+    <div class="rsvp-err" id="delRsvpErr"></div>
+
+    <div class="rsvp-actions">
+      <button type="button" class="rsvp-cancel" onclick="closeDelRsvpModal()">取消</button>
+      <button type="button" class="rsvp-confirm" id="delRsvpSubmit" onclick="submitDelRsvp()" style="background:#c0392b;box-shadow:0 3px 10px rgba(192,57,43,0.30)">确认删除</button>
+    </div>
+  </div>
+</div>
 
 ${!isPast ? `<!-- RSVP modal -->
 <div class="rsvp-modal-overlay" id="rsvpModal" onclick="if(event.target.id==='rsvpModal')closeRsvpModal()">
@@ -301,6 +324,73 @@ async function submitRsvp() {
   }
 }
 </script>` : ''}
+
+<script>
+// ─────────── 删除报名（admin 用，密码保护） ───────────
+const _ACT_REC_ID = ${JSON.stringify(act.record_id)};
+let _delRsvpId = null;
+
+function askDelRsvp(record_id, name) {
+  if (!record_id) return;
+  _delRsvpId = record_id;
+  document.getElementById('delRsvpTarget').textContent = name || '该报名';
+  document.getElementById('delRsvpPwd').value = '';
+  const errEl = document.getElementById('delRsvpErr');
+  errEl.textContent = ''; errEl.classList.remove('ok');
+  const btn = document.getElementById('delRsvpSubmit');
+  btn.disabled = false; btn.textContent = '确认删除';
+  document.getElementById('rsvpDelModal').classList.add('open');
+  setTimeout(() => document.getElementById('delRsvpPwd').focus(), 200);
+}
+
+function closeDelRsvpModal() {
+  document.getElementById('rsvpDelModal').classList.remove('open');
+  _delRsvpId = null;
+}
+
+async function submitDelRsvp() {
+  const pwd = document.getElementById('delRsvpPwd').value.trim();
+  const errEl = document.getElementById('delRsvpErr');
+  const btn = document.getElementById('delRsvpSubmit');
+  errEl.textContent = ''; errEl.classList.remove('ok');
+  if (!pwd) { errEl.textContent = '请输入管理密码'; return; }
+  if (!_delRsvpId) { errEl.textContent = '记录 ID 丢失，请刷新重试'; return; }
+
+  btn.disabled = true; btn.textContent = '删除中...';
+  try {
+    const res = await fetch('/api/rsvp?action=delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        record_id: _delRsvpId,
+        activity_rec_id: _ACT_REC_ID,
+        password: pwd,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '删除失败');
+
+    errEl.classList.add('ok');
+    errEl.textContent = '✓ 已删除';
+    btn.textContent = '已删除';
+    setTimeout(() => {
+      closeDelRsvpModal();
+      window.location.href = window.location.pathname + '?_=' + Date.now();
+    }, 1000);
+  } catch (err) {
+    errEl.textContent = err.message;
+    btn.disabled = false;
+    btn.textContent = '确认删除';
+  }
+}
+
+// ESC 关闭删除 modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('rsvpDelModal').classList.contains('open')) {
+    closeDelRsvpModal();
+  }
+});
+</script>
 
 </body>
 </html>`;
