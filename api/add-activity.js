@@ -6,8 +6,8 @@
 import { getCurrentPassword } from './_password.js';
 import { applyCors, getAccessToken, checkFeishuEnv } from './_feishu.js';
 import { kvDel, isKvConfigured } from './_kv.js';
-import { replaceSpeakerRsvps } from './_rsvp.js';
-import { fetchAllMembers }     from './_member.js';
+import { replaceSpeakerRsvps }                  from './_rsvp.js';
+import { fetchAllMembers, autoCreateMember }    from './_member.js';
 
 /** 在已拉好的成员列表里匹配单个嘉宾名字（避免 N 次 fetchAllMembers）
  *  规则同 _member.findMemberByName：先 nickname 精确，再 name 精确，再 nickname 包含
@@ -135,18 +135,43 @@ export default async function handler(req, res) {
     // 即使 sp 为空也调用，确保编辑活动后删掉嘉宾时旧 RSVP 也跟着清掉
     let speakerSync = null;
     try {
-      let speakers = [];
+      const speakers      = [];
+      const namesMatched  = [];
+      const namesCreated  = [];
+      const namesFailed   = [];
       if (sp.length) {
         const allMembers = await fetchAllMembers();
-        speakers = sp.filter(s => s.name).map(s => {
-          const m = matchSpeaker(allMembers, s.name);
-          return { name: s.name, bio: s.bio || '', member_rec_id: m?.record_id || '' };
-        });
+        for (const s of sp) {
+          if (!s.name) continue;
+          let m = matchSpeaker(allMembers, s.name);
+          if (m) {
+            namesMatched.push(s.name);
+          } else {
+            // 没匹配上 → 自动建一条最小成员（仅 name + bio，无 wechat）
+            try {
+              const newId = await autoCreateMember({
+                name:   s.name,
+                bio:    s.bio || '',
+                source: '嘉宾联动自动建',
+              });
+              m = { record_id: newId, name: s.name, nickname: s.name, bio: s.bio || '' };
+              allMembers.push(m);  // 同名嘉宾不再重复触发建
+              namesCreated.push(s.name);
+            } catch (err) {
+              console.warn('[add-activity] auto-create member failed:', s.name, err.message);
+              namesFailed.push(s.name);
+              m = null;
+            }
+          }
+          speakers.push({ name: s.name, bio: s.bio || '', member_rec_id: m?.record_id || '' });
+        }
       }
       const result = await replaceSpeakerRsvps(newRecordId, activity.title || '', speakers);
       speakerSync = {
         ...result,
-        names_matched: speakers.filter(s => s.member_rec_id).map(s => s.name),
+        names_matched:      namesMatched,
+        names_auto_created: namesCreated,
+        names_create_failed: namesFailed,
       };
     } catch (err) {
       console.error('[add-activity] speaker sync failed:', err.message);

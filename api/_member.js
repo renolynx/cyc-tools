@@ -370,19 +370,24 @@ export async function findMemberByWechat(wechat) {
 
 /**
  * 自动创建最小成员记录
- * 默认 hidden=false：报名了 = 行为意义上的活跃成员，应当自然进入公开目录
+ * 必填：name；选填：wechat / nickname / bio / source
+ * 默认 hidden=false：报名了/被嘉宾联动认作活跃成员，应当自然进入公开目录
  * （即使信息不全也展示。Admin 觉得不该公开可手动打勾。）
+ *
+ * 没 wechat 的场景：嘉宾联动从活动「带领人/嘉宾」输入框来；这条记录将来无法
+ * 靠 wechat 匹配，但能靠 nickname/name 匹配（matchSpeaker / findMemberByName）。
  */
 export async function autoCreateMember(data) {
-  if (!data || !data.name || !data.wechat) throw new Error('autoCreateMember 需要 name + wechat');
+  if (!data || !data.name) throw new Error('autoCreateMember 至少需要 name');
 
   const fields = {
     '姓名':   data.name,
-    '微信号':  data.wechat,
     '在社群成员列表中隐藏': false,  // 默认公开，admin 想隐再打勾
     '来自渠道': data.source || '活动报名自动建',
   };
-  if (data.bio) fields['个人介绍'] = data.bio;
+  if (data.wechat)   fields['微信号']  = data.wechat;
+  if (data.nickname) fields['称呼']    = data.nickname;
+  if (data.bio)      fields['个人介绍'] = data.bio;
 
   const token = await getAccessToken();
   const res = await fetch(

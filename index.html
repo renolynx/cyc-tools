@@ -789,17 +789,26 @@ function showSpeakerSyncDetail(id, sync) {
   } else if ((sync.written || 0) === 0 && (sync.removed || 0) === 0) {
     return;  // 没嘉宾、没动作 → 不显示
   } else {
-    const matched = (sync.names_matched || []).length;
+    const matched = (sync.names_matched      || []).length;
+    const created = (sync.names_auto_created || []);
     const total   = sync.written || 0;
-    lines.push('<span class="sync-detail-line">已写入 <strong>' + total + '</strong> 条嘉宾 RSVP'
-      + (matched ? '，匹配上 <strong>' + matched + '</strong> 位社群成员' : '') + '</span>');
+
+    let parts = ['已写入 <strong>' + total + '</strong> 条嘉宾 RSVP'];
+    if (matched) parts.push('匹配 <strong>' + matched + '</strong> 位老成员');
+    if (created.length) parts.push('新建 <strong>' + created.length + '</strong> 位');
+    lines.push('<span class="sync-detail-line">' + parts.join(' · ') + '</span>');
+
+    if (created.length) {
+      lines.push('<span class="sync-detail-line sync-detail-mute">新建成员：'
+        + created.map(esc).join('、') + '（仅称呼，admin 后台可补全资料）</span>');
+    }
     if (sync.removed) {
       lines.push('<span class="sync-detail-line sync-detail-mute">替换了 ' + sync.removed + ' 条旧记录</span>');
     }
-    const unmatched = sync.names_unmatched || [];
-    if (unmatched.length) {
-      lines.push('<span class="sync-detail-line sync-detail-warn">未在成员表找到：'
-        + unmatched.map(esc).join('、') + '</span>');
+    const failed = sync.names_create_failed || [];
+    if (failed.length) {
+      lines.push('<span class="sync-detail-line sync-detail-warn">自动建成员失败：'
+        + failed.map(esc).join('、') + '（请到飞书手动加）</span>');
     }
   }
 
