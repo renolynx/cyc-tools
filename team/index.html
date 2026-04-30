@@ -183,6 +183,24 @@
   </div>
 </div>
 
+<!-- ===== 成员选择器（B 战役 picker） ===== -->
+<div class="modal-overlay" id="picker-modal">
+  <div class="modal-sheet picker-modal">
+    <div class="modal-handle"></div>
+    <div class="picker-head">
+      <div class="picker-title">🔗 选择社区成员</div>
+      <button class="picker-close-btn" onclick="closePicker()" aria-label="关闭">✕</button>
+    </div>
+    <div class="picker-search-wrap">
+      <input class="picker-search" id="picker-search" type="text" placeholder="搜索姓名 / 称呼 / 城市..."
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="picker-list" id="picker-list">
+      <div class="picker-loading">⏳ 加载中…</div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // Constants
@@ -231,6 +249,12 @@ const DEFAULT_DATA = {
 let data = {};
 let editMode = false;
 let wkOffset = 0;
+// 成员池缓存（B 战役：team ↔ member 联动）
+//   _membersById: { rec_id → 成员对象 }，null 代表还没拉过
+//   _membersList: 同样数据但是数组，picker 列表用，按姓名排序
+let _membersById = null;
+let _membersList = [];
+let _membersErr  = null;
 
 function loadData() {
   const saved = localStorage.getItem('cyc-team-data');
@@ -246,7 +270,14 @@ function loadData() {
     data.schedule = {};
   }
   // Migrate: ensure detail fields exist
-  const addFields = obj => { if (!obj.jd && obj.jd !== '') obj.jd = ''; if (!obj.bio && obj.bio !== '') obj.bio = ''; if (!obj.since && obj.since !== '') obj.since = ''; if (!obj.avatar && obj.avatar !== '') obj.avatar = ''; };
+  const addFields = obj => {
+    if (!obj.jd && obj.jd !== '') obj.jd = '';
+    if (!obj.bio && obj.bio !== '') obj.bio = '';
+    if (!obj.since && obj.since !== '') obj.since = '';
+    if (!obj.avatar && obj.avatar !== '') obj.avatar = '';
+    // B 战役：关联到社区成员池的 record_id（空 = 未关联，沿用本地字段）
+    if (typeof obj.member_rec_id !== 'string') obj.member_rec_id = '';
+  };
   data.cyc.triangle.forEach(addFields);
   data.cyc.ops.forEach(addFields);
   data.cyc.volunteers.forEach(addFields);
@@ -305,6 +336,7 @@ async function doLogin() {
     const json = await res.json();
     if (res.ok && json.success) {
       sessionStorage.setItem('cyc-team-auth', '1');
+      sessionStorage.setItem('cyc-team-pwd',  pwd);  // B 战役：API 调用要用
       showApp();
     } else { errEl.textContent = json.error || '密码错误'; }
   } catch { errEl.textContent = '网络错误，请重试'; }
@@ -314,9 +346,42 @@ async function doLogin() {
 function doLogout() {
   sessionStorage.removeItem('cyc-team-auth');
   sessionStorage.removeItem('cyc-team-edit');
+  sessionStorage.removeItem('cyc-team-pwd');
   editMode = false;
+  _membersById = null; _membersList = []; _membersErr = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+}
+
+/** 拉成员池（懒加载，登录后预热一次；picker 打开时若未就绪再触发） */
+async function loadMembers(force = false) {
+  if (_membersById !== null && !force) return _membersById;
+  const pwd = sessionStorage.getItem('cyc-team-pwd');
+  if (!pwd) {
+    _membersErr = '会话已过期，请重新登录';
+    return null;
+  }
+  try {
+    const res = await fetch('/api/members', {
+      headers: { 'Authorization': 'Bearer ' + pwd },
+    });
+    if (res.status === 401) {
+      sessionStorage.removeItem('cyc-team-pwd');
+      _membersErr = '密码已变更，请重新登录';
+      return null;
+    }
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || '加载失败');
+
+    _membersList = json.members;
+    _membersById = {};
+    for (const m of json.members) _membersById[m.record_id] = m;
+    _membersErr = null;
+    return _membersById;
+  } catch (err) {
+    _membersErr = err.message || '网络错误';
+    return null;
+  }
 }
 
 function showApp() {
@@ -324,6 +389,8 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   if (sessionStorage.getItem('cyc-team-edit') === '1') { editMode = true; applyEditMode(); }
   loadData(); render();
+  // 后台预热成员池（不阻塞 UI；详情卡渲染时若已就绪可直接拿用）
+  loadMembers().then(() => render());
 }
 
 document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -353,7 +420,9 @@ async function verifyEditPwd() {
     });
     const json = await res.json();
     if (res.ok && json.success) {
-      editMode = true; sessionStorage.setItem('cyc-team-edit', '1');
+      editMode = true;
+      sessionStorage.setItem('cyc-team-edit', '1');
+      sessionStorage.setItem('cyc-team-pwd',  pwd);  // B 战役：保险（doLogin 已存过，但万一刷新过会话）
       closeEditPwdModal(); applyEditMode(); render();
     } else { errEl.textContent = json.error || '密码错误'; }
   } catch { errEl.textContent = '网络错误'; }
@@ -488,13 +557,25 @@ function render() {
 
 function nameOrVacant(name) { return name || '<span class="vacant">空缺</span>'; }
 
+/** 显示用的姓名：关联成员优先 → item.name → 空缺
+ *  顺手返回是否带链接（用于卡片视觉区分 — 暂不用，但留个钩子）
+ */
+function displayName(item) {
+  const recId = item && item.member_rec_id;
+  if (recId && _membersById && _membersById[recId]) {
+    const m = _membersById[recId];
+    return nameOrVacant(m.name || m.nickname || item.name);
+  }
+  return nameOrVacant(item ? item.name : '');
+}
+
 function renderTriangle() {
   const t = data.cyc.triangle;
   document.getElementById('cyc-triangle').innerHTML = `
     <div class="triangle-top">
       <div class="role-card featured" onclick="openDetail('cyc.triangle', 0)">
         <div class="role-top"><span class="role-title">${t[0].role}</span></div>
-        <div class="person-name">${nameOrVacant(t[0].name)}</div>
+        <div class="person-name">${displayName(t[0])}</div>
         <div class="role-desc">${t[0].desc}</div>
       </div>
     </div>
@@ -502,7 +583,7 @@ function renderTriangle() {
       ${t.slice(1).map((p, i) => `
         <div class="role-card featured" onclick="openDetail('cyc.triangle', ${i+1})">
           <div class="role-top"><span class="role-title">${p.role}</span></div>
-          <div class="person-name">${nameOrVacant(p.name)}</div>
+          <div class="person-name">${displayName(p)}</div>
           <div class="role-desc">${p.desc}</div>
         </div>
       `).join('')}
@@ -513,7 +594,7 @@ function renderOps() {
   document.getElementById('cyc-ops').innerHTML = data.cyc.ops.map((o, i) => `
     <div class="role-card" onclick="openDetail('cyc.ops', ${i})">
       <div class="role-top"><span class="role-title">${o.role}</span></div>
-      <div class="person-name">${nameOrVacant(o.name)}</div>
+      <div class="person-name">${displayName(o)}</div>
       <div class="role-desc">${o.desc}</div>
     </div>`).join('');
 }
@@ -522,7 +603,7 @@ function renderCycVolunteers() {
   document.getElementById('cyc-volunteers').innerHTML = data.cyc.volunteers.map((v, i) => `
     <div class="volunteer-card" onclick="openDetail('cyc.volunteers', ${i})">
       <div class="volunteer-emoji">${v.emoji}</div>
-      <div class="person-name">${nameOrVacant(v.name)}</div>
+      <div class="person-name">${displayName(v)}</div>
       <div class="role-desc">${v.title}</div>
       <div class="role-keywords">
         ${v.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
@@ -535,7 +616,7 @@ function renderPraxisLead() {
   document.getElementById('praxis-lead').innerHTML = `
     <div class="role-card praxis-featured" onclick="openDetail('praxis.lead', null)">
       <div class="role-top"><span class="role-title">${l.role}</span></div>
-      <div class="person-name">${nameOrVacant(l.name)}</div>
+      <div class="person-name">${displayName(l)}</div>
       <div class="role-desc">${l.desc}</div>
     </div>`;
 }
@@ -544,7 +625,7 @@ function renderPraxisVolunteers() {
   document.getElementById('praxis-volunteers').innerHTML = data.praxis.volunteers.map((v, i) => `
     <div class="volunteer-card" onclick="openDetail('praxis.volunteers', ${i})">
       <div class="volunteer-emoji">${v.emoji}</div>
-      <div class="person-name">${nameOrVacant(v.name)}</div>
+      <div class="person-name">${displayName(v)}</div>
       <div class="role-desc">${v.title}</div>
       <div class="role-keywords">
         ${v.keywords.map(k => `<span class="keyword-tag praxis-keyword">${k}</span>`).join('')}
@@ -615,9 +696,37 @@ function openDetail(path, idx) {
 
     // Common detail fields (not for reps)
     if (!isRep) {
+      // ── B 战役：关联成员区块（在详细资料之前）──
+      const linkRecId = item.member_rec_id || '';
+      const linkedMember = linkRecId && _membersById && _membersById[linkRecId] ? _membersById[linkRecId] : null;
+      const isStaleLink = linkRecId && !linkedMember && _membersById !== null; // 已拉过但找不到 = 成员被删
+      const isLoadingMembers = _membersById === null && linkRecId;
+
+      let linkBlock = '<div class="link-section"><div class="link-section-title">🔗 关联社区成员</div>';
+      if (linkedMember) {
+        linkBlock += renderLinkedMemberCard(linkedMember);
+        linkBlock += '<div class="link-actions">'
+          + '<button class="btn btn-sm btn-outline" style="flex:1" onclick="openPicker(\'' + path + '\',' + idx + ')">更换成员</button>'
+          + '<button class="btn btn-sm btn-outline" style="flex:1" onclick="clearMemberLink(\'' + path + '\',' + idx + ')">解除关联</button>'
+        + '</div>';
+      } else if (isStaleLink) {
+        linkBlock += '<div class="link-fallback-hint" style="color:var(--danger)">⚠️ 已关联的成员（rec_id: ' + escTeamHtml(linkRecId) + '）在成员池中已不存在，建议重新选择或解除。</div>'
+          + '<div class="link-actions" style="margin-top:8px">'
+          + '<button class="btn btn-sm btn-outline" style="flex:1" onclick="openPicker(\'' + path + '\',' + idx + ')">重新选择</button>'
+          + '<button class="btn btn-sm btn-outline" style="flex:1" onclick="clearMemberLink(\'' + path + '\',' + idx + ')">解除关联</button>'
+        + '</div>';
+      } else if (isLoadingMembers) {
+        linkBlock += '<div class="link-fallback-hint">⏳ 成员池加载中…</div>';
+      } else {
+        linkBlock += '<button class="btn-link-pick" onclick="openPicker(\'' + path + '\',' + idx + ')">🔗 选择社区成员</button>'
+          + '<div class="link-fallback-hint">关联后，详情卡会自动显示成员的真实简介与头像。<br>未关联则使用下方手动填写的姓名、简介、头像。</div>';
+      }
+      linkBlock += '</div>';
+      fields += linkBlock;
+
       fields += `
         <div style="border-top: 1px solid var(--stroke); margin: 16px 0; padding-top: 16px;">
-          <p class="section-title" style="margin-bottom: 12px;">详细资料</p>
+          <p class="section-title" style="margin-bottom: 12px;">手动填写（未关联成员时使用）</p>
         </div>
         <div class="form-group"><label class="form-label">头像 URL</label><input class="form-input" id="df-avatar" value="${item.avatar || ''}"></div>
         <div class="form-group"><label class="form-label">岗位职责 (JD)</label><textarea class="form-input" id="df-jd">${item.jd || ''}</textarea></div>
@@ -637,23 +746,61 @@ function openDetail(path, idx) {
     `;
   } else {
     // VIEW mode: show detail card
-    const name = item.name || '空缺';
+
+    // ── B 战役：如果有关联成员且成员池已加载，优先用成员的姓名/头像/简介 ──
+    const linkedRecId = item.member_rec_id || '';
+    const linkedMember = linkedRecId && _membersById && _membersById[linkedRecId] ? _membersById[linkedRecId] : null;
+
     const role = item.role || item.title || '';
     const desc = item.desc || '';
     const jd = item.jd || '';
-    const bio = item.bio || '';
     const since = item.since || '';
-    const avatarContent = item.avatar
-      ? `<img src="${item.avatar}" alt="">`
-      : emoji;
+
+    // 名称：关联成员优先 → item.name → 「空缺」
+    const name = linkedMember
+      ? (linkedMember.name || linkedMember.nickname || item.name || '空缺')
+      : (item.name || '空缺');
+
+    // bio：关联成员优先（用完整 bio，本字段在 picker 里截断了，详情视图想要完整版可以后期改）
+    const bio = linkedMember ? (linkedMember.bio || item.bio || '') : (item.bio || '');
+
+    // 头像：关联成员的 avatar_token → /api/poster；否则 item.avatar URL；都没有 → emoji
+    let avatarContent;
+    if (linkedMember && linkedMember.avatar_token) {
+      avatarContent = `<img src="/api/poster?token=${encodeURIComponent(linkedMember.avatar_token)}" onerror="this.style.display='none';this.parentNode.textContent='${emoji}'" alt="">`;
+    } else if (item.avatar) {
+      avatarContent = `<img src="${item.avatar}" alt="">`;
+    } else {
+      avatarContent = emoji;
+    }
 
     let detailFields = '';
+
+    // 关联成员卡（如果有）— 给一个明显的"这是谁"的入口
+    if (linkedMember) {
+      const cityHint = (linkedMember.cities || []).join(' / ');
+      const identityHint = (linkedMember.identity || []).join(' · ');
+      const memberMeta = [cityHint, identityHint].filter(Boolean).join('  ·  ');
+      detailFields += `
+        <div class="view-member">
+          <div class="view-member-info">
+            <div class="view-member-name">🔗 关联成员主页</div>
+            ${memberMeta ? `<div class="view-member-meta">${escTeamHtml(memberMeta)}</div>` : ''}
+          </div>
+          <a class="view-member-link" href="/community/${encodeURIComponent(linkedRecId)}" target="_blank" rel="noopener">查看主页 →</a>
+        </div>
+      `;
+    } else if (linkedRecId && _membersById !== null) {
+      // stale link 提示
+      detailFields += `<div class="detail-field" style="color:var(--danger);font-size:12px">⚠️ 关联的成员（${escTeamHtml(linkedRecId)}）已不在成员池中</div>`;
+    }
+
     if (desc) detailFields += `<div class="detail-field"><div class="detail-label">职责描述</div><div class="detail-value">${desc}</div></div>`;
     if (isVolunteer && item.keywords && item.keywords.length) {
       detailFields += `<div class="detail-field"><div class="detail-label">关键词</div><div class="detail-value">${item.keywords.map(k => `<span class="keyword-tag" style="font-size:12px;padding:3px 8px;">${k}</span>`).join(' ')}</div></div>`;
     }
     if (jd) detailFields += `<div class="detail-field"><div class="detail-label">岗位职责</div><div class="detail-value">${jd.replace(/\n/g,'<br>')}</div></div>`;
-    if (bio) detailFields += `<div class="detail-field"><div class="detail-label">个人简介</div><div class="detail-value">${bio.replace(/\n/g,'<br>')}</div></div>`;
+    if (bio) detailFields += `<div class="detail-field"><div class="detail-label">${linkedMember ? '个人简介（来自成员主页）' : '个人简介'}</div><div class="detail-value">${escTeamHtml(bio).replace(/\n/g,'<br>')}</div></div>`;
     if (since) detailFields += `<div class="detail-field"><div class="detail-label">任职时间</div><div class="detail-value">${since}</div></div>`;
 
     if (isRep) {
@@ -868,6 +1015,164 @@ async function submitChangePassword() {
     btn.textContent = '确认修改';
     btn.disabled    = false;
   }
+}
+
+// ═══════════════════════════════════════════
+// 🔗 B 战役：成员选择器 picker
+// ═══════════════════════════════════════════
+//   _pickerCtx = { path, idx } — 记住要把选中结果写回哪条角色
+//   _pickerFilter — 当前搜索关键字，每次输入触发重渲染
+let _pickerCtx    = null;
+let _pickerFilter = '';
+
+/** 入口：打开 picker；context 是当前编辑的角色路径（如 'cyc.triangle'）+ index */
+function openPicker(path, idx) {
+  _pickerCtx = { path, idx };
+  _pickerFilter = '';
+  document.getElementById('picker-search').value = '';
+  document.getElementById('picker-modal').classList.add('active');
+  setTimeout(() => document.getElementById('picker-search').focus(), 250);
+  renderPicker();
+  // 没拉过则现拉
+  if (_membersById === null) {
+    loadMembers().then(() => renderPicker());
+  }
+}
+
+function closePicker() {
+  document.getElementById('picker-modal').classList.remove('active');
+  _pickerCtx = null;
+}
+
+document.getElementById('picker-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePicker();
+});
+
+document.getElementById('picker-search').addEventListener('input', e => {
+  _pickerFilter = (e.target.value || '').trim().toLowerCase();
+  renderPicker();
+});
+
+function renderPicker() {
+  const listEl = document.getElementById('picker-list');
+
+  // 加载状态
+  if (_membersById === null) {
+    listEl.innerHTML = '<div class="picker-loading">⏳ 加载成员池…</div>';
+    return;
+  }
+
+  // 错误状态
+  if (_membersErr) {
+    listEl.innerHTML = '<div class="picker-error">😕 ' + escTeamHtml(_membersErr) + '<br><br>'
+      + '<button class="btn btn-sm btn-outline" onclick="loadMembers(true).then(()=>renderPicker())">重试</button></div>';
+    return;
+  }
+
+  if (!_membersList.length) {
+    listEl.innerHTML = '<div class="picker-empty">🌿 成员池为空</div>';
+    return;
+  }
+
+  const currentItem = _pickerCtx ? getItem(_pickerCtx.path, _pickerCtx.idx) : null;
+  const currentRid  = currentItem?.member_rec_id || '';
+
+  // 过滤
+  const f = _pickerFilter;
+  const filtered = !f ? _membersList : _membersList.filter(m => {
+    const hay = ((m.name || '') + ' ' + (m.nickname || '') + ' ' + (m.cities || []).join(' ')).toLowerCase();
+    return hay.includes(f);
+  });
+
+  let html = '';
+  // 「无人担任 / 解除关联」选项放最上
+  if (currentRid) {
+    html += '<div class="picker-row is-clear" onclick="pickerSelect(\'\')">'
+      + '<div class="picker-avatar">∅</div>'
+      + '<div class="picker-row-info">'
+        + '<div class="picker-row-name">解除关联（角色变为空缺）</div>'
+        + '<div class="picker-row-meta">不与任何成员绑定</div>'
+      + '</div>'
+    + '</div>';
+  }
+
+  if (!filtered.length) {
+    html += '<div class="picker-empty">没有匹配的成员</div>';
+  } else {
+    for (const m of filtered) {
+      const isCurrent = m.record_id === currentRid;
+      const displayName = m.name || m.nickname || '（未填姓名）';
+      const meta = [
+        m.nickname && m.nickname !== m.name ? '“' + m.nickname + '”' : '',
+        (m.cities || []).join(' / '),
+        (m.bio || '').slice(0, 30) + ((m.bio || '').length > 30 ? '…' : ''),
+      ].filter(Boolean).join(' · ');
+      const avatarHtml = m.avatar_token
+        ? '<img src="/api/poster?token=' + encodeURIComponent(m.avatar_token) + '" onerror="this.style.display=\'none\';this.parentNode.textContent=\'👤\'">'
+        : '👤';
+      html += '<div class="picker-row' + (isCurrent ? ' is-current' : '') + '" onclick="pickerSelect(\'' + m.record_id + '\')">'
+        + '<div class="picker-avatar">' + avatarHtml + '</div>'
+        + '<div class="picker-row-info">'
+          + '<div class="picker-row-name">' + escTeamHtml(displayName) + (isCurrent ? ' <span style="color:var(--orange);font-size:11px">· 当前</span>' : '') + '</div>'
+          + (meta ? '<div class="picker-row-meta">' + escTeamHtml(meta) + '</div>' : '')
+        + '</div>'
+      + '</div>';
+    }
+  }
+  listEl.innerHTML = html;
+}
+
+/** 选中某个成员（或传空字符串清除关联）→ 写回 data + 重新渲染详情 */
+function pickerSelect(recId) {
+  if (!_pickerCtx) return;
+  const item = getItem(_pickerCtx.path, _pickerCtx.idx);
+  if (!item) return;
+  item.member_rec_id = recId || '';
+  // 关联成员后，把成员的 name 同步到 item.name（保险，反正 view 会优先读 member.name）
+  if (recId && _membersById && _membersById[recId]) {
+    const m = _membersById[recId];
+    item.name = m.name || m.nickname || item.name || '';
+  }
+  saveData();
+  closePicker();
+  // 重新打开当前条目的编辑卡（让用户立刻看到关联结果）
+  openDetail(_pickerCtx.path, _pickerCtx.idx);
+}
+
+/** 简单 HTML escape，避免成员姓名 / bio 含 < > & 等字符破坏渲染 */
+function escTeamHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** 编辑卡里的「已关联成员」小卡（不带按钮，按钮在外面） */
+function renderLinkedMemberCard(m) {
+  const avatarHtml = m.avatar_token
+    ? '<img src="/api/poster?token=' + encodeURIComponent(m.avatar_token) + '" onerror="this.style.display=\'none\';this.parentNode.textContent=\'👤\'">'
+    : '👤';
+  const meta = [
+    (m.cities || []).join(' / '),
+    (m.bio || '').slice(0, 50) + ((m.bio || '').length > 50 ? '…' : ''),
+  ].filter(Boolean).join(' · ');
+  return '<div class="linked-member">'
+    + '<div class="linked-member-avatar">' + avatarHtml + '</div>'
+    + '<div class="linked-member-info">'
+      + '<div class="linked-member-name">' + escTeamHtml(m.name || m.nickname || '') + '</div>'
+      + (meta ? '<div class="linked-member-meta">' + escTeamHtml(meta) + '</div>' : '')
+    + '</div>'
+  + '</div>';
+}
+
+/** 直接解除关联（不弹 picker） */
+function clearMemberLink(path, idx) {
+  const item = getItem(path, idx);
+  if (!item) return;
+  item.member_rec_id = '';
+  saveData();
+  openDetail(path, idx);  // 刷新当前详情卡
 }
 
 // ═══════════════════════════════════════════
