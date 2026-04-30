@@ -138,7 +138,17 @@ export function parseMember(record, locMap = {}, locNameMap = {}) {
     residentStatus: getSelect(f['据点入住状态']),
     hubIds, hubs, cities,
     hidden:       getCheckbox(f['在社群成员列表中隐藏']),
+    // ⚠️ 私密：仅供服务端 RSVP 匹配 / admin 编辑使用
+    //    任何对外 SSR / JSON API 必须 strip 这些字段
+    _wechat:      getText(f['微信号']),
   };
+}
+
+/** 把私密字段从 Member 对象剥掉（对外渲染前必须调） */
+export function stripPrivate(member) {
+  if (!member) return member;
+  const { _wechat, ...safe } = member;
+  return safe;
 }
 
 // ─────────── 数据拉取 ───────────
@@ -235,6 +245,18 @@ export async function searchMembers(query, opts = {}) {
     [m.name, m.nickname, m.bio, m.job, m.company, m.topics, m.willShare, m.interests]
       .some(s => s && s.toLowerCase().includes(q))
   ).slice(0, 50);
+}
+
+/**
+ * 微信号精确匹配（大小写不敏感、trim）
+ * RSVP 报名时优先调这个 → 唯一性最高
+ */
+export async function findMemberByWechat(wechat) {
+  if (!wechat) return null;
+  const target = String(wechat).trim().toLowerCase();
+  if (!target) return null;
+  const all = await fetchAllMembers();
+  return all.find(m => (m._wechat || '').trim().toLowerCase() === target) || null;
 }
 
 /**

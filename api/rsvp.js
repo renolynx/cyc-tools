@@ -17,7 +17,7 @@
 
 import { applyCors } from './_feishu.js';
 import { fetchRsvpsForActivity, findExistingRsvp, addRsvp, deleteRsvp, fetchRsvpByRecordId } from './_rsvp.js';
-import { findMemberByName } from './_member.js';
+import { findMemberByName, findMemberByWechat } from './_member.js';
 import { verifyPassword } from './_password.js';
 
 // ─────────── 工具函数 ───────────
@@ -89,10 +89,11 @@ async function handlePost(req, res) {
       });
     }
 
-    // 尝试匹配成员表（按称呼/姓名）
+    // 尝试匹配成员表：先按微信号（唯一性最高），再按称呼/姓名 fallback
     let member_rec_id;
     try {
-      const m = await findMemberByName(name.trim());
+      let m = await findMemberByWechat(wechat.trim());
+      if (!m) m = await findMemberByName(name.trim());
       if (m) member_rec_id = m.record_id;
     } catch {}  // 匹配失败不阻塞报名
 
