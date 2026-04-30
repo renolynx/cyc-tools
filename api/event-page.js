@@ -88,10 +88,10 @@ function renderEventDetail(act, rsvps = []) {
   const dateStr = formatCnDate(act.date);
   const jsonLd   = buildJsonLd(act, ogImage, url, isPast);
 
-  // RSVP 按 wechat 去重（保留最新一条）；wechat 为空的全保留
+  // RSVP 按归一化 wechat 去重（大小写不敏感、保留最新一条）；wechat 空的全保留
   const seenWx = new Set();
   const rsvpsDeduped = rsvps.filter(r => {
-    const wx = (r.wechat || '').trim();
+    const wx = (r.wechat || '').trim().toLowerCase();
     if (!wx) return true;
     if (seenWx.has(wx)) return false;
     seenWx.add(wx);

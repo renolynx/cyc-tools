@@ -113,12 +113,42 @@ export async function findExistingRsvp(activity_rec_id, wechat) {
 
   // KV 没 mark → 飞书 search（可能延迟几秒看不到刚写的记录）
   const list = await fetchRsvpsForActivity(activity_rec_id);
-  return list.find(r => r.wechat === wechat) || null;
+  const target = normalizeWechat(wechat);
+  return list.find(r => normalizeWechat(r.wechat) === target) || null;
 }
 
-/** KV 防重 key（避开飞书 search 索引延迟） */
+/** 删除某条 RSVP 记录（admin 用，调用方负责密码校验） */
+export async function deleteRsvp(record_id, activity_rec_id, wechat) {
+  if (!record_id) throw new Error('缺 record_id');
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/${record_id}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  // 1254040/1254044 = record 不存在；当作幂等成功
+  if (data.code !== 0 && data.code !== 1254040 && data.code !== 1254044) {
+    throw new Error(`RSVP 删除失败 (${data.code}): ${data.msg}`);
+  }
+
+  // 清缓存 + 清 KV mark
+  if (isKvConfigured()) {
+    const ops = [];
+    if (activity_rec_id) ops.push(kvDel('rsvp:activity:' + activity_rec_id));
+    if (activity_rec_id && wechat) ops.push(kvDel(seenKey(activity_rec_id, wechat)));
+    await Promise.all(ops).catch(() => {});
+  }
+  return { success: true };
+}
+
+/** wechat 归一化（大小写不敏感、去前后空格） */
+function normalizeWechat(wx) {
+  return (wx || '').trim().toLowerCase();
+}
+
+/** KV 防重 key（用归一化后的 wechat） */
 function seenKey(activity_rec_id, wechat) {
-  return `rsvp_seen:${activity_rec_id}:${wechat}`;
+  return `rsvp_seen:${activity_rec_id}:${normalizeWechat(wechat)}`;
 }
 
 // ─────────── 写入 ───────────

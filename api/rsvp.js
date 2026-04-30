@@ -16,8 +16,9 @@
  */
 
 import { applyCors } from './_feishu.js';
-import { fetchRsvpsForActivity, findExistingRsvp, addRsvp } from './_rsvp.js';
+import { fetchRsvpsForActivity, findExistingRsvp, addRsvp, deleteRsvp } from './_rsvp.js';
 import { findMemberByName } from './_member.js';
+import { verifyPassword } from './_password.js';
 
 // ─────────── 工具函数 ───────────
 
@@ -112,12 +113,36 @@ async function handlePost(req, res) {
   }
 }
 
+// ─────────── DELETE: 删除某条 RSVP（admin 用） ───────────
+//   POST /api/rsvp?action=delete
+//   Body: { record_id, password, activity_rec_id?, wechat? }
+//   activity_rec_id + wechat 用于清相关 KV mark（不传也能删，但 mark 会到 24h 自然过期）
+
+async function handleDelete(req, res) {
+  const { record_id, password, activity_rec_id, wechat } = req.body || {};
+  if (!record_id) return res.status(400).json({ error: '缺 record_id' });
+
+  const ok = await verifyPassword(password);
+  if (!ok) return res.status(401).json({ error: '密码错误（用同步活动那个）' });
+
+  try {
+    await deleteRsvp(record_id, activity_rec_id, wechat);
+    return res.status(200).json({ success: true, record_id });
+  } catch (err) {
+    console.error('[rsvp delete]', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 // ─────────── Handler ───────────
 
 export default async function handler(req, res) {
   applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method === 'GET')     return handleGet(req, res);
-  if (req.method === 'POST')    return handlePost(req, res);
+  if (req.method === 'POST') {
+    if (req.query.action === 'delete') return handleDelete(req, res);
+    return handlePost(req, res);
+  }
   return res.status(405).json({ error: 'Method not allowed' });
 }
