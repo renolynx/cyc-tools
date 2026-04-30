@@ -264,6 +264,26 @@ export async function deleteRsvp(record_id) {
   return { success: true, cleared_wechat: !!recordWechat };
 }
 
+/**
+ * 把一条 RSVP 的「关联成员ID」改指向另一个成员（用于合并成员场景）
+ * 不动其他字段；调用方负责清缓存（合并端点最后批量清）
+ */
+export async function updateRsvpMemberLink(record_id, new_member_rec_id) {
+  if (!record_id) throw new Error('缺 record_id');
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/${record_id}`,
+    {
+      method:  'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ fields: { '关联成员ID': new_member_rec_id || '' } }),
+    }
+  );
+  const data = await res.json();
+  if (data.code !== 0) throw new Error(`RSVP 重链失败 (${data.code}): ${data.msg}`);
+  return true;
+}
+
 /** wechat 归一化（大小写不敏感、去前后空格） */
 function normalizeWechat(wx) {
   return (wx || '').trim().toLowerCase();

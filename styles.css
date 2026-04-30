@@ -2071,15 +2071,197 @@ body.event-page {
 }
 .cm-edit-actions {
   margin-top: 16px;
-  display: grid;
-  grid-template-columns: 1fr 2fr;
+  display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
+.cm-edit-actions > .rsvp-cancel,
+.cm-edit-actions > .rsvp-confirm,
+.cm-edit-actions > .cm-merge-btn,
+.cm-edit-actions > .cm-merge-confirm { flex: 1; min-width: 0; }
 
 @media (max-width: 560px) {
   .cm-edit-grid { grid-template-columns: 1fr; }
   .cm-edit-wide { grid-column: span 1; }
 }
+
+/* ── 合并成员 modal ── */
+.cm-merge-btn {
+  background: rgba(217,101,42,0.10);
+  color: var(--orange);
+  border: 1px solid rgba(217,101,42,0.30);
+  border-radius: 100px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s;
+}
+.cm-merge-btn:hover { background: rgba(217,101,42,0.18); }
+.cm-merge-btn:active { transform: scale(0.97); }
+
+.cm-merge-overlay {
+  position: fixed; inset: 0; z-index: 220;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s;
+}
+.cm-merge-overlay.open { opacity: 1; pointer-events: all; }
+.cm-merge-modal {
+  width: 100%; max-width: 600px;
+  background: var(--sand);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 22px 28px;
+  transform: translateY(40px);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.cm-merge-overlay.open .cm-merge-modal { transform: translateY(0); }
+.cm-merge-title {
+  font-size: 18px; font-weight: 800;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+.cm-merge-sub {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+.cm-merge-rsvp-info {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cm-merge-candidates {
+  margin-top: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.5);
+}
+.cm-merge-candidate {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--stroke);
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.cm-merge-candidate:last-child { border-bottom: none; }
+.cm-merge-candidate:hover  { background: rgba(28,61,46,0.06); }
+.cm-merge-candidate:active { background: rgba(28,61,46,0.12); }
+.cm-merge-candidate-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cm-merge-candidate-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.cm-merge-fields {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cm-merge-field-row {
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.5);
+}
+.cm-merge-field-row.is-conflict {
+  border-color: rgba(217,101,42,0.45);
+  background: rgba(217,101,42,0.05);
+}
+.cm-merge-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.cm-merge-field-vals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.cm-merge-field-side em {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 12px;
+}
+.cm-merge-side-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: rgba(28,61,46,0.10);
+  color: var(--green);
+  font-weight: 600;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.cm-merge-side-tag.tgt {
+  background: rgba(217,101,42,0.12);
+  color: var(--orange);
+}
+.cm-merge-field-take {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+.cm-merge-field-take input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--green);
+}
+.cm-merge-warn {
+  font-size: 12px;
+  color: var(--orange);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.cm-merge-confirm {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 3px 10px rgba(192,57,43,0.30);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s, opacity 0.15s;
+}
+.cm-merge-confirm:hover  { opacity: 0.92; }
+.cm-merge-confirm:active { transform: scale(0.98); }
+.cm-merge-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* RSVP chip 内的链接（点名字跳成员页） */
 .event-rsvp-chip-link {

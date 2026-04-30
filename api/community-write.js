@@ -22,12 +22,16 @@ import {
   fetchAllMembers,
   fetchMember,
   writeMember,
+  deleteMember,
   inferMemberActivityCities,
   matchSpeaker,
   autoCreateMember,
 } from './_member.js';
-import { fetchAllActivities }   from './_activity.js';
-import { replaceSpeakerRsvps }  from './_rsvp.js';
+import { fetchAllActivities }                       from './_activity.js';
+import { replaceSpeakerRsvps,
+         fetchRsvpsByMember,
+         updateRsvpMemberLink }                     from './_rsvp.js';
+import { kvDel, isKvConfigured }                    from './_kv.js';
 
 /**
  * 拉所有成员 + 给每条加 inferredCities 字段（活动反推）
@@ -187,6 +191,162 @@ async function handleBackfillSpeakers(req, res) {
   });
 }
 
+// ─────────── 合并去重 ───────────
+
+/** admin UI 编辑表单暴露的可合并字段（hidden 不参与；avatar/identity/contribution/hubs 暂不动） */
+const MERGEABLE_FIELDS = [
+  'name', 'nickname', 'bio', 'job', 'company',
+  'willShare', 'interests', 'topics', 'mbti',
+  'residentStatus',
+];
+
+/**
+ * 字段合并方案：source 字段非空 + target 字段为空 → 建议带过去
+ *   wechat 单独处理：写到 writeMember 时 key 是 'wechat'，但成员对象里是 '_wechat'
+ *   返回 { proposed: { field: source_value }, conflicts: [{ field, source, target }] }
+ */
+function buildFieldProposal(source, target) {
+  const proposed = {};
+  const conflicts = [];
+
+  for (const k of MERGEABLE_FIELDS) {
+    const sv = (source[k] || '').toString().trim();
+    const tv = (target[k] || '').toString().trim();
+    if (!sv) continue;
+    if (!tv) proposed[k] = sv;
+    else if (sv !== tv) conflicts.push({ field: k, source: sv, target: tv });
+  }
+
+  // wechat：成员对象里在 _wechat
+  const sw = (source._wechat || '').trim();
+  const tw = (target._wechat || '').trim();
+  if (sw) {
+    if (!tw) proposed.wechat = sw;
+    else if (sw.toLowerCase() !== tw.toLowerCase())
+      conflicts.push({ field: 'wechat', source: sw, target: tw });
+  }
+  return { proposed, conflicts };
+}
+
+/**
+ * Merge preview：拉 source / target，组装字段对比 + RSVP 数
+ * 不做任何写入。让前端展示后让用户确认。
+ *
+ * Body: { action:'merge-preview', password, source_id, target_id }
+ * Response: { success, source, target, proposed, conflicts, rsvp_count }
+ */
+async function handleMergePreview(req, res) {
+  const { source_id, target_id } = req.body || {};
+  if (!source_id || !target_id) return res.status(400).json({ error: '缺 source_id / target_id' });
+  if (source_id === target_id)   return res.status(400).json({ error: 'source 和 target 是同一人' });
+
+  const [source, target, rsvps] = await Promise.all([
+    fetchMember(source_id),
+    fetchMember(target_id),
+    fetchRsvpsByMember(source_id),
+  ]);
+  if (!source) return res.status(404).json({ error: 'source 成员不存在' });
+  if (!target) return res.status(404).json({ error: 'target 成员不存在' });
+
+  const { proposed, conflicts } = buildFieldProposal(source, target);
+
+  return res.status(200).json({
+    success: true,
+    source: { ...source, _phone: undefined },   // 减少回传
+    target: { ...target, _phone: undefined },
+    proposed,
+    conflicts,
+    rsvp_count: rsvps.length,
+    rsvp_activity_ids: [...new Set(rsvps.map(r => r.activity_rec_id).filter(Boolean))],
+  });
+}
+
+/**
+ * Merge 实际执行：
+ *   1. 字段补全：把 field_overrides（前端确认后的字段 map）写到 target
+ *   2. RSVP 重链：source 的所有 RSVP 关联成员ID → target_id
+ *   3. 删 source 成员
+ *   4. 清缓存（写操作 helper 各自清，最后再补一次活动级 rsvp:activity:* 缓存）
+ *
+ * Body: { action:'merge', password, source_id, target_id, field_overrides? }
+ *   field_overrides: { fieldName: value, ... } — 来自 preview 的 proposed，admin 可改
+ * Response: { success, target_id, rsvp_updated, source_deleted, fields_applied }
+ */
+async function handleMerge(req, res) {
+  const { source_id, target_id, field_overrides } = req.body || {};
+  if (!source_id || !target_id) return res.status(400).json({ error: '缺 source_id / target_id' });
+  if (source_id === target_id)   return res.status(400).json({ error: 'source 和 target 是同一人' });
+
+  // 拉数据 + 字段补全（如果提供了）
+  const fieldsApplied = {};
+  if (field_overrides && typeof field_overrides === 'object') {
+    for (const [k, v] of Object.entries(field_overrides)) {
+      if (v == null || v === '') continue;
+      fieldsApplied[k] = v;
+    }
+    if (Object.keys(fieldsApplied).length) {
+      try {
+        await writeMember(fieldsApplied, target_id);
+      } catch (err) {
+        return res.status(500).json({ error: '字段补全失败：' + err.message });
+      }
+    }
+  }
+
+  // RSVP 重链
+  let rsvps;
+  try { rsvps = await fetchRsvpsByMember(source_id); }
+  catch (err) { return res.status(500).json({ error: '拉 source RSVP 失败：' + err.message }); }
+
+  let rsvpUpdated = 0;
+  const rsvpFailed = [];
+  const affectedActivityIds = new Set();
+  for (const r of rsvps) {
+    try {
+      await updateRsvpMemberLink(r.record_id, target_id);
+      rsvpUpdated++;
+      if (r.activity_rec_id) affectedActivityIds.add(r.activity_rec_id);
+    } catch (err) {
+      console.warn('[merge] rsvp relink failed:', r.record_id, err.message);
+      rsvpFailed.push({ record_id: r.record_id, error: err.message });
+    }
+  }
+
+  // 删 source（即使有 RSVP relink 失败也删；那些孤立 RSVP 在飞书后台手动改）
+  let sourceDeleted = false;
+  try {
+    await deleteMember(source_id);
+    sourceDeleted = true;
+  } catch (err) {
+    console.warn('[merge] delete source failed:', err.message);
+  }
+
+  // 清缓存：rsvp:* 涉及的，rsvp:member:source/target，rsvp:all
+  if (isKvConfigured()) {
+    const ops = [
+      kvDel('rsvp:all'),
+      kvDel('rsvp:member:' + source_id),
+      kvDel('rsvp:member:' + target_id),
+      kvDel('member:' + source_id),
+      kvDel('member:' + target_id),
+      kvDel('members:大理'),
+      kvDel('members:上海'),
+      kvDel('member_activity_cities'),
+    ];
+    for (const aid of affectedActivityIds) ops.push(kvDel('rsvp:activity:' + aid));
+    await Promise.all(ops).catch(() => {});
+  }
+
+  return res.status(200).json({
+    success: true,
+    target_id,
+    source_deleted: sourceDeleted,
+    rsvp_updated: rsvpUpdated,
+    rsvp_failed: rsvpFailed,
+    fields_applied: Object.keys(fieldsApplied),
+  });
+}
+
 export default async function handler(req, res) {
   applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -204,6 +364,8 @@ export default async function handler(req, res) {
   if (action === 'create')             return handleCreate(req, res);
   if (action === 'update')             return handleUpdate(req, res);
   if (action === 'backfill-speakers')  return handleBackfillSpeakers(req, res);
+  if (action === 'merge-preview')      return handleMergePreview(req, res);
+  if (action === 'merge')              return handleMerge(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }

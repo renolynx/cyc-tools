@@ -466,6 +466,38 @@ export async function findMemberByName(name) {
   return matchSpeaker(all, name);
 }
 
+// ─────────── 删除 ───────────
+
+/**
+ * 删除成员记录（用于合并去重场景）
+ * 调用方负责先把 RSVP 重链 / 字段合并好；这里只删记录 + 清缓存
+ *
+ * 1254040/1254044 = record 不存在 → 当作幂等成功
+ */
+export async function deleteMember(record_id) {
+  if (!record_id) throw new Error('缺 record_id');
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/${record_id}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  if (data.code !== 0 && data.code !== 1254040 && data.code !== 1254044) {
+    throw new Error(`成员删除失败 (${data.code}): ${data.msg}`);
+  }
+
+  if (isKvConfigured()) {
+    await Promise.all([
+      kvDel('member:' + record_id),
+      kvDel('rsvp:member:' + record_id),
+      kvDel('members:大理'),
+      kvDel('members:上海'),
+      kvDel('member_activity_cities'),
+    ]).catch(() => {});
+  }
+  return { success: true };
+}
+
 // ─────────── 写入 ───────────
 
 /**

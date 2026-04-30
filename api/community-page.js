@@ -394,7 +394,40 @@ function renderAdminApp() {
 
     <div class="cm-edit-actions">
       <button class="rsvp-cancel" onclick="cmCloseEdit()">取消</button>
+      <button class="cm-merge-btn" id="cmMergeBtn" onclick="cmStartMerge()" style="display:none">→ 合并到另一个</button>
       <button class="rsvp-confirm" id="cmEditSubmit" onclick="cmSubmitEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 合并 modal -->
+<div class="cm-merge-overlay" id="cmMergeOverlay" onclick="if(event.target.id==='cmMergeOverlay')cmCloseMerge()">
+  <div class="cm-merge-modal">
+    <div class="rsvp-modal-handle"></div>
+    <div class="cm-merge-title" id="cmMergeTitle">合并成员</div>
+
+    <!-- Step 1: 选目标 -->
+    <div class="cm-merge-step" id="cmMergeStep1">
+      <p class="cm-merge-sub">把 <strong id="cmMergeSourceName"></strong> 合并到下面哪位？</p>
+      <input type="text" class="cm-admin-search" id="cmMergeSearch" placeholder="搜索目标成员..." oninput="cmMergeSearchTick()">
+      <div class="cm-merge-candidates" id="cmMergeCandidates"></div>
+    </div>
+
+    <!-- Step 2: 字段对比确认 -->
+    <div class="cm-merge-step" id="cmMergeStep2" style="display:none">
+      <p class="cm-merge-sub">
+        要把 <strong id="cmMergeSourceName2"></strong> → <strong id="cmMergeTargetName2"></strong><br>
+        <span class="cm-merge-rsvp-info" id="cmMergeRsvpInfo"></span>
+      </p>
+      <div class="cm-merge-fields" id="cmMergeFieldList"></div>
+      <p class="cm-merge-warn" id="cmMergeConflicts"></p>
+      <p class="cm-edit-err" id="cmMergeErr"></p>
+    </div>
+
+    <div class="cm-edit-actions">
+      <button class="rsvp-cancel" onclick="cmCloseMerge()">取消</button>
+      <button class="rsvp-cancel" id="cmMergeBack" onclick="cmMergeBack()" style="display:none">← 重选</button>
+      <button class="cm-merge-confirm" id="cmMergeSubmit" onclick="cmDoMerge()" style="display:none">确认合并并删除原条目</button>
     </div>
   </div>
 </div>
@@ -537,6 +570,7 @@ function cmRender() {
 function cmStartCreate() {
   _editingId = null;
   $('cmEditTitle').textContent = '＋ 新建成员';
+  $('cmMergeBtn').style.display = 'none';   // 新建模式不显示「合并」
   ['name','nickname','bio','job','company','willShare','interests','topics','mbti','wechat','residentStatus'].forEach(k => $('cmF_'+k).value = '');
   $('cmF_hidden').checked = false;
   $('cmEditErr').textContent = '';
@@ -547,6 +581,7 @@ function cmStartCreate() {
 async function cmStartEdit(rid) {
   $('cmEditErr').textContent = '加载中...';
   $('cmEditOverlay').classList.add('open');
+  $('cmMergeBtn').style.display = '';   // 编辑模式才显示「合并」按钮
   try {
     const res = await fetch('/api/community-write', {
       method: 'POST',
@@ -627,8 +662,186 @@ async function cmSubmitEdit() {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('cmEditOverlay').classList.contains('open')) cmCloseEdit();
+  if (e.key === 'Escape') {
+    if ($('cmMergeOverlay').classList.contains('open'))      cmCloseMerge();
+    else if ($('cmEditOverlay').classList.contains('open'))  cmCloseEdit();
+  }
 });
+
+// ─────────── 合并 ───────────
+let _mergeSourceId = null, _mergeSourceMember = null, _mergeTargetMember = null, _mergeProposed = {}, _mergeSearchTimer = null;
+
+const FIELD_LABELS = {
+  name: '姓名', nickname: '称呼', bio: '个人介绍',
+  job: '职业描述', company: '公司',
+  willShare: '愿做的分享', interests: '感兴趣活动',
+  topics: '关注话题', mbti: 'MBTI',
+  wechat: '微信号', residentStatus: '据点入住状态',
+};
+
+function cmStartMerge() {
+  if (!_editingId) return;
+  _mergeSourceId = _editingId;
+  _mergeSourceMember = _allMembers.find(m => m.record_id === _mergeSourceId);
+  if (!_mergeSourceMember) { alert('找不到当前编辑的成员'); return; }
+
+  $('cmMergeSourceName').textContent  = _mergeSourceMember.nickname || _mergeSourceMember.name || '(未署名)';
+  $('cmMergeSourceName2').textContent = _mergeSourceMember.nickname || _mergeSourceMember.name || '(未署名)';
+  $('cmMergeStep1').style.display = '';
+  $('cmMergeStep2').style.display = 'none';
+  $('cmMergeBack').style.display  = 'none';
+  $('cmMergeSubmit').style.display = 'none';
+  $('cmMergeSearch').value = '';
+  $('cmMergeErr').textContent = '';
+  $('cmMergeOverlay').classList.add('open');
+  cmRenderMergeCandidates('');
+  setTimeout(() => $('cmMergeSearch').focus(), 200);
+}
+
+function cmCloseMerge() {
+  $('cmMergeOverlay').classList.remove('open');
+  _mergeSourceId = _mergeSourceMember = _mergeTargetMember = null;
+  _mergeProposed = {};
+}
+
+function cmMergeSearchTick() {
+  clearTimeout(_mergeSearchTimer);
+  _mergeSearchTimer = setTimeout(() => cmRenderMergeCandidates($('cmMergeSearch').value.trim().toLowerCase()), 150);
+}
+
+function cmRenderMergeCandidates(q) {
+  let pool = _allMembers.filter(m => m.record_id !== _mergeSourceId);
+  if (q) pool = pool.filter(m =>
+    [m.name, m.nickname, m.bio, m.job, m.company, m._wechat]
+      .some(s => s && String(s).toLowerCase().includes(q))
+  );
+  pool = pool.slice(0, 30);
+  if (!pool.length) {
+    $('cmMergeCandidates').innerHTML = '<div class="cm-admin-empty">' + (q ? '没有匹配' : '请输入关键词搜索') + '</div>';
+    return;
+  }
+  $('cmMergeCandidates').innerHTML = pool.map(m => {
+    const name = (m.nickname || m.name || '未署名').trim();
+    const sub  = [m.name && m.nickname && m.name !== m.nickname ? m.name : '', m.job, m.company].filter(Boolean).join(' · ');
+    return '<button class="cm-merge-candidate" onclick="cmPickMergeTarget(\\'' + escapeHtml(m.record_id) + '\\')">'
+      + '<div class="cm-merge-candidate-name">' + escapeHtml(name) + (m.hidden ? ' <span class="cm-hidden-tag">已隐藏</span>' : '') + '</div>'
+      + (sub ? '<div class="cm-merge-candidate-sub">' + escapeHtml(sub) + '</div>' : '')
+    + '</button>';
+  }).join('');
+}
+
+async function cmPickMergeTarget(targetId) {
+  $('cmMergeErr').textContent = '加载预览中...';
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'merge-preview', password: _adminPwd, source_id: _mergeSourceId, target_id: targetId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    _mergeTargetMember = data.target;
+    _mergeProposed = { ...(data.proposed || {}) };
+
+    $('cmMergeTargetName2').textContent = data.target.nickname || data.target.name || '(未署名)';
+    $('cmMergeRsvpInfo').textContent = data.rsvp_count
+      ? '将把 ' + data.rsvp_count + ' 条 RSVP 记录的关联从原条目转到目标条目。'
+      : '原条目没有 RSVP 记录。';
+
+    // 字段对比
+    const lines = [];
+    const allFields = Object.keys(FIELD_LABELS);
+    for (const k of allFields) {
+      const sv = (k === 'wechat' ? data.source._wechat : data.source[k]) || '';
+      const tv = (k === 'wechat' ? data.target._wechat : data.target[k]) || '';
+      if (!sv && !tv) continue;
+      const inProposed = Object.prototype.hasOwnProperty.call(_mergeProposed, k);
+      const conflict = sv && tv && sv !== tv;
+      const checkable = inProposed || conflict;
+      const checked = inProposed;
+      lines.push(
+        '<div class="cm-merge-field-row' + (conflict ? ' is-conflict' : '') + '">'
+        + '<div class="cm-merge-field-label">' + FIELD_LABELS[k] + '</div>'
+        + '<div class="cm-merge-field-vals">'
+          + '<div class="cm-merge-field-side"><span class="cm-merge-side-tag">原</span> ' + (sv ? escapeHtml(String(sv)) : '<em>(空)</em>') + '</div>'
+          + '<div class="cm-merge-field-side"><span class="cm-merge-side-tag tgt">目标</span> ' + (tv ? escapeHtml(String(tv)) : '<em>(空)</em>') + '</div>'
+        + '</div>'
+        + (checkable
+            ? '<label class="cm-merge-field-take"><input type="checkbox" data-field="' + k + '"' + (checked ? ' checked' : '') + ' onchange="cmToggleMergeField(this)"> ' + (conflict ? '覆盖目标，用原值' : '把原值带到目标') + '</label>'
+            : '')
+        + '</div>'
+      );
+    }
+    $('cmMergeFieldList').innerHTML = lines.join('') || '<p class="cm-merge-sub" style="color:var(--muted)">没有可补全的字段。</p>';
+
+    // 冲突提示
+    if (data.conflicts && data.conflicts.length) {
+      $('cmMergeConflicts').textContent = '⚠️ 有 ' + data.conflicts.length + ' 个字段两边都有值且不同（已默认保留目标，可手动勾选改用原值）';
+    } else {
+      $('cmMergeConflicts').textContent = '';
+    }
+
+    $('cmMergeStep1').style.display = 'none';
+    $('cmMergeStep2').style.display = '';
+    $('cmMergeBack').style.display  = '';
+    $('cmMergeSubmit').style.display = '';
+    $('cmMergeErr').textContent = '';
+  } catch (err) {
+    $('cmMergeErr').textContent = '加载失败：' + err.message;
+  }
+}
+
+function cmToggleMergeField(cb) {
+  const k  = cb.dataset.field;
+  const sv = (k === 'wechat' ? _mergeSourceMember._wechat : _mergeSourceMember[k]) || '';
+  if (cb.checked) _mergeProposed[k] = sv;
+  else delete _mergeProposed[k];
+}
+
+function cmMergeBack() {
+  $('cmMergeStep1').style.display = '';
+  $('cmMergeStep2').style.display = 'none';
+  $('cmMergeBack').style.display  = 'none';
+  $('cmMergeSubmit').style.display = 'none';
+  _mergeTargetMember = null;
+  _mergeProposed = {};
+  $('cmMergeErr').textContent = '';
+}
+
+async function cmDoMerge() {
+  if (!_mergeTargetMember) return;
+  if (!confirm('确认合并？\\n原条目（' + (_mergeSourceMember.nickname || _mergeSourceMember.name) + '）将被删除，相关 RSVP 转移到目标。此操作不可撤销。')) return;
+
+  const btn = $('cmMergeSubmit');
+  btn.disabled = true; btn.textContent = '合并中...';
+
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'merge', password: _adminPwd,
+        source_id: _mergeSourceId,
+        target_id: _mergeTargetMember.record_id,
+        field_overrides: _mergeProposed,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    $('cmMergeErr').textContent = '✓ 合并完成 · 重链 ' + (data.rsvp_updated || 0) + ' 条 RSVP · 补 ' + (data.fields_applied || []).length + ' 个字段';
+    setTimeout(() => {
+      cmCloseMerge();
+      cmCloseEdit();
+      cmReload();
+      btn.disabled = false; btn.textContent = '确认合并并删除原条目';
+    }, 1200);
+  } catch (err) {
+    $('cmMergeErr').textContent = '合并失败：' + err.message;
+    btn.disabled = false; btn.textContent = '确认合并并删除原条目';
+  }
+}
 </script>
 
 </body>
