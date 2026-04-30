@@ -11,6 +11,8 @@
 
 import { getAccessToken } from './_feishu.js';
 import { kvGet, kvSet, kvDel, isKvConfigured } from './_kv.js';
+import { fetchAllActivities } from './_activity.js';
+import { fetchAllRsvps }       from './_rsvp.js';
 
 const APP_TOKEN = process.env.FEISHU_MEMBER_APP_TOKEN;
 const TABLE_ID  = process.env.FEISHU_MEMBER_TABLE_ID;
@@ -221,7 +223,60 @@ export async function fetchMember(rec_id) {
   return member;
 }
 
-/** 按城市拉公开成员（hidden=false + cities 含指定城市） */
+/**
+ * 根据"ta 报过的活动地点"反推每个成员的相关城市
+ * 解决：很多成员的「现在所在据点」字段是空的，但他们其实参加过本地活动
+ * 返回 Map<member_rec_id, Set<city>>
+ */
+async function inferMemberActivityCities() {
+  const cacheKey = 'member_activity_cities';
+  if (isKvConfigured()) {
+    try {
+      const cached = await kvGet(cacheKey);
+      if (cached) {
+        const obj = JSON.parse(cached);
+        return new Map(Object.entries(obj).map(([id, arr]) => [id, new Set(arr)]));
+      }
+    } catch {}
+  }
+
+  let allRsvps = [];
+  let allActs  = [];
+  try {
+    [allRsvps, allActs] = await Promise.all([fetchAllRsvps(), fetchAllActivities()]);
+  } catch (err) {
+    console.warn('[inferMemberActivityCities] fetch failed:', err.message);
+    return new Map();
+  }
+
+  const actLoc = new Map(allActs.map(a => [a.record_id, a.loc || '']));
+  const result = new Map();
+
+  for (const r of allRsvps) {
+    if (!r.member_rec_id) continue;
+    const loc = actLoc.get(r.activity_rec_id) || '';
+    if (!loc) continue;
+    if (!result.has(r.member_rec_id)) result.set(r.member_rec_id, new Set());
+    if (loc.includes('大理')) result.get(r.member_rec_id).add('大理');
+    if (loc.includes('上海')) result.get(r.member_rec_id).add('上海');
+  }
+
+  if (isKvConfigured()) {
+    try {
+      const obj = {};
+      for (const [id, cities] of result) obj[id] = [...cities];
+      await kvSet(cacheKey, JSON.stringify(obj), 1800);  // 30min
+    } catch {}
+  }
+  return result;
+}
+
+/** 按城市拉公开成员
+ *  匹配两路：
+ *    1. 据点关联：现在所在据点 → 城市（飞书显式填了的）
+ *    2. 活动反推：ta 报过的活动地点含城市名（隐式生效）
+ *  任一命中即纳入；hidden=true 永远过滤
+ */
 export async function fetchMembersByCity(city) {
   if (!city) return [];
   const cacheKey = 'members:' + city;
@@ -232,8 +287,18 @@ export async function fetchMembersByCity(city) {
     } catch {}
   }
 
-  const all = await fetchAllMembers();
-  const filtered = all.filter(m => !m.hidden && m.cities.includes(city));
+  const [all, inferredMap] = await Promise.all([
+    fetchAllMembers(),
+    inferMemberActivityCities(),
+  ]);
+
+  const filtered = all.filter(m => {
+    if (m.hidden) return false;
+    if (m.cities.includes(city)) return true;     // 1. 据点
+    const inf = inferredMap.get(m.record_id);
+    if (inf && inf.has(city)) return true;        // 2. 活动反推
+    return false;
+  });
 
   if (isKvConfigured()) {
     try { await kvSet(cacheKey, JSON.stringify(filtered), KV_TTL_CITY); } catch (err) {

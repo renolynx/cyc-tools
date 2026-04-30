@@ -72,9 +72,11 @@ function renderList(city, members) {
         const hub  = displayHub(m);
         const bio  = truncate(m.bio, 50);
         const job  = truncate(m.job || m.company, 30);
+        const identityTags = (m.identity || []).slice(0, 3);
         return `<a class="cm-card" href="/community/${escapeHtml(m.record_id)}">
   <div class="cm-card-ava">${ava ? `<img src="${ava}" alt="" loading="lazy">` : '<span>👤</span>'}</div>
   <div class="cm-card-name">${escapeHtml(name)}</div>
+  ${identityTags.length ? `<div class="cm-card-tags">${identityTags.map(t => `<span class="cm-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
   ${job ? `<div class="cm-card-job">${escapeHtml(job)}</div>` : ''}
   ${hub ? `<div class="cm-card-meta">📍 ${escapeHtml(hub)}</div>` : ''}
   ${bio ? `<div class="cm-card-bio">${escapeHtml(bio)}</div>` : ''}
@@ -199,6 +201,7 @@ function renderDetail(member, rsvps) {
     ${member.job ? `<p class="cm-detail-job">${escapeHtml(member.job)}${member.company ? ` · ${escapeHtml(member.company)}` : ''}</p>` : ''}
     ${hubName ? `<p class="cm-detail-hub">📍 ${escapeHtml(hubName)}${member.residentStatus ? ` · ${escapeHtml(member.residentStatus)}` : ''}</p>` : ''}
     ${member.mbti ? `<span class="cm-detail-mbti">${escapeHtml(member.mbti)}</span>` : ''}
+    ${(member.identity && member.identity.length) ? `<div class="cm-detail-tags">${member.identity.map(t => `<span class="cm-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
   </div>
 
   ${member.bio ? `<section class="event-section">

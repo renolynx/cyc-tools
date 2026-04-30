@@ -93,6 +93,40 @@ export async function fetchRsvpsForActivity(activity_rec_id) {
   return filtered;
 }
 
+/** 拉全表所有 RSVP（用于聚合统计、按成员推断活动城市等） */
+export async function fetchAllRsvps() {
+  const cacheKey = 'rsvp:all';
+  if (isKvConfigured()) {
+    try {
+      const cached = await kvGet(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+  }
+
+  const token = await getAccessToken();
+  let all = [];
+  let pageToken = '';
+  for (let i = 0; i < 30; i++) {
+    const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/search?page_size=500${pageToken ? '&page_token=' + pageToken : ''}`;
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (data.code !== 0) throw new Error(`RSVP 全量拉取失败: ${data.msg}`);
+    all = all.concat((data.data?.items || []).map(parseRsvp));
+    if (!data.data?.has_more) break;
+    pageToken = data.data.page_token || '';
+    if (!pageToken) break;
+  }
+
+  if (isKvConfigured()) {
+    try { await kvSet(cacheKey, JSON.stringify(all), 600); } catch {} // 10min
+  }
+  return all;
+}
+
 /** 拉某成员所有 RSVP 记录（成员主页用）：含已发起 / 嘉宾 / 参与
  *  缓存 10 min，按报名时间倒序
  */
@@ -217,7 +251,12 @@ export async function deleteRsvp(record_id) {
 
   // 清缓存 + KV mark
   if (isKvConfigured()) {
-    const ops = [];
+    const ops = [
+      kvDel('rsvp:all'),
+      kvDel('member_activity_cities'),
+      kvDel('members:大理'),
+      kvDel('members:上海'),
+    ];
     if (recordActivityId) ops.push(kvDel('rsvp:activity:' + recordActivityId));
     if (recordActivityId && recordWechat) ops.push(kvDel(seenKey(recordActivityId, recordWechat)));
     await Promise.all(ops).catch(() => {});
@@ -269,12 +308,16 @@ export async function addRsvp(data) {
 
   const newRecordId = result.data.record.record_id;
 
-  // 1. 失效该活动报名列表缓存
+  // 1. 失效相关缓存
   // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）
   if (isKvConfigured()) {
     await Promise.all([
       kvDel('rsvp:activity:' + data.activity_rec_id),
-      kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400),  // 1 天 TTL
+      kvDel('rsvp:all'),
+      kvDel('member_activity_cities'),
+      kvDel('members:大理'),  // 推断的城市可能变 → 列表缓存也清
+      kvDel('members:上海'),
+      kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400),
     ]).catch(() => {});
   }
 

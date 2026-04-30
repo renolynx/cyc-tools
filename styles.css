@@ -1702,3 +1702,37 @@ body.event-page {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* 社区角色 tag（社群身份多选） */
+.cm-card-tags {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  justify-content: center;
+  margin: 4px 0 6px;
+}
+.cm-detail-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.cm-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(28,61,46,0.08);
+  color: var(--green);
+  padding: 2px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+}
+.cm-detail-tags .cm-tag {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+/* 详情页滑入动画（让导航感觉像 drawer） */
+.cm-detail {
+  animation: cmDetailIn 0.32s cubic-bezier(0.32,0.72,0,1);
+}
+@keyframes cmDetailIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
