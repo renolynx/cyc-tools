@@ -160,11 +160,9 @@ async function handleDelete(req, res) {
   }
 
   try {
-    // 用记录里的真实 wechat 清 KV mark（如能拿到）
-    let realWechat = wechat;
-    if (mode === 'self') realWechat = credential;
-    await deleteRsvp(record_id, activity_rec_id, realWechat);
-    return res.status(200).json({ success: true, record_id, mode });
+    // deleteRsvp 内部会 fetch 拿真实 wechat / activity_id 自动清 KV mark
+    const result = await deleteRsvp(record_id);
+    return res.status(200).json({ success: true, record_id, mode, ...result });
   } catch (err) {
     console.error('[rsvp delete]', err.message);
     return res.status(500).json({ error: err.message });

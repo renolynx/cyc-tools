@@ -94,24 +94,33 @@ export async function fetchRsvpsForActivity(activity_rec_id) {
 }
 
 /** 同活动同微信号去重检查
- * 双层：先查 KV mark（强一致，避开飞书 search 索引延迟）
- * 没命中再查飞书 search（最终一致）
+ * 双层 + self-heal：
+ *   1. KV mark（强一致，规避飞书 search 索引延迟）
+ *   2. 命中 mark → 验证 mark 指向的 record 还存在（飞书可能已被删）
+ *      不存在 → 清 stale mark + fall through 到 search
+ *   3. 飞书 search（最终一致）
  */
 export async function findExistingRsvp(activity_rec_id, wechat) {
   if (!activity_rec_id || !wechat) return null;
 
-  // KV mark 优先：写入时同步打了 mark，立即生效
+  // 1. KV mark
   if (isKvConfigured()) {
     try {
       const mark = await kvGet(seenKey(activity_rec_id, wechat));
       if (mark) {
-        // mark 存的是 record_id；找不到 record 但已知报过 → 仍返回标记对象
-        return { record_id: mark, name: '', wechat, _from_mark: true };
+        // 验证 mark 指向的 record 还在飞书表
+        const record = await fetchRsvpByRecordId(mark);
+        if (record) return record;
+        // record 已被删 → 清 stale mark
+        try { await kvDel(seenKey(activity_rec_id, wechat)); } catch {}
+        // 不 return，fall through 到 search
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[findExistingRsvp] KV mark 验证失败:', err.message);
+    }
   }
 
-  // KV 没 mark → 飞书 search（可能延迟几秒看不到刚写的记录）
+  // 2. 飞书 search
   const list = await fetchRsvpsForActivity(activity_rec_id);
   const target = normalizeWechat(wechat);
   return list.find(r => normalizeWechat(r.wechat) === target) || null;
@@ -134,9 +143,29 @@ export async function fetchRsvpByRecordId(record_id) {
   return parseRsvp(data.data.record);
 }
 
-/** 删除某条 RSVP 记录（admin 用，调用方负责密码校验） */
-export async function deleteRsvp(record_id, activity_rec_id, wechat) {
+/**
+ * 删除某条 RSVP 记录
+ * 调用方负责密码 / 自助身份校验。
+ * 内部主动 fetch record 拿真实 wechat / activity_rec_id 用于清 KV mark
+ *   → 即便 admin mode 不传 wechat，mark 也能被正确清掉
+ */
+export async function deleteRsvp(record_id) {
   if (!record_id) throw new Error('缺 record_id');
+
+  // 先 fetch 拿真实 wechat 和 activity_rec_id
+  let recordWechat = '';
+  let recordActivityId = '';
+  try {
+    const r = await fetchRsvpByRecordId(record_id);
+    if (r) {
+      recordWechat = r.wechat || '';
+      recordActivityId = r.activity_rec_id || '';
+    }
+  } catch (err) {
+    console.warn('[deleteRsvp] fetch before delete failed:', err.message);
+  }
+
+  // 删飞书记录
   const token = await getAccessToken();
   const res = await fetch(
     `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/${record_id}`,
@@ -148,14 +177,14 @@ export async function deleteRsvp(record_id, activity_rec_id, wechat) {
     throw new Error(`RSVP 删除失败 (${data.code}): ${data.msg}`);
   }
 
-  // 清缓存 + 清 KV mark
+  // 清缓存 + KV mark
   if (isKvConfigured()) {
     const ops = [];
-    if (activity_rec_id) ops.push(kvDel('rsvp:activity:' + activity_rec_id));
-    if (activity_rec_id && wechat) ops.push(kvDel(seenKey(activity_rec_id, wechat)));
+    if (recordActivityId) ops.push(kvDel('rsvp:activity:' + recordActivityId));
+    if (recordActivityId && recordWechat) ops.push(kvDel(seenKey(recordActivityId, recordWechat)));
     await Promise.all(ops).catch(() => {});
   }
-  return { success: true };
+  return { success: true, cleared_wechat: !!recordWechat };
 }
 
 /** wechat 归一化（大小写不敏感、去前后空格） */
