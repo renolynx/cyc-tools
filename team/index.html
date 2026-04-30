@@ -1351,7 +1351,7 @@ async function submitChangePassword() {
   errEl.textContent = '';
 
   try {
-    const res = await fetch('/api/change-password', {
+    const res = await fetch('/api/team-auth?action=change-password', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ currentPassword: current, newPassword: newPwd }),
