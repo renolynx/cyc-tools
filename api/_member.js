@@ -224,6 +224,14 @@ export async function fetchMember(rec_id) {
   return member;
 }
 
+/** 单个成员的参与度：roleStats 里所有 role 的 count 之和（用于排序） */
+function totalParticipation(member) {
+  const stats = member.roleStats || {};
+  let n = 0;
+  for (const v of Object.values(stats)) n += (Number(v) || 0);
+  return n;
+}
+
 /**
  * 聚合每个成员的活动类型 top-3（按参与活动 join activity.types 累加频次）
  * 飞书活动表「活动类型」未建字段时所有 activity.types 都是 []，结果 Map 全空
@@ -384,6 +392,10 @@ export async function fetchMembersByCity(city, options = {}) {
       roleStats: roleMap.get(m.record_id) || {},
       topTypes:  typeMap.get(m.record_id) || [],
     }));
+
+  // 按参与度倒序：roleStats 所有 count 之和（活动发起者 + 嘉宾 + 参与者...）
+  // 没参加过任何活动的成员排末尾；活动多的排前面
+  filtered.sort((a, b) => totalParticipation(b) - totalParticipation(a));
 
   if (isKvConfigured()) {
     try { await kvSet(cacheKey, JSON.stringify(filtered), KV_TTL_CITY); } catch (err) {

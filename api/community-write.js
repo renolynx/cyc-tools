@@ -55,6 +55,13 @@ async function handleSearch(req, res) {
     topTypes:       typeMap.get(m.record_id) || [],
   }));
 
+  // 同 fetchMembersByCity 的策略：按参与度倒序
+  enriched.sort((a, b) => {
+    const sa = Object.values(a.roleStats || {}).reduce((s, n) => s + (Number(n) || 0), 0);
+    const sb = Object.values(b.roleStats || {}).reduce((s, n) => s + (Number(n) || 0), 0);
+    return sb - sa;
+  });
+
   return res.status(200).json({
     success: true,
     count: enriched.length,
