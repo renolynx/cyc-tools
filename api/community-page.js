@@ -55,6 +55,14 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n) + '…' : s;
 }
 
+/** topTypes [{type,count}] → chip 行 */
+function renderTypeChips(topTypes) {
+  if (!Array.isArray(topTypes) || !topTypes.length) return '';
+  return topTypes.map(t =>
+    `<span class="cm-type-chip">${escapeHtml(t.type)}${t.count > 1 ? ` <em>×${t.count}</em>` : ''}</span>`
+  ).join('');
+}
+
 /** 把 roleStats {'活动发起者':3, '嘉宾':1, '活动参与者':5} 渲染成 chip 行
  *  优先级：活动发起者 → 嘉宾 → 活动参与者 → 其他
  */
@@ -100,11 +108,13 @@ function renderList(city, members) {
         const job  = truncate(m.job || m.company, 30);
         const identityTags = (m.identity || []).slice(0, 3);
         const roleChips = renderRoleChips(m.roleStats);
+        const typeChips = renderTypeChips(m.topTypes);
         return `<a class="cm-card" href="/community/${escapeHtml(m.record_id)}">
   <div class="cm-card-ava">${ava ? `<img src="${ava}" alt="" loading="lazy">` : '<span>👤</span>'}</div>
   <div class="cm-card-name">${escapeHtml(name)}</div>
   ${identityTags.length ? `<div class="cm-card-tags">${identityTags.map(t => `<span class="cm-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
   ${roleChips ? `<div class="cm-card-roles">${roleChips}</div>` : ''}
+  ${typeChips ? `<div class="cm-card-types">${typeChips}</div>` : ''}
   ${job ? `<div class="cm-card-job">${escapeHtml(job)}</div>` : ''}
   ${hub ? `<div class="cm-card-meta">📍 ${escapeHtml(hub)}</div>` : ''}
   ${bio ? `<div class="cm-card-bio">${escapeHtml(bio)}</div>` : ''}
@@ -171,7 +181,7 @@ function renderList(city, members) {
 
 // ─────────── 详情页 ───────────
 
-function renderDetail(member, rsvps, fromActivityId) {
+function renderDetail(member, rsvps, fromActivityId, topTypes = []) {
   const name = displayName(member);
   const ava  = avatarUrl(member);
   const url  = `${SITE_URL}/community/${member.record_id}`;
@@ -237,6 +247,7 @@ function renderDetail(member, rsvps, fromActivityId) {
     ${hubName ? `<p class="cm-detail-hub">📍 ${escapeHtml(hubName)}${member.residentStatus ? ` · ${escapeHtml(member.residentStatus)}` : ''}</p>` : ''}
     ${member.mbti ? `<span class="cm-detail-mbti">${escapeHtml(member.mbti)}</span>` : ''}
     ${(member.identity && member.identity.length) ? `<div class="cm-detail-tags">${member.identity.map(t => `<span class="cm-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+    ${topTypes.length ? `<div class="cm-detail-types">${topTypes.map(t => `<span class="cm-type-chip">${escapeHtml(t.type)}${t.count > 1 ? ` <em>×${t.count}</em>` : ''}</span>`).join('')}</div>` : ''}
   </div>
 
   ${member.bio ? `<section class="event-section">
@@ -601,11 +612,13 @@ function cmRender() {
       : (inferred ? '🎯 ' + escapeHtml(inferred) + '（活动参与）' : '');
     const job = (m.job || m.company || '').slice(0, 40);
     const roleChips = renderRoleChipsClient(m.roleStats);
+    const typeChips = (m.topTypes || []).map(t => '<span class="cm-type-chip">' + escapeHtml(t.type) + (t.count > 1 ? ' <em>×' + t.count + '</em>' : '') + '</span>').join('');
     return \`<div class="cm-admin-item" data-rid="\${escapeHtml(m.record_id)}">
       <div class="cm-admin-item-main">
         <div class="cm-admin-item-name">\${escapeHtml(display)}\${m.hidden ? ' <span class="cm-hidden-tag">已隐藏</span>' : ''}</div>
         <div class="cm-admin-item-meta">\${meta}\${meta && job ? ' · ' : ''}\${escapeHtml(job)}</div>
         \${roleChips ? '<div class="cm-admin-item-roles">' + roleChips + '</div>' : ''}
+        \${typeChips ? '<div class="cm-admin-item-roles">' + typeChips + '</div>' : ''}
       </div>
       <button class="cm-admin-edit" onclick="cmStartEdit('\${escapeHtml(m.record_id)}')">编辑</button>
     </div>\`;
@@ -1068,8 +1081,19 @@ export default async function handler(req, res) {
       };
     });
 
+    // ta 的 top-3 活动类型（基于 RSVP × activity.types）
+    const typeCounts = new Map();
+    for (const r of rsvps) {
+      const a = actMap.get(r.activity_rec_id);
+      for (const t of (a?.types || [])) typeCounts.set(t, (typeCounts.get(t) || 0) + 1);
+    }
+    const topTypes = [...typeCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([type, count]) => ({ type, count }));
+
     res.setHeader('Cache-Control', EDGE_CACHE);
-    return res.status(200).send(renderDetail(stripPrivate(member), rsvpsEnriched, req.query.from));
+    return res.status(200).send(renderDetail(stripPrivate(member), rsvpsEnriched, req.query.from, topTypes));
   }
 
   // 3. 列表页

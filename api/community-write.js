@@ -25,6 +25,7 @@ import {
   deleteMember,
   inferMemberActivityCities,
   aggregateMemberRoles,
+  aggregateMemberTopTypes,
   matchSpeaker,
   autoCreateMember,
   splitSpeakerNames,
@@ -40,16 +41,18 @@ import { kvDel, isKvConfigured }                    from './_kv.js';
  * 服务端不做 city/hidden 过滤，客户端拿全集自己筛 → tab 切换瞬时
  */
 async function handleSearch(req, res) {
-  const [members, inferredMap, roleMap] = await Promise.all([
+  const [members, inferredMap, roleMap, typeMap] = await Promise.all([
     fetchAllMembers(),
     inferMemberActivityCities(),
     aggregateMemberRoles(),
+    aggregateMemberTopTypes(),
   ]);
 
   const enriched = members.map(m => ({
     ...m,
     inferredCities: [...(inferredMap.get(m.record_id) || [])],
     roleStats:      roleMap.get(m.record_id) || {},
+    topTypes:       typeMap.get(m.record_id) || [],
   }));
 
   return res.status(200).json({

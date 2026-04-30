@@ -225,6 +225,43 @@ export async function fetchMember(rec_id) {
 }
 
 /**
+ * 聚合每个成员的活动类型 top-3（按参与活动 join activity.types 累加频次）
+ * 飞书活动表「活动类型」未建字段时所有 activity.types 都是 []，结果 Map 全空
+ * 返回 Map<member_rec_id, [{ type, count }]>
+ */
+export async function aggregateMemberTopTypes() {
+  let rsvps = [], acts = [];
+  try {
+    [rsvps, acts] = await Promise.all([fetchAllRsvps(), fetchAllActivities()]);
+  } catch (err) {
+    console.warn('[aggregateMemberTopTypes] fetch failed:', err.message);
+    return new Map();
+  }
+
+  const actTypes = new Map(acts.map(a => [a.record_id, a.types || []]));
+  const counts   = new Map();   // rid → Map<type, n>
+
+  for (const r of rsvps) {
+    if (!r.member_rec_id) continue;
+    const types = actTypes.get(r.activity_rec_id);
+    if (!types || !types.length) continue;
+    if (!counts.has(r.member_rec_id)) counts.set(r.member_rec_id, new Map());
+    const inner = counts.get(r.member_rec_id);
+    for (const t of types) inner.set(t, (inner.get(t) || 0) + 1);
+  }
+
+  const result = new Map();
+  for (const [rid, inner] of counts) {
+    const sorted = [...inner.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([type, count]) => ({ type, count }));
+    if (sorted.length) result.set(rid, sorted);
+  }
+  return result;
+}
+
+/**
  * 聚合每个成员在 RSVP 里出现的角色 + 计数
  * 返回 Map<member_rec_id, { '活动发起者': N, '嘉宾': N, '活动参与者': N, ... }>
  *
@@ -327,10 +364,11 @@ export async function fetchMembersByCity(city, options = {}) {
     ]).catch(() => {});
   }
 
-  const [all, inferredMap, roleMap] = await Promise.all([
+  const [all, inferredMap, roleMap, typeMap] = await Promise.all([
     fetchAllMembers(),
     inferMemberActivityCities(),
     aggregateMemberRoles(),
+    aggregateMemberTopTypes(),
   ]);
 
   const filtered = all
@@ -341,7 +379,11 @@ export async function fetchMembersByCity(city, options = {}) {
       if (inf && inf.has(city)) return true;        // 2. 活动反推
       return false;
     })
-    .map(m => ({ ...m, roleStats: roleMap.get(m.record_id) || {} }));
+    .map(m => ({
+      ...m,
+      roleStats: roleMap.get(m.record_id) || {},
+      topTypes:  typeMap.get(m.record_id) || [],
+    }));
 
   if (isKvConfigured()) {
     try { await kvSet(cacheKey, JSON.stringify(filtered), KV_TTL_CITY); } catch (err) {

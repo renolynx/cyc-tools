@@ -44,6 +44,7 @@ function renderCard(a, isPast) {
       ${a.time ? `<span>⏰ ${escapeHtml(a.time)}</span>` : ''}
       ${a.loc  ? `<span>📍 ${escapeHtml(a.loc)}</span>`  : ''}
     </div>
+    ${a.types?.length ? `<div class="el-card-types">${a.types.slice(0,3).map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
     ${status}
   </div>
   <span class="el-card-arrow">›</span>

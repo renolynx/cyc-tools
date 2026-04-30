@@ -53,6 +53,13 @@ function getPoster(v) {
   return { file_token: f.file_token, name: f.name, url: f.url, type: f.type };
 }
 
+function getMultiSelect(v) {
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.map(it => typeof it === 'string' ? it : (it.text || it.name || '')).filter(Boolean);
+  if (typeof v === 'string') return [v];
+  return [];
+}
+
 function parseDesc(raw, activity) {
   if (!raw) return;
   const text = Array.isArray(raw) ? raw.map(s => s.text || '').join('') : String(raw);
@@ -85,6 +92,7 @@ export function parseRecord(record) {
     loc:    getText(f['地点']) || '',
     status: getSelect(f['目前状态']) || '',
     poster: getPoster(f['活动海报']),
+    types:  getMultiSelect(f['活动类型']),  // multi-select；飞书表里没建该字段时为空数组
     time: '', fee: '', signup: '', desc: '',
     flow: [], spk: [],
   };

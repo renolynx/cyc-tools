@@ -1815,6 +1815,46 @@ body.event-page {
 .cm-role-chip.role-attend  { background: rgba(28,61,46,0.10);  color: var(--green); }
 .cm-role-chip.role-other   { background: rgba(0,0,0,0.06);     color: var(--muted); }
 
+/* ── 活动类型 chip（成员卡 top-3 + 活动页）── */
+.cm-card-types {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  justify-content: center;
+  margin: 0 0 6px;
+}
+.cm-detail-types {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.event-types,
+.el-card-types {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin: 6px 0 12px;
+}
+.cm-type-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: linear-gradient(135deg, rgba(28,61,46,0.10), rgba(217,101,42,0.10));
+  color: var(--green);
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(28,61,46,0.18);
+  white-space: nowrap;
+}
+.cm-type-chip em {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 2px;
+}
+.cm-detail-types .cm-type-chip,
+.event-types .cm-type-chip {
+  font-size: 12px;
+  padding: 4px 11px;
+}
+
 /* 详情页滑入动画（让导航感觉像 drawer） */
 .cm-detail {
   animation: cmDetailIn 0.32s cubic-bezier(0.32,0.72,0,1);

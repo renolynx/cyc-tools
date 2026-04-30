@@ -158,6 +158,8 @@ ${jsonLd}
 
   <h1 class="event-title">${title}</h1>
 
+  ${act.types?.length ? `<div class="event-types">${act.types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+
   <dl class="event-info">
     ${act.loc    ? `<div class="event-info-row"><dt>📍 地点</dt><dd>${escapeHtml(act.loc)}</dd></div>` : ''}
     ${act.fee    ? `<div class="event-info-row"><dt>💰 费用</dt><dd>${escapeHtml(act.fee)}</dd></div>` : ''}
