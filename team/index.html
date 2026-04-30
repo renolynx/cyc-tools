@@ -469,6 +469,11 @@ function renderWeekStrip() {
 
   const strip = document.getElementById('wkStrip');
   strip.innerHTML = '';
+  // 占位空格——和下方 sched-table-row 的 60px 标签列对齐，
+  // 这样上面的「周几」头才能和下面的排班单元格一一对上
+  const spacer = document.createElement('div');
+  spacer.className = 'day-spacer';
+  strip.appendChild(spacer);
   for (let i = 0; i < 7; i++) {
     const d = new Date(s); d.setDate(s.getDate() + i);
     const isToday = d.getTime() === today.getTime();
@@ -1125,7 +1130,10 @@ function renderPicker() {
 /** 选中某个成员（或传空字符串清除关联）→ 写回 data + 重新渲染详情 */
 function pickerSelect(recId) {
   if (!_pickerCtx) return;
-  const item = getItem(_pickerCtx.path, _pickerCtx.idx);
+  // ⚠️ 必须先把 ctx 拷到本地变量再 closePicker —— closePicker 会把 _pickerCtx 置 null，
+  //   不拷的话下面 openDetail 拿不到 path/idx，整个刷新链就断了（之前的 bug）
+  const ctx = _pickerCtx;
+  const item = getItem(ctx.path, ctx.idx);
   if (!item) return;
   item.member_rec_id = recId || '';
   // 关联成员后，把成员的 name 同步到 item.name（保险，反正 view 会优先读 member.name）
@@ -1135,8 +1143,8 @@ function pickerSelect(recId) {
   }
   saveData();
   closePicker();
-  // 重新打开当前条目的编辑卡（让用户立刻看到关联结果）
-  openDetail(_pickerCtx.path, _pickerCtx.idx);
+  render();                          // 顺手刷新底层卡片，立刻能看到名字变化
+  openDetail(ctx.path, ctx.idx);     // 重新渲染编辑卡，关联区块切到「已关联」状态
 }
 
 /** 简单 HTML escape，避免成员姓名 / bio 含 < > & 等字符破坏渲染 */
