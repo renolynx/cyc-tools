@@ -93,6 +93,44 @@ export async function fetchRsvpsForActivity(activity_rec_id) {
   return filtered;
 }
 
+/** 拉某成员所有 RSVP 记录（成员主页用）：含已发起 / 嘉宾 / 参与
+ *  缓存 10 min，按报名时间倒序
+ */
+export async function fetchRsvpsByMember(member_rec_id) {
+  if (!member_rec_id) return [];
+  const cacheKey = 'rsvp:member:' + member_rec_id;
+  if (isKvConfigured()) {
+    try {
+      const cached = await kvGet(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+  }
+
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records/search?page_size=500`,
+    {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({}),
+    }
+  );
+  const data = await res.json();
+  if (data.code !== 0) {
+    console.error('[fetchRsvpsByMember]', data.msg);
+    return [];
+  }
+
+  const all = (data.data?.items || []).map(parseRsvp);
+  const filtered = all.filter(r => r.member_rec_id === member_rec_id);
+  filtered.sort((a, b) => (b.registered_at || 0) - (a.registered_at || 0));
+
+  if (isKvConfigured()) {
+    try { await kvSet(cacheKey, JSON.stringify(filtered), 600); } catch {}
+  }
+  return filtered;
+}
+
 /** 同活动同微信号去重检查
  * 双层 + self-heal：
  *   1. KV mark（强一致，规避飞书 search 索引延迟）
