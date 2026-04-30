@@ -1736,3 +1736,283 @@ body.event-page {
   from { transform: translateY(20px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
+/* ═══════════════════════════════════════════════
+ * 成员管理后台 /community/admin
+ * ═══════════════════════════════════════════════ */
+
+.cm-admin-main {
+  position: relative; z-index: 1;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px env(safe-area-inset-bottom);
+}
+
+/* 登录卡 */
+.cm-login {
+  max-width: 380px;
+  margin: 60px auto;
+  padding: 32px 28px 28px;
+  background: var(--card);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+.cm-login-icon { font-size: 44px; margin-bottom: 12px; }
+.cm-login h2 {
+  font-size: 22px; font-weight: 800;
+  color: var(--green); letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.cm-login-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.cm-login input {
+  margin-bottom: 8px;
+  text-align: center;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  font-size: 16px;
+}
+.cm-login-err {
+  font-size: 12px; color: #c0392b;
+  min-height: 16px; margin-bottom: 8px;
+}
+.cm-login-btn {
+  width: 100%; padding: 12px;
+  background: var(--green); color: #fff;
+  border: none; border-radius: var(--r-sm);
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 3px 12px rgba(28,61,46,0.22);
+  transition: opacity 0.15s, transform 0.1s;
+}
+.cm-login-btn:active { transform: scale(0.98); opacity: 0.92; }
+.cm-login-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* 主操作栏 */
+.cm-admin-bar {
+  display: flex; gap: 8px;
+  margin-bottom: 12px;
+}
+.cm-admin-search {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--stroke);
+  border-radius: 100px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.85);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.cm-admin-search:focus { border-color: var(--green); }
+.cm-admin-add {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(217,101,42,0.25);
+  white-space: nowrap;
+}
+.cm-admin-add:active { transform: scale(0.97); }
+
+/* 城市/隐藏 tabs（复用 .cm-tabs 风格但放在 admin 上下文里） */
+.cm-admin-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 100px;
+  padding: 3px;
+  margin-bottom: 10px;
+  width: fit-content;
+}
+.cm-admin-tabs .cm-tab {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.cm-admin-tabs .cm-tab.active {
+  background: #fff; color: var(--green);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+
+.cm-admin-count {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+/* 成员列表 row */
+.cm-admin-list { display: flex; flex-direction: column; gap: 6px; }
+.cm-admin-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+.cm-admin-item:hover { background: rgba(255,255,255,0.85); }
+.cm-admin-item-main { flex: 1; min-width: 0; }
+.cm-admin-item-name {
+  font-size: 14px; font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+.cm-admin-item-meta {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cm-hidden-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 100px;
+  background: rgba(0,0,0,0.06);
+  color: var(--muted);
+}
+.cm-admin-edit {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  background: rgba(28,61,46,0.08);
+  color: var(--green);
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cm-admin-edit:active { transform: scale(0.96); background: rgba(28,61,46,0.16); }
+.cm-admin-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* 编辑/新建 modal */
+.cm-edit-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s;
+}
+.cm-edit-overlay.open { opacity: 1; pointer-events: all; }
+.cm-edit-modal {
+  width: 100%; max-width: 600px;
+  background: var(--sand);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 22px 28px;
+  transform: translateY(40px);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.cm-edit-overlay.open .cm-edit-modal { transform: translateY(0); }
+.cm-edit-title {
+  font-size: 18px; font-weight: 800;
+  color: var(--green);
+  margin-bottom: 16px;
+}
+.cm-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+}
+.cm-edit-field { display: flex; flex-direction: column; }
+.cm-edit-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+.cm-edit-field input,
+.cm-edit-field textarea {
+  padding: 9px 12px;
+  border: 1.5px solid var(--stroke);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: rgba(255,255,255,0.85);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cm-edit-field input:focus,
+.cm-edit-field textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(28,61,46,0.10);
+}
+.cm-edit-field textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.55;
+}
+.cm-edit-wide { grid-column: span 2; }
+.cm-edit-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cm-edit-checkbox label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.cm-edit-checkbox input { width: 16px; height: 16px; accent-color: var(--green); }
+.cm-edit-tip {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 14px;
+  line-height: 1.55;
+}
+.cm-edit-err {
+  font-size: 12px;
+  color: #c0392b;
+  min-height: 16px;
+  margin-top: 8px;
+}
+.cm-edit-actions {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .cm-edit-grid { grid-template-columns: 1fr; }
+  .cm-edit-wide { grid-column: span 1; }
+}

@@ -272,27 +272,333 @@ function renderErrorPage({ icon, title, titleEn, msg, msgEn }) {
 </html>`;
 }
 
-// ─────────── Admin placeholder（Phase E 实现） ───────────
+// ─────────── Admin SPA shell ───────────
 
-function renderAdminPlaceholder() {
+function renderAdminApp() {
   return `<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>管理后台（建设中） · ${SITE_NAME}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0">
+<title>成员管理 · ${SITE_NAME}</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="event-page">
-<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-<main class="event-detail event-404">
-  <div class="event-404-icon">🛠️</div>
-  <h1>成员管理后台</h1>
-  <p class="event-404-en">Coming soon</p>
-  <p>正在建设中，搜索 / 添加 / 编辑功能在 Phase E。</p>
-  <a href="/community" class="event-404-link">查看全部成员 →</a>
+<body class="event-page cm-admin-page">
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<header class="event-topbar">
+  <a href="/community" class="event-back">‹ 公开列表</a>
+  <span class="event-site">成员管理</span>
+</header>
+
+<main class="cm-admin-main">
+  <!-- 登录卡 -->
+  <div class="cm-login" id="cmLoginCard">
+    <div class="cm-login-icon">🔐</div>
+    <h2>成员管理后台</h2>
+    <p class="cm-login-sub">输入活动同步密码</p>
+    <input type="text" id="cmPwd" class="rsvp-input pwd-mask" placeholder="•••••" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="cm-login-err" id="cmLoginErr"></p>
+    <button class="cm-login-btn" id="cmLoginBtn" onclick="cmLogin()">进入</button>
+  </div>
+
+  <!-- 主界面 -->
+  <div class="cm-admin-app" id="cmAdminApp" style="display:none">
+    <div class="cm-admin-bar">
+      <input type="text" id="cmSearch" class="cm-admin-search" placeholder="搜索 姓名 / 微信号 / 公司 / 兴趣..." oninput="cmDebouncedSearch()">
+      <button class="cm-admin-add" onclick="cmStartCreate()">＋ 新成员</button>
+    </div>
+
+    <div class="cm-admin-tabs" id="cmAdminTabs">
+      <button class="cm-tab active" data-city="all" onclick="cmSetTab('all')">全部</button>
+      <button class="cm-tab" data-city="大理" onclick="cmSetTab('大理')">大理</button>
+      <button class="cm-tab" data-city="上海" onclick="cmSetTab('上海')">上海</button>
+      <button class="cm-tab" data-city="hidden" onclick="cmSetTab('hidden')">已隐藏</button>
+    </div>
+
+    <p class="cm-admin-count" id="cmAdminCount">加载中...</p>
+    <div class="cm-admin-list" id="cmAdminList"></div>
+  </div>
 </main>
+
+<!-- 编辑/新建 modal -->
+<div class="cm-edit-overlay" id="cmEditOverlay" onclick="if(event.target.id==='cmEditOverlay')cmCloseEdit()">
+  <div class="cm-edit-modal">
+    <div class="rsvp-modal-handle"></div>
+    <div class="cm-edit-title" id="cmEditTitle">编辑成员</div>
+
+    <div class="cm-edit-grid">
+      <div class="cm-edit-field">
+        <label>姓名 <span style="color:#c0392b">*</span></label>
+        <input id="cmF_name" maxlength="40" type="text">
+      </div>
+      <div class="cm-edit-field">
+        <label>称呼</label>
+        <input id="cmF_nickname" maxlength="40" type="text">
+      </div>
+      <div class="cm-edit-field cm-edit-wide">
+        <label>个人介绍</label>
+        <textarea id="cmF_bio" maxlength="500" rows="3"></textarea>
+      </div>
+      <div class="cm-edit-field">
+        <label>职业描述</label>
+        <input id="cmF_job" maxlength="80" type="text">
+      </div>
+      <div class="cm-edit-field">
+        <label>公司 / 工作机构</label>
+        <input id="cmF_company" maxlength="80" type="text">
+      </div>
+      <div class="cm-edit-field cm-edit-wide">
+        <label>愿意做的分享</label>
+        <input id="cmF_willShare" maxlength="200" type="text">
+      </div>
+      <div class="cm-edit-field cm-edit-wide">
+        <label>感兴趣的活动</label>
+        <input id="cmF_interests" maxlength="200" type="text">
+      </div>
+      <div class="cm-edit-field">
+        <label>关注的话题</label>
+        <input id="cmF_topics" maxlength="200" type="text">
+      </div>
+      <div class="cm-edit-field">
+        <label>MBTI</label>
+        <input id="cmF_mbti" maxlength="8" type="text" placeholder="如 INFP">
+      </div>
+      <div class="cm-edit-field">
+        <label>微信号</label>
+        <input id="cmF_wechat" maxlength="40" type="text">
+      </div>
+      <div class="cm-edit-field">
+        <label>据点入住状态</label>
+        <input id="cmF_residentStatus" maxlength="20" type="text" placeholder="如：在住 / 已离开">
+      </div>
+      <div class="cm-edit-field cm-edit-wide cm-edit-checkbox">
+        <label>
+          <input id="cmF_hidden" type="checkbox">
+          <span>在公开成员列表中隐藏 ta（默认不隐藏）</span>
+        </label>
+      </div>
+    </div>
+
+    <p class="cm-edit-tip">完整 41 字段（如电话/学校/性别等）请去飞书后台编辑。</p>
+    <p class="cm-edit-err" id="cmEditErr"></p>
+
+    <div class="cm-edit-actions">
+      <button class="rsvp-cancel" onclick="cmCloseEdit()">取消</button>
+      <button class="rsvp-confirm" id="cmEditSubmit" onclick="cmSubmitEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _adminPwd = '';
+let _editingId = null;
+let _curTab = 'all';
+let _searchTimer = null;
+
+const $ = id => document.getElementById(id);
+const escapeHtml = s => (s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'));
+
+// ─────────── 登录 ───────────
+
+const SAVED_PWD_KEY = 'cyc_admin_pwd';
+
+(function autoLogin() {
+  try {
+    const p = sessionStorage.getItem(SAVED_PWD_KEY);
+    if (p) { _adminPwd = p; setTimeout(() => cmLogin(true), 50); }
+  } catch {}
+})();
+
+async function cmLogin(silent) {
+  const pwd = silent ? _adminPwd : $('cmPwd').value.trim();
+  if (!pwd) { $('cmLoginErr').textContent = '请输入密码'; return; }
+  if (!silent) { $('cmLoginBtn').disabled = true; $('cmLoginBtn').textContent = '验证中...'; }
+
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'search', password: pwd, query: '', cityFilter: 'all' }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (silent) { try { sessionStorage.removeItem(SAVED_PWD_KEY); } catch {} ; return; }
+      $('cmLoginErr').textContent = data.error || '密码错误';
+      $('cmLoginBtn').disabled = false; $('cmLoginBtn').textContent = '进入';
+      return;
+    }
+    _adminPwd = pwd;
+    try { sessionStorage.setItem(SAVED_PWD_KEY, pwd); } catch {}
+    $('cmLoginCard').style.display = 'none';
+    $('cmAdminApp').style.display = 'block';
+    cmRenderList(data);
+  } catch (err) {
+    $('cmLoginErr').textContent = '网络错误：' + err.message;
+    $('cmLoginBtn').disabled = false; $('cmLoginBtn').textContent = '进入';
+  }
+}
+
+$('cmPwd').addEventListener('keydown', e => { if (e.key === 'Enter') cmLogin(); });
+
+// ─────────── 搜索 / 列表 ───────────
+
+function cmDebouncedSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(cmDoSearch, 300);
+}
+
+async function cmDoSearch() {
+  const q = $('cmSearch').value.trim();
+  $('cmAdminCount').textContent = '加载中...';
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'search', password: _adminPwd, query: q, cityFilter: _curTab }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    cmRenderList(data);
+  } catch (err) {
+    $('cmAdminCount').textContent = '加载失败：' + err.message;
+  }
+}
+
+function cmSetTab(city) {
+  _curTab = city;
+  document.querySelectorAll('#cmAdminTabs .cm-tab').forEach(b => b.classList.toggle('active', b.dataset.city === city));
+  cmDoSearch();
+}
+
+function cmRenderList(data) {
+  const members = data.members || [];
+  $('cmAdminCount').textContent = data.total > data.count
+    ? \`显示 \${data.count} / 共 \${data.total} 位\`
+    : \`共 \${data.count} 位\`;
+
+  if (!members.length) {
+    $('cmAdminList').innerHTML = '<div class="cm-admin-empty">没有匹配的成员</div>';
+    return;
+  }
+
+  $('cmAdminList').innerHTML = members.map(m => {
+    const display = (m.nickname || m.name || '未署名').trim();
+    const hub = (m.hubs && m.hubs[0] && m.hubs[0].name) || '';
+    const job = (m.job || m.company || '').slice(0, 40);
+    return \`<div class="cm-admin-item" data-rid="\${escapeHtml(m.record_id)}">
+      <div class="cm-admin-item-main">
+        <div class="cm-admin-item-name">\${escapeHtml(display)}\${m.hidden ? ' <span class="cm-hidden-tag">已隐藏</span>' : ''}</div>
+        <div class="cm-admin-item-meta">\${hub ? '📍 ' + escapeHtml(hub) : ''}\${hub && job ? ' · ' : ''}\${escapeHtml(job)}</div>
+      </div>
+      <button class="cm-admin-edit" onclick="cmStartEdit('\${escapeHtml(m.record_id)}')">编辑</button>
+    </div>\`;
+  }).join('');
+}
+
+// ─────────── 创建 / 编辑 ───────────
+
+function cmStartCreate() {
+  _editingId = null;
+  $('cmEditTitle').textContent = '＋ 新建成员';
+  ['name','nickname','bio','job','company','willShare','interests','topics','mbti','wechat','residentStatus'].forEach(k => $('cmF_'+k).value = '');
+  $('cmF_hidden').checked = false;
+  $('cmEditErr').textContent = '';
+  $('cmEditOverlay').classList.add('open');
+  setTimeout(() => $('cmF_name').focus(), 200);
+}
+
+async function cmStartEdit(rid) {
+  $('cmEditErr').textContent = '加载中...';
+  $('cmEditOverlay').classList.add('open');
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get', password: _adminPwd, record_id: rid }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    const m = data.member;
+    _editingId = rid;
+    $('cmEditTitle').textContent = '编辑：' + (m.nickname || m.name || '');
+    $('cmF_name').value = m.name || '';
+    $('cmF_nickname').value = m.nickname || '';
+    $('cmF_bio').value = m.bio || '';
+    $('cmF_job').value = m.job || '';
+    $('cmF_company').value = m.company || '';
+    $('cmF_willShare').value = m.willShare || '';
+    $('cmF_interests').value = m.interests || '';
+    $('cmF_topics').value = m.topics || '';
+    $('cmF_mbti').value = m.mbti || '';
+    $('cmF_wechat').value = m._wechat || '';
+    $('cmF_residentStatus').value = m.residentStatus || '';
+    $('cmF_hidden').checked = !!m.hidden;
+    $('cmEditErr').textContent = '';
+    setTimeout(() => $('cmF_name').focus(), 50);
+  } catch (err) {
+    $('cmEditErr').textContent = '加载失败：' + err.message;
+  }
+}
+
+function cmCloseEdit() {
+  $('cmEditOverlay').classList.remove('open');
+  _editingId = null;
+}
+
+async function cmSubmitEdit() {
+  const data = {
+    name: $('cmF_name').value.trim(),
+    nickname: $('cmF_nickname').value.trim(),
+    bio: $('cmF_bio').value.trim(),
+    job: $('cmF_job').value.trim(),
+    company: $('cmF_company').value.trim(),
+    willShare: $('cmF_willShare').value.trim(),
+    interests: $('cmF_interests').value.trim(),
+    topics: $('cmF_topics').value.trim(),
+    mbti: $('cmF_mbti').value.trim(),
+    wechat: $('cmF_wechat').value.trim(),
+    residentStatus: $('cmF_residentStatus').value.trim(),
+    hidden: $('cmF_hidden').checked,
+  };
+  if (!data.name) { $('cmEditErr').textContent = '请填写姓名'; return; }
+
+  const btn = $('cmEditSubmit');
+  btn.disabled = true; btn.textContent = '保存中...';
+
+  const action = _editingId ? 'update' : 'create';
+  const body = { action, password: _adminPwd, data };
+  if (_editingId) body.record_id = _editingId;
+
+  try {
+    const res = await fetch('/api/community-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error);
+    $('cmEditErr').textContent = '✓ 已保存';
+    setTimeout(() => {
+      cmCloseEdit();
+      cmDoSearch();
+      btn.disabled = false; btn.textContent = '保存';
+    }, 800);
+  } catch (err) {
+    $('cmEditErr').textContent = '保存失败：' + err.message;
+    btn.disabled = false; btn.textContent = '保存';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('cmEditOverlay').classList.contains('open')) cmCloseEdit();
+});
+</script>
+
 </body>
 </html>`;
 }
@@ -311,9 +617,9 @@ export default async function handler(req, res) {
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-  // 1. Admin（Phase E 才做）
+  // 1. Admin SPA
   if (mode === 'admin') {
-    return res.status(200).send(renderAdminPlaceholder());
+    return res.status(200).send(renderAdminApp());
   }
 
   // 2. 详情页
