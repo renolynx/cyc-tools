@@ -2080,6 +2080,63 @@ body.event-page {
   cursor: pointer;
 }
 .cm-edit-checkbox input { width: 16px; height: 16px; accent-color: var(--green); }
+
+/* ── multi-select chip 编辑器（社群身份）── */
+.cm-edit-hint {
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cm-multi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1.5px solid var(--stroke);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.85);
+  min-height: 42px;
+}
+.cm-multi-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cm-multi-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: rgba(0,0,0,0.05);
+  color: var(--muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cm-multi-chip:hover { background: rgba(28,61,46,0.08); }
+.cm-multi-chip.is-on {
+  background: rgba(28,61,46,0.12);
+  color: var(--green);
+  border-color: rgba(28,61,46,0.30);
+}
+.cm-multi-input {
+  flex: 1;
+  min-width: 100px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  padding: 4px 6px;
+}
+.cm-multi-input::placeholder { color: var(--muted); }
 .cm-edit-tip {
   font-size: 11px;
   color: var(--muted);

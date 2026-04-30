@@ -559,6 +559,7 @@ export async function writeMember(memberData, recordId) {
   if (memberData.interests !== undefined)  fields['感兴趣的活动'] = memberData.interests;
   if (memberData.topics !== undefined)     fields['关注的话题'] = memberData.topics;
   if (memberData.mbti !== undefined)       fields['MBTI'] = memberData.mbti;
+  if (memberData.identity !== undefined)   fields['社群身份'] = Array.isArray(memberData.identity) ? memberData.identity : [];
 
   const token = await getAccessToken();
   const url = recordId

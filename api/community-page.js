@@ -411,6 +411,13 @@ function renderAdminApp() {
         <label>据点入住状态</label>
         <input id="cmF_residentStatus" maxlength="20" type="text" placeholder="如：在住 / 已离开">
       </div>
+      <div class="cm-edit-field cm-edit-wide">
+        <label>社群身份 <span class="cm-edit-hint">点击切换；输入回车添加新值</span></label>
+        <div class="cm-multi" id="cmF_identity_wrap">
+          <div class="cm-multi-chips" id="cmF_identity_chips"></div>
+          <input class="cm-multi-input" id="cmF_identity_input" type="text" maxlength="20" placeholder="加新身份…" onkeydown="cmIdentityKeydown(event)">
+        </div>
+      </div>
       <div class="cm-edit-field cm-edit-wide cm-edit-checkbox">
         <label>
           <input id="cmF_hidden" type="checkbox">
@@ -475,6 +482,7 @@ let _editingId = null;
 let _curTab = 'all';
 let _searchTimer = null;
 let _allMembers = [];   // 登录时一次拉全，含 hidden 含 inferredCities
+let _identitySelected = [];   // 当前编辑的成员的「社群身份」选中状态（multi-select）
 
 const $ = id => document.getElementById(id);
 const escapeHtml = s => (s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'));
@@ -635,9 +643,55 @@ function cmStartCreate() {
   $('cmEditRsvps').style.display = 'none';  // 新建无 RSVP 可看
   ['name','nickname','bio','job','company','willShare','interests','topics','mbti','wechat','residentStatus'].forEach(k => $('cmF_'+k).value = '');
   $('cmF_hidden').checked = false;
+  _identitySelected = [];
+  cmRenderIdentity();
   $('cmEditErr').textContent = '';
   $('cmEditOverlay').classList.add('open');
   setTimeout(() => $('cmF_name').focus(), 200);
+}
+
+// ─────────── 「社群身份」multi-select ───────────
+
+/** 列出所有可选选项：当前选中 + 全集 union（其他成员用过的） — 排除「游客」 */
+function cmIdentityKnownOptions() {
+  const seen = new Set();
+  for (const m of _allMembers) {
+    for (const v of (m.identity || [])) {
+      if (v && v !== '游客') seen.add(v);
+    }
+  }
+  for (const v of _identitySelected) seen.add(v);   // 当前编辑也算
+  return [...seen].sort();
+}
+
+function cmRenderIdentity() {
+  const chips = $('cmF_identity_chips');
+  const known = cmIdentityKnownOptions();
+  const selectedSet = new Set(_identitySelected);
+  chips.innerHTML = known.map(v => {
+    const sel = selectedSet.has(v);
+    return '<button type="button" class="cm-multi-chip' + (sel ? ' is-on' : '') + '" data-val="' + escapeHtml(v) + '" onclick="cmIdentityToggle(this.dataset.val)">' + escapeHtml(v) + '</button>';
+  }).join('');
+}
+
+function cmIdentityToggle(v) {
+  if (_identitySelected.includes(v)) {
+    _identitySelected = _identitySelected.filter(x => x !== v);
+  } else {
+    _identitySelected = [..._identitySelected, v];
+  }
+  cmRenderIdentity();
+}
+
+function cmIdentityKeydown(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const v = e.target.value.trim();
+  if (!v) return;
+  if (v === '游客') { e.target.value = ''; return; }   // 不让加回「游客」
+  if (!_identitySelected.includes(v)) _identitySelected.push(v);
+  e.target.value = '';
+  cmRenderIdentity();
 }
 
 async function cmStartEdit(rid) {
@@ -667,6 +721,8 @@ async function cmStartEdit(rid) {
     $('cmF_wechat').value = m._wechat || '';
     $('cmF_residentStatus').value = m.residentStatus || '';
     $('cmF_hidden').checked = !!m.hidden;
+    _identitySelected = Array.isArray(m.identity) ? [...m.identity] : [];
+    cmRenderIdentity();
     $('cmEditErr').textContent = '';
     cmRenderEditRsvps(data.rsvps || []);
     setTimeout(() => $('cmF_name').focus(), 50);
@@ -730,6 +786,7 @@ async function cmSubmitEdit() {
     mbti: $('cmF_mbti').value.trim(),
     wechat: $('cmF_wechat').value.trim(),
     residentStatus: $('cmF_residentStatus').value.trim(),
+    identity: [..._identitySelected],
     hidden: $('cmF_hidden').checked,
   };
   if (!data.name) { $('cmEditErr').textContent = '请填写姓名'; return; }
