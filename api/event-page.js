@@ -7,6 +7,7 @@
 
 import { applyCors, checkFeishuEnv } from './_feishu.js';
 import { fetchActivity, formatCnDate, todayBJ } from './_activity.js';
+import { fetchRsvpsForActivity } from './_rsvp.js';
 import { kvGet, kvSet, isKvConfigured } from './_kv.js';
 
 const CACHE_TTL_SEC = 600;     // KV 10 分钟
@@ -75,7 +76,7 @@ function buildJsonLd(act, ogImage, url, isPast) {
   return JSON.stringify(ld);
 }
 
-function renderEventDetail(act) {
+function renderEventDetail(act, rsvps = []) {
   const title    = escapeHtml(act.title || '未命名活动');
   const descRaw  = act.desc || '';
   const descShort = escapeHtml(descRaw.replace(/\n/g, ' ').slice(0, 100));
@@ -86,6 +87,11 @@ function renderEventDetail(act) {
   const isPast   = act.date && act.date < todayBJ();
   const dateStr = formatCnDate(act.date);
   const jsonLd   = buildJsonLd(act, ogImage, url, isPast);
+
+  // RSVP 拆 hosts / attendees
+  const rsvpHosts     = rsvps.filter(r => r.roles.includes('活动发起者') || r.roles.includes('嘉宾'));
+  const rsvpAttendees = rsvps.filter(r => r.roles.includes('活动参与者'));
+  const rsvpTitleJson = JSON.stringify(act.title || '');
 
   return `<!DOCTYPE html>
 <html lang="zh">
@@ -159,16 +165,112 @@ ${jsonLd}
     <ul class="event-flow">${act.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
   </section>` : ''}
 
-  ${act.spk?.length ? `<section class="event-section">
+  ${(rsvpHosts.length || act.spk?.length) ? `<section class="event-section">
     <h2>带领人 / 嘉宾</h2>
-    <div class="event-spk">${act.spk.map(s => `<div class="event-spk-row"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</div>`).join('')}</div>
+    <div class="event-spk">${
+      rsvpHosts.length
+        ? rsvpHosts.map(h => `<div class="event-spk-row">${
+            h.member_rec_id
+              ? `<a href="/community/${escapeHtml(h.member_rec_id)}" class="event-spk-link"><strong>${escapeHtml(h.name)}</strong></a>`
+              : `<strong>${escapeHtml(h.name)}</strong>`
+          }${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</div>`).join('')
+        : act.spk.map(s => `<div class="event-spk-row"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</div>`).join('')
+    }</div>
   </section>` : ''}
+
+  ${!isPast ? `<section class="event-section event-rsvp-section">
+    <h2>报名情况</h2>
+    ${rsvpAttendees.length ? `
+      <p class="event-rsvp-count">已 <strong>${rsvpAttendees.length}</strong> 位伙伴报名</p>
+      <div class="event-rsvp-list">
+        ${rsvpAttendees.slice(0, 30).map(a => `<div class="event-rsvp-chip${a.bio ? ' has-bio' : ''}" ${a.bio ? `onclick="this.classList.toggle('expanded')"` : ''}>
+          <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
+          ${a.bio ? `<div class="event-rsvp-chip-bio">${escapeHtml(a.bio)}</div>` : ''}
+        </div>`).join('')}
+        ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
+      </div>
+    ` : `<p class="event-rsvp-empty">还没有伙伴报名 · 你来当第一个 →</p>`}
+    <button class="event-rsvp-btn" onclick="openRsvpModal()">📝 我要参加</button>
+  </section>` : (rsvpAttendees.length ? `<section class="event-section">
+    <h2>当时参加的伙伴</h2>
+    <div class="event-rsvp-list">
+      ${rsvpAttendees.map(a => `<div class="event-rsvp-chip is-past">${escapeHtml(a.name)}</div>`).join('')}
+    </div>
+  </section>` : '')}
 </main>
 
 <footer class="event-footer">
   <p class="event-footer-tagline">链接每一座孤岛</p>
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
+
+${!isPast ? `<!-- RSVP modal -->
+<div class="rsvp-modal-overlay" id="rsvpModal" onclick="if(event.target.id==='rsvpModal')closeRsvpModal()">
+  <div class="rsvp-modal">
+    <div class="rsvp-modal-handle"></div>
+    <div class="rsvp-modal-title">📝 报名活动</div>
+    <p class="rsvp-modal-sub">${title}</p>
+    <form onsubmit="event.preventDefault();submitRsvp()">
+      <label class="rsvp-label">姓名 <span class="rsvp-required">*</span></label>
+      <input class="rsvp-input" id="rsvpName" maxlength="20" autocomplete="name" required>
+
+      <label class="rsvp-label">微信号 <span class="rsvp-required">*</span> <span class="rsvp-hint">用于活动通知，不会公开显示</span></label>
+      <input class="rsvp-input" id="rsvpWechat" maxlength="30" autocomplete="off" required>
+
+      <label class="rsvp-label">个人简介 <span class="rsvp-hint">选填，限 200 字</span></label>
+      <textarea class="rsvp-input rsvp-textarea" id="rsvpBio" maxlength="200" rows="3"></textarea>
+
+      <div class="rsvp-err" id="rsvpErr"></div>
+
+      <div class="rsvp-actions">
+        <button type="button" class="rsvp-cancel" onclick="closeRsvpModal()">取消</button>
+        <button type="submit" class="rsvp-confirm" id="rsvpSubmit">确认报名</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const ACT_REC_ID = ${JSON.stringify(act.record_id)};
+const ACT_TITLE  = ${rsvpTitleJson};
+
+function openRsvpModal()  { document.getElementById('rsvpModal').classList.add('open'); setTimeout(() => document.getElementById('rsvpName').focus(), 200); }
+function closeRsvpModal() { document.getElementById('rsvpModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRsvpModal(); });
+
+async function submitRsvp() {
+  const name   = document.getElementById('rsvpName').value.trim();
+  const wechat = document.getElementById('rsvpWechat').value.trim();
+  const bio    = document.getElementById('rsvpBio').value.trim();
+  const errEl  = document.getElementById('rsvpErr');
+  const btn    = document.getElementById('rsvpSubmit');
+
+  errEl.textContent = ''; errEl.classList.remove('ok');
+  if (!name)   { errEl.textContent = '请填写姓名'; return; }
+  if (!wechat) { errEl.textContent = '请填写微信号'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  try {
+    const res = await fetch('/api/rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity_rec_id: ACT_REC_ID, activity_title: ACT_TITLE, name, wechat, bio }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '报名失败');
+
+    errEl.classList.add('ok');
+    errEl.textContent = data.already_registered ? '✓ 你已经报名过这个活动' : '✓ 报名成功！我们会通过微信联系你';
+    btn.textContent = '已成功';
+    setTimeout(() => { closeRsvpModal(); location.reload(); }, 1600);
+  } catch (err) {
+    errEl.textContent = err.message;
+    btn.disabled = false;
+    btn.textContent = '确认报名';
+  }
+}
+</script>` : ''}
 
 </body>
 </html>`;
@@ -270,8 +372,16 @@ export default async function handler(req, res) {
     return res.status(404).send(render404());
   }
 
-  // 4. 渲染
+  // 4. 拉 RSVP（失败不阻塞主渲染）
+  let rsvps = [];
+  try {
+    rsvps = await fetchRsvpsForActivity(id);
+  } catch (err) {
+    console.error('[event-page] rsvp fetch failed:', err.message);
+  }
+
+  // 5. 渲染
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', EDGE_CACHE);
-  return res.status(200).send(renderEventDetail(act));
+  return res.status(200).send(renderEventDetail(act, rsvps));
 }

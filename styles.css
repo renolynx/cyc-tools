@@ -1172,3 +1172,240 @@ body.event-page {
   letter-spacing: 0.02em;
 }
 .el-about-link a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════
+ * RSVP 报名 UI（活动详情页）
+ * ═══════════════════════════════════════════════ */
+
+/* 嘉宾名字带成员链接时 */
+.event-spk-link {
+  color: var(--green);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(28,61,46,0.35);
+  transition: border-color 0.15s, color 0.15s;
+}
+.event-spk-link:hover {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+/* 报名情况 section */
+.event-rsvp-section { /* 跟其他 .event-section 一致 */ }
+.event-rsvp-count {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.event-rsvp-count strong {
+  color: var(--green);
+  font-weight: 700;
+}
+.event-rsvp-empty {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 14px 0;
+  font-style: italic;
+}
+
+/* 报名 chip 列表 */
+.event-rsvp-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 14px;
+}
+.event-rsvp-chip {
+  background: rgba(28,61,46,0.05);
+  border: 1px solid var(--stroke);
+  border-radius: 100px;
+  padding: 6px 12px;
+  font-size: 13px; color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s;
+}
+.event-rsvp-chip.has-bio {
+  cursor: pointer;
+  border-color: rgba(28,61,46,0.20);
+  position: relative;
+}
+.event-rsvp-chip.has-bio::after {
+  content: '›';
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  display: inline-block;
+  transition: transform 0.18s;
+}
+.event-rsvp-chip.has-bio.expanded::after {
+  transform: rotate(90deg);
+}
+.event-rsvp-chip.has-bio:active { transform: scale(0.97); background: rgba(28,61,46,0.10); }
+.event-rsvp-chip-bio {
+  display: none;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 0.5px solid var(--stroke);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.event-rsvp-chip.expanded {
+  display: block;        /* 展开后变块状，占整行 */
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.event-rsvp-chip.expanded .event-rsvp-chip-bio {
+  display: block;
+}
+.event-rsvp-chip.is-past {
+  background: rgba(0,0,0,0.04);
+  color: var(--muted);
+  border-color: rgba(0,0,0,0.06);
+}
+.event-rsvp-more {
+  background: rgba(0,0,0,0.04);
+  color: var(--muted);
+  border-radius: 100px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 报名按钮 */
+.event-rsvp-btn {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--orange) 0%, #c4561e 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 16px rgba(217,101,42,0.30);
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  margin-top: 6px;
+}
+.event-rsvp-btn:active {
+  transform: scale(0.985);
+  box-shadow: 0 2px 8px rgba(217,101,42,0.22);
+}
+.event-rsvp-btn:hover { opacity: 0.95; }
+
+/* 报名 modal */
+.rsvp-modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s;
+}
+.rsvp-modal-overlay.open { opacity: 1; pointer-events: all; }
+.rsvp-modal {
+  width: 100%; max-width: 480px;
+  background: var(--sand);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 22px 28px;
+  transform: translateY(40px);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.rsvp-modal-overlay.open .rsvp-modal { transform: translateY(0); }
+.rsvp-modal-handle {
+  width: 36px; height: 4px;
+  background: rgba(0,0,0,0.18);
+  border-radius: 2px;
+  margin: 0 auto 14px;
+}
+.rsvp-modal-title {
+  font-size: 18px; font-weight: 800;
+  color: var(--green);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+.rsvp-modal-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.rsvp-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 12px;
+  margin-bottom: 5px;
+  letter-spacing: 0.02em;
+}
+.rsvp-label .rsvp-required { color: var(--orange); }
+.rsvp-label .rsvp-hint {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: 4px;
+}
+.rsvp-input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid var(--stroke);
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  background: rgba(255,255,255,0.85);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rsvp-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(28,61,46,0.10);
+}
+.rsvp-textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.55;
+}
+.rsvp-err {
+  margin-top: 12px;
+  min-height: 18px;
+  font-size: 12px;
+  color: #c0392b;
+  text-align: center;
+}
+.rsvp-err.ok { color: #1d9e75; }
+
+.rsvp-actions {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+}
+.rsvp-cancel {
+  padding: 12px;
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-sm);
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+}
+.rsvp-confirm {
+  padding: 12px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: linear-gradient(135deg, var(--orange) 0%, #c4561e 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(217,101,42,0.28);
+}
+.rsvp-confirm:active { transform: scale(0.98); }
+.rsvp-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
