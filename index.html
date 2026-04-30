@@ -755,6 +755,12 @@ function renderCalendarContent(activities, rangeStart, rangeEnd) {
       html += '</div>';
       if (a.status && badgeCls)
         html += '<span class="cal-act-badge ' + badgeCls + '">' + escHtml(a.status) + '</span>';
+      // 活动类型 chip（multi-select；多个时多行换行）
+      if (a.types && a.types.length) {
+        html += '<div class="cal-act-types">'
+          + a.types.map(t => '<span class="cal-act-type">' + escHtml(t) + '</span>').join('')
+          + '</div>';
+      }
       html += '</div><span class="cal-act-chevron">›</span></div>';
 
       // 展开详情
