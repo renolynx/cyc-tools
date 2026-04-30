@@ -88,9 +88,18 @@ function renderEventDetail(act, rsvps = []) {
   const dateStr = formatCnDate(act.date);
   const jsonLd   = buildJsonLd(act, ogImage, url, isPast);
 
-  // RSVP 拆 hosts / attendees
-  const rsvpHosts     = rsvps.filter(r => r.roles.includes('活动发起者') || r.roles.includes('嘉宾'));
-  const rsvpAttendees = rsvps.filter(r => r.roles.includes('活动参与者'));
+  // RSVP 按 wechat 去重（保留最新一条）；wechat 为空的全保留
+  const seenWx = new Set();
+  const rsvpsDeduped = rsvps.filter(r => {
+    const wx = (r.wechat || '').trim();
+    if (!wx) return true;
+    if (seenWx.has(wx)) return false;
+    seenWx.add(wx);
+    return true;
+  });
+  // 拆 hosts / attendees
+  const rsvpHosts     = rsvpsDeduped.filter(r => r.roles.includes('活动发起者') || r.roles.includes('嘉宾'));
+  const rsvpAttendees = rsvpsDeduped.filter(r => r.roles.includes('活动参与者'));
   const rsvpTitleJson = JSON.stringify(act.title || '');
 
   return `<!DOCTYPE html>
