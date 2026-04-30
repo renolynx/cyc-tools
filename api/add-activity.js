@@ -103,6 +103,11 @@ export default async function handler(req, res) {
       fields['活动海报'] = [{ file_token: fileToken }];
     }
 
+    // 活动类型（multi-select；飞书可能还没加这字段 → 写失败时去掉重试）
+    if (Array.isArray(activity.types) && activity.types.length) {
+      fields['活动类型'] = activity.types;
+    }
+
     // 来源标记
     fields['SourceID'] = 'cyc-tools';
 
@@ -112,12 +117,25 @@ export default async function handler(req, res) {
       ? `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/${activity.record_id}`
       : `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records`;
 
-    const recordRes  = await fetch(url, {
-      method:  hasRecord ? 'PUT' : 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ fields }),
-    });
-    const recordData = await recordRes.json();
+    let writeFn = async (fieldsToSend) => {
+      const r = await fetch(url, {
+        method:  hasRecord ? 'PUT' : 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ fields: fieldsToSend }),
+      });
+      return r.json();
+    };
+
+    let recordData = await writeFn(fields);
+    let typesDropped = false;
+    // 飞书字段不存在 / 类型不匹配 → 1254045 (字段不存在) / 1254050 (字段类型不匹配)
+    // 兜底：当返回错误且 fields 含「活动类型」时，剔除该字段重试一次
+    if (recordData.code !== 0 && fields['活动类型'] !== undefined) {
+      console.warn(`[add-activity] 「活动类型」字段写入失败 (${recordData.code}): ${recordData.msg} — 重试不带 types`);
+      const { ['活动类型']: _drop, ...fieldsNoTypes } = fields;
+      recordData = await writeFn(fieldsNoTypes);
+      typesDropped = true;
+    }
     if (recordData.code !== 0)
       throw new Error(`${hasRecord ? '更新' : '写入'}失败 (${recordData.code}): ${recordData.msg}`);
 
@@ -182,10 +200,11 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      success:      true,
-      is_update:    hasRecord,
-      record_id:    newRecordId,
-      speaker_sync: speakerSync,
+      success:       true,
+      is_update:     hasRecord,
+      record_id:     newRecordId,
+      speaker_sync:  speakerSync,
+      types_dropped: typesDropped || undefined,  // 飞书没建「活动类型」字段时为 true
     });
 
   } catch (err) {

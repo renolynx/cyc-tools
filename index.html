@@ -301,6 +301,12 @@ function makeCard(a,idx){
         +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'办完了！\',this)">🎉 办完了！</button>'
       +'</div>'
     +'</div>'
+    +'<div class="field"><label>活动类型<span class="opt">选填 · 多选 · 助力成员匹配兴趣</span></label>'
+      +'<div class="types-multi" id="types-'+a.id+'">'
+        +'<div class="types-chips" id="types-chips-'+a.id+'"></div>'
+        +'<input class="types-input" id="types-input-'+a.id+'" type="text" maxlength="20" placeholder="加新类型…" onkeydown="typesKeydown(event,\''+a.id+'\')">'
+      +'</div>'
+    +'</div>'
     +'<div class="field"><label>活动海报<span class="opt">选填，最大 3MB</span></label>'
       // 上传区（无海报时显示）
       +'<div class="poster-upload" id="poster-upload-'+a.id+'" onclick="triggerPoster(\''+a.id+'\')">'
@@ -328,7 +334,7 @@ function makeCard(a,idx){
     +'</div>'
     +'</div>';
   setTimeout(()=>{
-    renderFlows(a); renderSpks(a); initStatusPills(a);
+    renderFlows(a); renderSpks(a); initStatusPills(a); renderTypes(a);
     updateSyncBtn(a.id);
     updateCharCounter(a.id);
     if (a.poster?.base64)           showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
@@ -342,7 +348,7 @@ function toggle(id){const b=document.getElementById('body-'+id);b.style.display=
 function addAct(){
   if(!selDate)return;
   if(!data[selDate])data[selDate]=[];
-  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[],status:'',poster:null};
+  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[],status:'',poster:null,types:[]};
   data[selDate].push(a);renderActs();renderWeek();
   setTimeout(()=>{const b=document.getElementById('body-'+a.id);if(b)b.style.display='';},50);
 }
@@ -360,6 +366,49 @@ function updSpk(id,i,f,v){const a=find(id);if(a){a.spk[i][f]=v;genPreview()}}
 function renderSpks(a){
   const c=document.getElementById('spk-'+a.id);if(!c)return;
   c.innerHTML=a.spk.map((s,i)=>'<div class="spk-row"><input type="text" placeholder="姓名" value="'+esc(s.name)+'" oninput="updSpk(\''+a.id+'\','+i+',\'name\',this.value)"><input type="text" placeholder="背景简介" value="'+esc(s.bio)+'" oninput="updSpk(\''+a.id+'\','+i+',\'bio\',this.value)"><button class="rm" onclick="rmSpk(\''+a.id+'\','+i+')">×</button></div>').join('');
+}
+
+// ── 活动类型 multi-select ──
+// 候选选项 = 全场已有活动用过的 types union（_calActs 在切活动抽屉时填充；
+// 没数据时回退到下面的预设默认值）。新输入的回车加入，自动出现在候选里
+const TYPES_DEFAULTS = ['户外','身体','疗愈','艺术','学习','创作','美食','社区','自然','对话'];
+function knownTypeOptions(a){
+  const set = new Set();
+  // _calActs 是抽屉里拉到的活动列表（同步飞书数据后）；这里 union 它们已选的 types
+  if (typeof _calActs !== 'undefined') {
+    for (const x of (_calActs || [])) for (const t of (x.types || [])) if (t) set.add(t);
+  }
+  for (const t of TYPES_DEFAULTS) set.add(t);
+  for (const t of (a.types || []))   set.add(t);
+  return [...set];
+}
+function renderTypes(a){
+  if (!a.types) a.types = [];
+  const c = document.getElementById('types-chips-'+a.id); if (!c) return;
+  const options = knownTypeOptions(a);
+  const sel = new Set(a.types);
+  c.innerHTML = options.map(t => {
+    const on = sel.has(t);
+    return '<button type="button" class="type-chip'+(on?' is-on':'')+'" onclick="toggleType(\''+a.id+'\',\''+esc(t).replace(/'/g,"\\'")+'\')">'+esc(t)+'</button>';
+  }).join('');
+}
+function toggleType(id, t){
+  const a = find(id); if (!a) return;
+  if (!a.types) a.types = [];
+  const i = a.types.indexOf(t);
+  if (i >= 0) a.types.splice(i,1); else a.types.push(t);
+  renderTypes(a); genPreview();
+}
+function typesKeydown(e, id){
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const v = e.target.value.trim();
+  if (!v) return;
+  const a = find(id); if (!a) return;
+  if (!a.types) a.types = [];
+  if (!a.types.includes(v)) a.types.push(v);
+  e.target.value = '';
+  renderTypes(a); genPreview();
 }
 // full=true 完整版：含详情·流程 + 嘉宾；false 简版：仅 meta + 简介
 function actBodyText(a, full){
@@ -775,19 +824,24 @@ function editFromCalendar(rid) {
 }
 
 // ── 嘉宾联动结果展示（add-activity 成功后调用） ──
-function showSpeakerSyncDetail(id, sync) {
+function showSpeakerSyncDetail(id, sync, typesDropped) {
   const row = document.getElementById('sync-' + id)?.parentElement;
   if (!row) return;
   // 先移除旧的
   const old = row.parentElement.querySelector('#sync-detail-' + id);
   if (old) old.remove();
-  if (!sync) return;
+  // 如果什么提示都没（无嘉宾联动 + types 也写入 OK）→ 不显示
+  if (!sync && !typesDropped) return;
 
   const lines = [];
-  if (sync.error) {
+  if (typesDropped) {
+    lines.push('<span class="sync-detail-line sync-detail-warn">⚠ 飞书活动表还未添加「活动类型」字段，本次类型未保存。请去飞书表头加 multi-select 字段「活动类型」后重新同步</span>');
+  }
+  if (!sync) { /* 只 typesDropped，跳到下面渲染 */ }
+  else if (sync.error) {
     lines.push('<span class="sync-detail-line sync-detail-warn">嘉宾联动失败：' + esc(sync.error) + '</span>');
   } else if ((sync.written || 0) === 0 && (sync.removed || 0) === 0) {
-    return;  // 没嘉宾、没动作 → 不显示
+    if (!typesDropped) return;   // 没动作 + 没 types 警告 → 啥都不显示
   } else {
     const matched = (sync.names_matched      || []).length;
     const created = (sync.names_auto_created || []);
@@ -1010,7 +1064,7 @@ async function doSync(id, password) {
     icon.textContent  = '✓';
     label.textContent = json.is_update ? '已更新飞书记录' : '已录入飞书';
 
-    showSpeakerSyncDetail(id, json.speaker_sync);
+    showSpeakerSyncDetail(id, json.speaker_sync, json.types_dropped);
 
     setTimeout(() => {
       btn.classList.remove('ok');
