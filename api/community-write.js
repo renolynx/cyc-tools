@@ -296,6 +296,98 @@ async function handleListActivityTypes(req, res) {
   });
 }
 
+/**
+ * 从所有活动的「活动类型」字段里批量扒掉指定 tags
+ * 用于清理脏数据（如飞书 schema 默认值导致的"玩点新东西+中医理疗"被自动填进新活动）
+ *
+ * Body: { action:'strip-activity-types', password, strip:['玩点新东西','中医理疗'], dryRun?:bool }
+ *   strip: 要从所有活动 types 里去掉的标签数组
+ *   dryRun: 只统计不写入；默认 false（直接执行）
+ *
+ * Response: {
+ *   success, total_scanned, affected, dryRun,
+ *   details: [{record_id, title, before, after}]
+ * }
+ *
+ * 直接 PUT 飞书活动表：fields['活动类型'] = filtered_types
+ * 失效相关 KV cache（events:upcoming / event:* / sitemap:acts）
+ */
+async function handleStripActivityTypes(req, res) {
+  const { strip, dryRun } = req.body || {};
+  const stripSet = new Set(Array.isArray(strip) ? strip.filter(Boolean) : []);
+  if (!stripSet.size) return res.status(400).json({ error: 'strip 数组不能为空' });
+
+  const { FEISHU_APP_TOKEN, FEISHU_TABLE_ID } = process.env;
+  if (!FEISHU_APP_TOKEN || !FEISHU_TABLE_ID) return res.status(500).json({ error: '活动表 env 未配' });
+
+  let acts;
+  try { acts = await fetchAllActivities(); }
+  catch (err) { return res.status(500).json({ error: '拉活动失败：' + err.message }); }
+
+  // 找出 types 中含任一 strip tag 的活动
+  const candidates = acts.filter(a => Array.isArray(a.types) && a.types.some(t => stripSet.has(t)));
+
+  if (dryRun) {
+    return res.status(200).json({
+      success: true,
+      dryRun: true,
+      total_scanned: acts.length,
+      affected: candidates.length,
+      details: candidates.map(a => ({
+        record_id: a.record_id,
+        title:     a.title || '',
+        before:    a.types,
+        after:     a.types.filter(t => !stripSet.has(t)),
+      })),
+    });
+  }
+
+  // 实际写入：逐条 PUT
+  const { getAccessToken } = await import('./_feishu.js');
+  const token = await getAccessToken();
+  const details = [];
+  const affectedIds = [];
+  for (const a of candidates) {
+    const after = a.types.filter(t => !stripSet.has(t));
+    try {
+      const r = await fetch(
+        `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_APP_TOKEN}/tables/${FEISHU_TABLE_ID}/records/${a.record_id}`,
+        {
+          method:  'PUT',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ fields: { '活动类型': after } }),
+        }
+      );
+      const data = await r.json();
+      if (data.code !== 0) throw new Error(`code ${data.code}: ${data.msg}`);
+      details.push({ record_id: a.record_id, title: a.title || '', before: a.types, after });
+      affectedIds.push(a.record_id);
+    } catch (err) {
+      details.push({ record_id: a.record_id, title: a.title || '', error: err.message });
+    }
+  }
+
+  // 失效活动 KV cache
+  if (isKvConfigured()) {
+    const ops = [
+      kvDel('events:upcoming'),
+      kvDel('sitemap:acts'),
+      kvDel('members:大理'),  // top types 也会变
+      kvDel('members:上海'),
+    ];
+    for (const id of affectedIds) ops.push(kvDel('event:' + id));
+    await Promise.all(ops).catch(() => {});
+  }
+
+  return res.status(200).json({
+    success: true,
+    dryRun: false,
+    total_scanned: acts.length,
+    affected: affectedIds.length,
+    details,
+  });
+}
+
 // ─────────── 合并去重 ───────────
 
 /** admin UI 编辑表单暴露的可合并字段（hidden 不参与；avatar/identity/contribution/hubs 暂不动） */
@@ -472,7 +564,8 @@ export default async function handler(req, res) {
   if (action === 'merge-preview')      return handleMergePreview(req, res);
   if (action === 'merge')              return handleMerge(req, res);
   if (action === 'clear-cache')        return handleClearCache(req, res);
-  if (action === 'list-activity-types') return handleListActivityTypes(req, res);
+  if (action === 'list-activity-types')   return handleListActivityTypes(req, res);
+  if (action === 'strip-activity-types')  return handleStripActivityTypes(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }

@@ -104,7 +104,10 @@ export default async function handler(req, res) {
     }
 
     // 活动类型（multi-select；飞书可能还没加这字段 → 写失败时去掉重试）
-    if (Array.isArray(activity.types) && activity.types.length) {
+    // 总是显式写（含空数组），覆盖飞书表的"字段默认值"配置（否则 POST 新建时
+    // 飞书会用 schema 默认值自动填，导致用户看到莫名其妙的标签）
+    const hadUserTypes = Array.isArray(activity.types) && activity.types.length > 0;
+    if (Array.isArray(activity.types)) {
       fields['活动类型'] = activity.types;
     }
 
@@ -134,7 +137,8 @@ export default async function handler(req, res) {
       console.warn(`[add-activity] 「活动类型」字段写入失败 (${recordData.code}): ${recordData.msg} — 重试不带 types`);
       const { ['活动类型']: _drop, ...fieldsNoTypes } = fields;
       recordData = await writeFn(fieldsNoTypes);
-      typesDropped = true;
+      // 仅在用户真的勾过 chip 的情况下提示用户（空数组场景的失败用户不关心）
+      typesDropped = hadUserTypes;
     }
     if (recordData.code !== 0)
       throw new Error(`${hasRecord ? '更新' : '写入'}失败 (${recordData.code}): ${recordData.msg}`);
