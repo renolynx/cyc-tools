@@ -26,6 +26,7 @@ import {
   inferMemberActivityCities,
   aggregateMemberRoles,
   aggregateMemberTopTypes,
+  aggregateMemberLastRsvp,
   matchSpeaker,
   autoCreateMember,
   splitSpeakerNames,
@@ -41,25 +42,32 @@ import { kvDel, isKvConfigured }                    from './_kv.js';
  * 服务端不做 city/hidden 过滤，客户端拿全集自己筛 → tab 切换瞬时
  */
 async function handleSearch(req, res) {
-  const [members, inferredMap, roleMap, typeMap] = await Promise.all([
+  const [members, inferredMap, roleMap, typeMap, lastRsvpMap] = await Promise.all([
     fetchAllMembers(),
     inferMemberActivityCities(),
     aggregateMemberRoles(),
     aggregateMemberTopTypes(),
+    aggregateMemberLastRsvp(),
   ]);
 
-  const enriched = members.map(m => ({
-    ...m,
-    inferredCities: [...(inferredMap.get(m.record_id) || [])],
-    roleStats:      roleMap.get(m.record_id) || {},
-    topTypes:       typeMap.get(m.record_id) || [],
-  }));
+  const enriched = members.map(m => {
+    const lastRsvpAt = lastRsvpMap.get(m.record_id) || 0;
+    const lastActiveAt = Math.max(m.lastModifiedAt || 0, lastRsvpAt);
+    return {
+      ...m,
+      inferredCities: [...(inferredMap.get(m.record_id) || [])],
+      roleStats:      roleMap.get(m.record_id) || {},
+      topTypes:       typeMap.get(m.record_id) || [],
+      lastActiveAt,
+    };
+  });
 
-  // 同 fetchMembersByCity 的策略：按参与度倒序
+  // 同 fetchMembersByCity：参与度 desc → tie 时最近活跃 desc
   enriched.sort((a, b) => {
     const sa = Object.values(a.roleStats || {}).reduce((s, n) => s + (Number(n) || 0), 0);
     const sb = Object.values(b.roleStats || {}).reduce((s, n) => s + (Number(n) || 0), 0);
-    return sb - sa;
+    if (sb - sa) return sb - sa;
+    return (b.lastActiveAt || 0) - (a.lastActiveAt || 0);
   });
 
   return res.status(200).json({

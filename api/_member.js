@@ -141,6 +141,8 @@ export function parseMember(record, locMap = {}, locNameMap = {}) {
     residentStatus: getSelect(f['据点入住状态']),
     hubIds, hubs, cities,
     hidden:       getCheckbox(f['在社群成员列表中隐藏']),
+    // 飞书自动维护：record 任意字段被改时刷新 → 用作"最近活跃"信号之一
+    lastModifiedAt: Number(record.last_modified_time) || Number(record.created_time) || 0,
     // ⚠️ 私密：仅供服务端 RSVP 匹配 / admin 编辑使用
     //    任何对外 SSR / JSON API 必须 strip 这些字段
     _wechat:      getText(f['微信号']),
@@ -269,6 +271,21 @@ export async function aggregateMemberTopTypes() {
   return result;
 }
 
+/** 每个成员的「最近 RSVP 注册时间」: max(registered_at) */
+export async function aggregateMemberLastRsvp() {
+  let rsvps;
+  try { rsvps = await fetchAllRsvps(); }
+  catch { return new Map(); }
+  const result = new Map();
+  for (const r of rsvps) {
+    if (!r.member_rec_id) continue;
+    const ts = Number(r.registered_at) || 0;
+    const cur = result.get(r.member_rec_id) || 0;
+    if (ts > cur) result.set(r.member_rec_id, ts);
+  }
+  return result;
+}
+
 /**
  * 聚合每个成员在 RSVP 里出现的角色 + 计数
  * 返回 Map<member_rec_id, { '活动发起者': N, '嘉宾': N, '活动参与者': N, ... }>
@@ -372,11 +389,12 @@ export async function fetchMembersByCity(city, options = {}) {
     ]).catch(() => {});
   }
 
-  const [all, inferredMap, roleMap, typeMap] = await Promise.all([
+  const [all, inferredMap, roleMap, typeMap, lastRsvpMap] = await Promise.all([
     fetchAllMembers(),
     inferMemberActivityCities(),
     aggregateMemberRoles(),
     aggregateMemberTopTypes(),
+    aggregateMemberLastRsvp(),
   ]);
 
   const filtered = all
@@ -387,15 +405,24 @@ export async function fetchMembersByCity(city, options = {}) {
       if (inf && inf.has(city)) return true;        // 2. 活动反推
       return false;
     })
-    .map(m => ({
-      ...m,
-      roleStats: roleMap.get(m.record_id) || {},
-      topTypes:  typeMap.get(m.record_id) || [],
-    }));
+    .map(m => {
+      const lastRsvpAt = lastRsvpMap.get(m.record_id) || 0;
+      const lastActiveAt = Math.max(m.lastModifiedAt || 0, lastRsvpAt);
+      return {
+        ...m,
+        roleStats: roleMap.get(m.record_id) || {},
+        topTypes:  typeMap.get(m.record_id) || [],
+        lastActiveAt,
+      };
+    });
 
-  // 按参与度倒序：roleStats 所有 count 之和（活动发起者 + 嘉宾 + 参与者...）
-  // 没参加过任何活动的成员排末尾；活动多的排前面
-  filtered.sort((a, b) => totalParticipation(b) - totalParticipation(a));
+  // 排序：参与度 desc → 平时再用最近活跃时间 desc → 飞书原顺序兜底
+  // 「最近活跃」= max(成员记录最后修改时间, 该成员任一 RSVP 的最新注册时间)
+  filtered.sort((a, b) => {
+    const dp = totalParticipation(b) - totalParticipation(a);
+    if (dp) return dp;
+    return (b.lastActiveAt || 0) - (a.lastActiveAt || 0);
+  });
 
   if (isKvConfigured()) {
     try { await kvSet(cacheKey, JSON.stringify(filtered), KV_TTL_CITY); } catch (err) {
