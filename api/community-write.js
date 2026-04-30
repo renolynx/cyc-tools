@@ -224,6 +224,26 @@ async function handleBackfillSpeakers(req, res) {
   });
 }
 
+// ─────────── 清缓存 ───────────
+
+/**
+ * 强制清掉公开/admin 列表相关的 KV 缓存
+ * 用于：schema 改动、合并/创建后想立刻看到效果（默认 30min TTL 太长）
+ *
+ * 不要太频繁调（飞书 API 速率限制）；正常合并/编辑端点已自动清相应 key
+ */
+async function handleClearCache(req, res) {
+  if (!isKvConfigured()) return res.status(200).json({ success: true, kv: 'not configured' });
+  const keys = [
+    'members:大理',
+    'members:上海',
+    'rsvp:all',
+    'member_activity_cities',
+  ];
+  await Promise.all(keys.map(k => kvDel(k))).catch(() => {});
+  return res.status(200).json({ success: true, cleared: keys });
+}
+
 // ─────────── 合并去重 ───────────
 
 /** admin UI 编辑表单暴露的可合并字段（hidden 不参与；avatar/identity/contribution/hubs 暂不动） */
@@ -399,6 +419,7 @@ export default async function handler(req, res) {
   if (action === 'backfill-speakers')  return handleBackfillSpeakers(req, res);
   if (action === 'merge-preview')      return handleMergePreview(req, res);
   if (action === 'merge')              return handleMerge(req, res);
+  if (action === 'clear-cache')        return handleClearCache(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }
