@@ -2602,13 +2602,20 @@
         + String(d.getDate()).padStart(2, '0');
     }
 
-    /** 用户点击"从照片读取"按钮 — 显式触发 EXIF 解析，带明确反馈 */
+    /** 用户点击"从照片读取"按钮 — 显式触发 EXIF 解析，每一步都给反馈
+     *  失败时弹 alert 显示详细诊断（让用户能立刻知道卡在哪），不再静默 */
     async function manualReadExif() {
       const btn = document.getElementById('upload-read-exif');
       if (!_uploadFile) {
-        setActivity('Empty', '先选一张照片');
+        alert('请先选一张照片');
         return;
       }
+
+      const log = [];
+      const f = _uploadFile;
+      log.push(`📁 文件名：${f.name || '(无)'}`);
+      log.push(`📋 类型：${f.type || '未知'}`);
+      log.push(`📊 大小：${(f.size / 1024).toFixed(0)} KB`);
 
       btn.disabled = true;
       const origText = btn.textContent;
@@ -2616,38 +2623,78 @@
       setActivity('Reading', '正在读取照片元信息…');
 
       try {
-        // 等 exifr CDN 加载完毕（最多 3s）— iOS 网络慢时常见
+        // Step 1: 等 exifr CDN 加载（最多 5s）
         if (!window.exifr) {
-          for (let i = 0; i < 30 && !window.exifr; i++) {
+          log.push('⏳ exifr 库还在加载，等待…');
+          for (let i = 0; i < 50 && !window.exifr; i++) {
             await new Promise(r => setTimeout(r, 100));
           }
         }
         if (!window.exifr) {
-          setActivity('Error', 'EXIF 解析库加载失败（网络问题），请手填日期');
+          log.push('❌ exifr 库加载失败（CDN 不可达 / 网络慢）');
+          log.push('请手动填日期，或检查网络后刷新页面重试');
+          alert(log.join('\n'));
+          return;
+        }
+        log.push('✓ exifr 库已就绪');
+
+        // Step 2: parse — 不限字段，看实际有什么
+        let data;
+        try {
+          data = await window.exifr.parse(f, true);
+        } catch (parseErr) {
+          log.push(`❌ exifr 解析报错：${parseErr.message || parseErr}`);
+          log.push('（可能格式不支持，例如某些 HEIC 变体）');
+          alert(log.join('\n'));
+          return;
+        }
+        if (!data) {
+          log.push('❌ 这张照片完全没有 EXIF 数据块');
+          log.push('（很可能：截图 / 微信传过 / 修图 app 剥过）');
+          alert(log.join('\n'));
+          return;
+        }
+        const keys = Object.keys(data);
+        log.push(`✓ 解析到 ${keys.length} 个 EXIF 字段`);
+
+        // Step 3: 找日期字段
+        const raw = data.DateTimeOriginal || data.CreateDate || data.DateTime
+                  || data.ModifyDate || data.GPSDateStamp;
+        if (!raw) {
+          log.push('❌ 没有任何拍摄日期字段');
+          log.push(`已读到的字段：${keys.slice(0, 8).join(', ')}${keys.length > 8 ? '…' : ''}`);
+          alert(log.join('\n'));
+          return;
+        }
+        log.push(`📅 原始日期值：${raw}`);
+
+        const dt = raw instanceof Date ? raw : new Date(raw);
+        if (isNaN(dt.getTime())) {
+          log.push(`❌ 日期格式无法解析`);
+          alert(log.join('\n'));
           return;
         }
 
-        const exifDate = await readExifDate(_uploadFile);
-        if (exifDate) {
-          const dateInput = document.getElementById('upload-date');
-          dateInput.value = formatDateForInput(exifDate);
-          dateInput.title = '从照片 EXIF 读取';
-          setActivity('Read', `已填入 EXIF 日期：${dateInput.value}`);
-          btn.textContent = '✓ 已读取';
-          setTimeout(() => { btn.textContent = origText; }, 2000);
-          return;
-        }
-        // 读不到 — 给明确反馈，告诉用户为什么
-        setActivity('Empty', '这张照片没有拍摄日期信息（可能被压缩过 / 是截图 / 已去元数据）');
+        // 成功
+        const dateInput = document.getElementById('upload-date');
+        dateInput.value = formatDateForInput(dt);
+        dateInput.title = '从照片 EXIF 读取';
+        setActivity('Read', `已填入 EXIF 日期：${dateInput.value}`);
+        btn.textContent = '✓ 已读取';
+        setTimeout(() => { btn.textContent = origText; }, 2000);
+        // 成功不弹 alert，只在 console 留 log 备查
+        console.log('[exif] success:\n' + log.join('\n'));
       } catch (err) {
-        setActivity('Error', 'EXIF 读取失败：' + (err.message || err));
+        log.push(`❌ 未捕获异常：${err.message || err}`);
+        console.error('[manualReadExif]', err);
+        alert(log.join('\n'));
       } finally {
         btn.disabled = false;
         if (btn.textContent === '读取中…') btn.textContent = origText;
       }
     }
 
-    /** 从图片 EXIF 读拍摄日期；exifr 没加载或没 EXIF 时返回 null */
+    /** 从图片 EXIF 读拍摄日期；exifr 没加载或没 EXIF 时返回 null（自动尝试用） */
     async function readExifDate(file) {
       if (!window.exifr) return null;
       try {
