@@ -1149,6 +1149,33 @@
       gap: var(--sp-2);
       z-index: 1;
     }
+
+    /* lightbox 左右切换按钮（垂直居中，仅 stack 列表 > 1 张时显示） */
+    .lightbox-nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      width: 44px; height: 44px;
+      font-size: 22px;
+      font-family: inherit;
+    }
+    .lightbox-nav-btn[data-dir="prev"] { left: 16px; }
+    .lightbox-nav-btn[data-dir="next"] { right: 16px; }
+    .lightbox-nav-btn[aria-disabled="true"] {
+      opacity: 0.25;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    @media (max-width: 480px) {
+      .lightbox-nav-btn { width: 40px; height: 40px; font-size: 20px; }
+      .lightbox-nav-btn[data-dir="prev"] { left: 8px; }
+      .lightbox-nav-btn[data-dir="next"] { right: 8px; }
+    }
+
+    /* 图片切换 / swipe 动画用 */
+    .lightbox-img { transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1), opacity 200ms ease; }
+    .lightbox-img.is-dragging { transition: none; }
     .icon-btn {
       width: 40px; height: 40px;
       border-radius: var(--r-dot);
@@ -1479,6 +1506,12 @@
       <button type="button" class="icon-btn"
               onclick="closeLightbox()" aria-label="关闭">✕</button>
     </div>
+    <button type="button" class="icon-btn lightbox-nav-btn" id="lb-prev"
+            data-dir="prev" onclick="lightboxPrev()"
+            aria-label="上一张">‹</button>
+    <button type="button" class="icon-btn lightbox-nav-btn" id="lb-next"
+            data-dir="next" onclick="lightboxNext()"
+            aria-label="下一张">›</button>
     <div class="lightbox-content">
       <img class="lightbox-img" id="lb-image" alt="">
       <div class="lightbox-meta">
@@ -2110,46 +2143,182 @@
         dispatchPolaroidClick(pol);
       }
     });
-    // ESC 关 lightbox / photo-detail
+    // 全局键盘：ESC 关弹层；← → 切 lightbox 上一/下一张
     document.addEventListener('keydown', e => {
-      if (e.key !== 'Escape') return;
       const lb = document.getElementById('lightbox');
-      if (lb && lb.classList.contains('active')) { closeLightbox(); return; }
       const pm = document.getElementById('photo-modal');
-      if (pm && pm.classList.contains('active')) { closePhotoDetail(); return; }
+      const lbActive = lb && lb.classList.contains('active');
+      const pmActive = pm && pm.classList.contains('active');
+
+      if (e.key === 'Escape') {
+        if (lbActive) { closeLightbox(); return; }
+        if (pmActive) { closePhotoDetail(); return; }
+      }
+      if (lbActive) {
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); lightboxPrev(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); lightboxNext(); }
+      }
     });
 
     /* ──────────────────────────────────────────────
-     *  Lightbox（stack 点击）
+     *  Lightbox（stack 点击）—— list + idx 导航
      * ────────────────────────────────────────────── */
+    let _lightboxList = [];      // 可切换的相片列表（与 stack 显示的 8 张一致）
+    let _lightboxIdx  = 0;
     let _lightboxPhotoId = null;
 
     function openLightbox(photoId) {
-      const p = _photos.find(x => x.id === photoId);
-      if (!p) return;
-      _lightboxPhotoId = photoId;
-
-      const img = document.getElementById('lb-image');
-      img.src = p.dataUrl || '';
-      img.alt = p.title || '';
-
-      document.getElementById('lb-title').textContent = p.title || '未命名';
-
-      // sub 行：日期 · 关联活动 · 隐私（仅"仅自己"时显示锁标）
-      const sub = [];
-      if (p.date) sub.push(fmtDate(p.date));
-      const act = MOCK_ACTIVITIES.find(a => a.id === p.activity_id);
-      if (act) sub.push(act.title);
-      if (p.privacy === 'self') sub.push('🔒 仅自己');
-      document.getElementById('lb-sub').textContent = sub.join(' · ');
-
+      // 列表 = 当前 stack 显示的（最近 8 张，按 date desc）
+      _lightboxList = [..._photos].sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 8);
+      const idx = _lightboxList.findIndex(p => p.id === photoId);
+      _lightboxIdx = idx >= 0 ? idx : 0;
+      if (!_lightboxList.length) return;
       document.getElementById('lightbox').classList.add('active');
+      renderLightboxPhoto(/*animate=*/false);
     }
 
     function closeLightbox() {
       document.getElementById('lightbox').classList.remove('active');
       _lightboxPhotoId = null;
+      _lightboxList = [];
+      _lightboxIdx  = 0;
+      // 复位 img 任何 inline transform/opacity
+      const img = document.getElementById('lb-image');
+      img.style.transform = '';
+      img.style.opacity = '';
+      img.classList.remove('is-dragging');
     }
+
+    function renderLightboxPhoto(animate) {
+      const p = _lightboxList[_lightboxIdx];
+      if (!p) return;
+      _lightboxPhotoId = p.id;
+
+      const img   = document.getElementById('lb-image');
+      const title = document.getElementById('lb-title');
+      const sub   = document.getElementById('lb-sub');
+
+      const apply = () => {
+        img.src = p.dataUrl || '';
+        img.alt = p.title || '';
+        title.textContent = p.title || '未命名';
+        const subParts = [];
+        if (p.date) subParts.push(fmtDate(p.date));
+        const act = MOCK_ACTIVITIES.find(a => a.id === p.activity_id);
+        if (act) subParts.push(act.title);
+        if (p.privacy === 'self') subParts.push('🔒 仅自己');
+        sub.textContent = subParts.join(' · ');
+        updateLightboxNav();
+      };
+
+      if (!animate) {
+        apply();
+        img.style.transform = '';
+        img.style.opacity = '';
+        return;
+      }
+      // 淡出 → 切 → 淡入
+      img.style.opacity = '0';
+      setTimeout(() => {
+        apply();
+        // 立刻把 transform 归零（无 transition）
+        img.classList.add('is-dragging');
+        img.style.transform = '';
+        // force reflow，让 transition 重新接管
+        void img.offsetWidth;
+        img.classList.remove('is-dragging');
+        img.style.opacity = '1';
+      }, 160);
+    }
+
+    function updateLightboxNav() {
+      const prev = document.getElementById('lb-prev');
+      const next = document.getElementById('lb-next');
+      const showNav = _lightboxList.length > 1;
+      [prev, next].forEach(b => b.style.display = showNav ? '' : 'none');
+      prev.setAttribute('aria-disabled', _lightboxIdx <= 0 ? 'true' : 'false');
+      next.setAttribute('aria-disabled', _lightboxIdx >= _lightboxList.length - 1 ? 'true' : 'false');
+    }
+
+    function lightboxPrev() {
+      if (_lightboxIdx <= 0) return;
+      _lightboxIdx--;
+      renderLightboxPhoto(true);
+    }
+    function lightboxNext() {
+      if (_lightboxIdx >= _lightboxList.length - 1) return;
+      _lightboxIdx++;
+      renderLightboxPhoto(true);
+    }
+
+    /* ─── Touch swipe（左右切换 lightbox 照片） ─── */
+    (function attachLightboxSwipe() {
+      const img = document.getElementById('lb-image');
+      if (!img) return;
+      let startX = 0, startY = 0, currentX = 0, dragging = false, locked = null;
+
+      img.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        startX = currentX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        dragging = true;
+        locked = null;          // 'h' = 水平锁定切换，'v' = 垂直放弃
+        img.classList.add('is-dragging');
+      }, { passive: true });
+
+      img.addEventListener('touchmove', e => {
+        if (!dragging) return;
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        const dx = x - startX;
+        const dy = y - startY;
+        // 第一帧先判方向：水平大 → 跟手；垂直大 → 放弃（让浏览器处理或不动）
+        if (locked === null) {
+          if (Math.abs(dx) > Math.abs(dy) + 4) locked = 'h';
+          else if (Math.abs(dy) > 8) locked = 'v';
+        }
+        if (locked !== 'h') return;
+        currentX = x;
+        // 边界阻力：第一张往右 / 最后一张往左 时拖动幅度衰减
+        let effDx = dx;
+        const atFirst = _lightboxIdx <= 0;
+        const atLast  = _lightboxIdx >= _lightboxList.length - 1;
+        if ((atFirst && dx > 0) || (atLast && dx < 0)) effDx = dx * 0.35;
+        img.style.transform = `translateX(${effDx}px)`;
+        img.style.opacity = String(Math.max(0.5, 1 - Math.abs(effDx) / 480));
+      }, { passive: true });
+
+      img.addEventListener('touchend', () => {
+        if (!dragging) return;
+        dragging = false;
+        img.classList.remove('is-dragging');
+        const dx = currentX - startX;
+        const THRESH = 80;
+        // 切换 or 回弹
+        if (locked === 'h' && dx > THRESH && _lightboxIdx > 0) {
+          // 让当前图先滑出右边再切
+          img.style.transform = 'translateX(60vw)';
+          img.style.opacity = '0';
+          setTimeout(lightboxPrev, 160);
+        } else if (locked === 'h' && dx < -THRESH && _lightboxIdx < _lightboxList.length - 1) {
+          img.style.transform = 'translateX(-60vw)';
+          img.style.opacity = '0';
+          setTimeout(lightboxNext, 160);
+        } else {
+          // 回弹
+          img.style.transform = '';
+          img.style.opacity = '';
+        }
+      }, { passive: true });
+
+      img.addEventListener('touchcancel', () => {
+        if (!dragging) return;
+        dragging = false;
+        img.classList.remove('is-dragging');
+        img.style.transform = '';
+        img.style.opacity = '';
+      }, { passive: true });
+    })();
 
     /** 从 lightbox 跳到 lineup 里的对应照片：
      *  - 关 lightbox
