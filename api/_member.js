@@ -490,12 +490,14 @@ export async function autoCreateMember(data) {
 
   const fields = {
     '姓名':   data.name,
+    // 默认把姓名也写到称呼字段 — 飞书各视图常按"称呼"显示，避免新建后
+    // 看起来像"空记录"。显式传 nickname 时才覆盖。
+    '称呼':   data.nickname || data.name,
     '在社群成员列表中隐藏': false,  // 默认公开，admin 想隐再打勾
     '来自渠道': data.source || '活动报名自动建',
   };
-  if (data.wechat)   fields['微信号']  = data.wechat;
-  if (data.nickname) fields['称呼']    = data.nickname;
-  if (data.bio)      fields['个人介绍'] = data.bio;
+  if (data.wechat) fields['微信号']  = data.wechat;
+  if (data.bio)    fields['个人介绍'] = data.bio;
 
   const token = await getAccessToken();
   const res = await fetch(
