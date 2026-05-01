@@ -19,7 +19,7 @@ export function renderAdminApp() {
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="event-page cm-admin-page">
+<body class="event-page cm-admin-page aurora-canvas">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>

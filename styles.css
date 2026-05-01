@@ -2649,3 +2649,159 @@ a.event-rsvp-chip {
   color: var(--orange);
   border-color: var(--orange);
 }
+
+/* ═══════════════════════════════════════════════
+ * Aurora 层（chrome / 工具 — admin 后台 / 设置）
+ * 加 .aurora-canvas 到 body 时激活
+ * 设计：深绿暗夜 + 双 ambient glow（橙右下、浅绿右上）+ 玻璃 surface
+ * ═══════════════════════════════════════════════ */
+
+body.aurora-canvas {
+  background: oklch(0.20 0.04 150);            /* deep forest dark */
+  color: oklch(0.96 0.005 150);
+  position: relative;
+  min-height: 100vh;
+}
+body.aurora-canvas::before {
+  /* 橙色 aurora glow 右下 */
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(600px circle at 90% 90%,
+    oklch(0.65 0.18 35 / 0.18), transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+body.aurora-canvas::after {
+  /* 浅绿 aurora glow 右上 */
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(500px circle at 95% 5%,
+    oklch(0.55 0.10 150 / 0.15), transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+
+/* Aurora 模式下三个老 blob 弱化 — 让出主舞台给 ambient glow */
+body.aurora-canvas .blob { opacity: 0.06; filter: blur(140px); }
+
+/* Aurora topbar */
+body.aurora-canvas .event-topbar {
+  background: oklch(0.22 0.03 150 / 0.78);
+  backdrop-filter: blur(28px) saturate(1.4);
+  border-bottom-color: oklch(1 0 0 / 0.06);
+}
+body.aurora-canvas .event-back,
+body.aurora-canvas .event-site {
+  color: oklch(0.85 0.06 150);
+}
+body.aurora-canvas .event-back:active {
+  background: oklch(1 0 0 / 0.08);
+}
+
+/* 登录卡 */
+body.aurora-canvas .cm-login-card {
+  background: oklch(0.25 0.03 150 / 0.55);
+  backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  box-shadow:
+    inset 0 0 0 0.5px oklch(1 0 0 / 0.06),
+    0 24px 48px -12px oklch(0 0 0 / 0.6);
+  color: oklch(0.96 0.005 150);
+}
+body.aurora-canvas .cm-login-card h2 { color: oklch(0.96 0.005 150); }
+body.aurora-canvas .cm-login-sub { color: oklch(0.7 0.02 150); }
+body.aurora-canvas .cm-login-card input {
+  background: oklch(0.18 0.02 150 / 0.6);
+  color: oklch(0.96 0.005 150);
+  border-color: oklch(1 0 0 / 0.12);
+}
+body.aurora-canvas .cm-login-card input::placeholder { color: oklch(0.55 0.02 150); }
+body.aurora-canvas .cm-login-card input:focus {
+  border-color: oklch(0.78 0.18 35);   /* coral focus ring */
+  box-shadow: 0 0 0 3px oklch(0.78 0.18 35 / 0.20);
+}
+
+/* 顶部搜索栏 */
+body.aurora-canvas .cm-admin-bar {
+  background: transparent;
+}
+body.aurora-canvas .cm-admin-search {
+  background: oklch(0.25 0.03 150 / 0.55);
+  backdrop-filter: blur(20px);
+  color: oklch(0.96 0.005 150);
+  border-color: oklch(1 0 0 / 0.10);
+}
+body.aurora-canvas .cm-admin-search::placeholder { color: oklch(0.55 0.02 150); }
+body.aurora-canvas .cm-admin-search:focus {
+  border-color: oklch(0.78 0.18 35);
+  box-shadow: 0 0 0 3px oklch(0.78 0.18 35 / 0.18);
+}
+body.aurora-canvas .cm-admin-add {
+  background: oklch(0.78 0.18 35);
+  color: oklch(0.15 0.02 150);
+  font-weight: 700;
+}
+
+/* Tabs */
+body.aurora-canvas .cm-admin-tabs {
+  background: oklch(0.25 0.03 150 / 0.4);
+  border-color: oklch(1 0 0 / 0.06);
+}
+body.aurora-canvas .cm-tab {
+  color: oklch(0.7 0.02 150);
+}
+body.aurora-canvas .cm-tab.active {
+  background: oklch(0.78 0.18 35 / 0.16);
+  color: oklch(0.85 0.12 35);
+}
+
+/* Count 文案 */
+body.aurora-canvas .cm-admin-count {
+  color: oklch(0.65 0.02 150);
+}
+
+/* 列表项 */
+body.aurora-canvas .cm-admin-item {
+  background: oklch(0.25 0.03 150 / 0.45);
+  backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid oklch(1 0 0 / 0.06);
+  color: oklch(0.96 0.005 150);
+}
+body.aurora-canvas .cm-admin-item:hover {
+  background: oklch(0.28 0.03 150 / 0.6);
+  border-color: oklch(1 0 0 / 0.12);
+}
+body.aurora-canvas .cm-admin-item-name { color: oklch(0.96 0.005 150); }
+body.aurora-canvas .cm-admin-item-meta { color: oklch(0.7 0.02 150); }
+body.aurora-canvas .cm-admin-edit {
+  background: oklch(0.78 0.18 35 / 0.18);
+  color: oklch(0.85 0.12 35);
+  border: none;
+}
+body.aurora-canvas .cm-admin-edit:hover {
+  background: oklch(0.78 0.18 35 / 0.30);
+}
+body.aurora-canvas .cm-hidden-tag {
+  background: oklch(0.5 0.02 150 / 0.35);
+  color: oklch(0.85 0.02 150);
+}
+
+/* 空状态 */
+body.aurora-canvas .cm-admin-empty {
+  color: oklch(0.55 0.02 150);
+  background: oklch(0.25 0.03 150 / 0.3);
+  border-color: oklch(1 0 0 / 0.05);
+}
+
+/* Edit modal — 保持白底（modal 内是表单需要可读性高） */
+/* 不改 modal 内部，保持原 daybook 风。Aurora 只管"chrome 容器" */
+
+/* role chip 在 dark surface 上的对比 */
+body.aurora-canvas .cm-role-chip.role-host    { background: oklch(0.78 0.18 35 / 0.22); color: oklch(0.85 0.14 35); }
+body.aurora-canvas .cm-role-chip.role-speaker { background: oklch(0.78 0.18 35 / 0.14); color: oklch(0.82 0.10 35); }
+body.aurora-canvas .cm-role-chip.role-attend  { background: oklch(0.55 0.10 150 / 0.20); color: oklch(0.78 0.10 150); }
+body.aurora-canvas .cm-role-chip.role-other   { background: oklch(0.5 0.02 150 / 0.30); color: oklch(0.75 0.02 150); }
+
+/* type chip 同样调暗 */
+body.aurora-canvas .cm-type-chip {
+  background: linear-gradient(135deg, oklch(0.55 0.10 150 / 0.18), oklch(0.65 0.18 35 / 0.16));
+  border-color: oklch(0.55 0.10 150 / 0.30);
+  color: oklch(0.85 0.06 150);
+}
+body.aurora-canvas .cm-type-chip em { color: oklch(0.65 0.02 150); }
