@@ -1,0 +1,13 @@
+{
+  "name": "cyc-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "cyc.center — 链岛社区工具站",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@vercel/blob": "^1.0.0"
+  }
+}

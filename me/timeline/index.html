@@ -954,6 +954,18 @@
     }
     .upload-preview.has-image { display: block; }
 
+    /* 配额提示 — 紧贴 modal-sub 下方 */
+    .upload-quota-hint {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      letter-spacing: 0;
+    }
+    .upload-quota-hint.is-warn { color: var(--cyc-warning); }   /* AAA orange */
+    .upload-quota-hint.is-full { color: #a93226; }             /* danger */
+
     .form-group { margin-bottom: var(--sp-4); }
     .form-label {
       display: block;
@@ -1391,7 +1403,10 @@
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <h3 class="modal-title">添加一张回忆</h3>
-      <p class="modal-sub">上传到你的时间线。选"公开"后，这张照片会汇入社区集体回忆。</p>
+      <p class="modal-sub">
+        上传到你的时间线。选"公开"后，这张照片会汇入社区集体回忆。
+        <br><span id="upload-quota-hint" class="upload-quota-hint">配额加载中…</span>
+      </p>
 
       <input type="file" id="upload-file-input" class="upload-file-input" accept="image/*">
       <button type="button" class="upload-drop" id="upload-drop">
@@ -1523,53 +1538,127 @@
 
   <script>
     /* ──────────────────────────────────────────────
-     *  /me/timeline · App logic (path A · mock 后端)
+     *  /me/timeline · App logic (path B · 真接后端)
      *
-     *  TODO（path B 接后端）：
-     *    [1] MOCK_MEMBERS    → fetch('/api/members') 已有
-     *    [2] MOCK_ACTIVITIES → fetch('/api/get-activities') 已有
-     *    [3] submitVerify    → POST /api/identity-verify {rec_id, code4}
-     *                          后端用成员的 _phone/_wechat 末 4 位匹配
-     *    [4] submitUpload    → 1) PUT @vercel/blob 拿 url
-     *                          2) POST /api/photo-upload 写飞书新表 cyc-photos
-     *    [5] hero/lineup     → fetch('/api/photos?member_rec_id=<self>')
+     *  数据流：
+     *    /api/members              → 公开成员目录（picker 用，KV 缓存 5min）
+     *    /api/get-activities       → POST 拉过去 6 个月活动（关联 select 用）
+     *    /api/identity-verify      → 微信号末 4 位 → 颁发 24h HMAC token
+     *    /api/photo-upload         → put @vercel/blob + 写飞书 cyc-photos
+     *    /api/photos?member_rec_id → 拉自己的照片（带 token 时含私照 + 配额）
+     *    /api/photos POST update   → 编辑（仅本人）
+     *    /api/photos POST delete   → 删除（仅本人，连带清 blob）
+     *
+     *  localStorage：
+     *    cyc-me-identity → { rec_id, name, nickname, avatar_token, token, expires_at, avatarDataUrl? }
+     *    （照片不再 cache 到 localStorage —— 每次启动从后端 fetch，避免脏数据）
      * ────────────────────────────────────────────── */
 
     /* ─── localStorage keys ─── */
     const KEY_IDENTITY = 'cyc-me-identity';
-    const KEY_PHOTOS   = 'cyc-me-photos';
-
-    /* ─── Mock 成员（path B 替换为 fetch /api/members） ─── */
-    const MOCK_MEMBERS = [
-      { rec_id: 'rec_jj',   name: '玖玖',   nickname: '',       cities: ['大理'], identity: ['创始人','设计师'] },
-      { rec_id: 'rec_yy',   name: '悠洋',   nickname: '',       cities: ['大理'], identity: ['社区主理'] },
-      { rec_id: 'rec_demi', name: 'Demian', nickname: '',       cities: ['上海'], identity: ['Praxis 主理'] },
-      { rec_id: 'rec_fr',   name: '方荣',   nickname: '',       cities: ['大理'], identity: ['治理'] },
-      { rec_id: 'rec_yx',   name: '月汐',   nickname: '',       cities: ['大理'], identity: ['物业'] },
-      { rec_id: 'rec_qf',   name: '千帆',   nickname: '',       cities: ['大理'], identity: ['运营'] },
-      { rec_id: 'rec_lh',   name: '梁欢',   nickname: '',       cities: ['大理'], identity: ['店长'] },
-      { rec_id: 'rec_yb',   name: '鸭脖',   nickname: '',       cities: ['大理'], identity: ['新媒体'] },
-      { rec_id: 'rec_e1',   name: '小麦',   nickname: 'wheat',  cities: ['大理'], identity: ['手作人'] },
-      { rec_id: 'rec_e2',   name: '阿野',   nickname: '',       cities: ['大理'], identity: ['咖啡店主'] },
-      { rec_id: 'rec_e3',   name: 'Cici',   nickname: '',       cities: ['上海'], identity: ['数字游民'] },
-      { rec_id: 'rec_e4',   name: '十月',   nickname: '',       cities: ['大理'], identity: ['民宿主理'] },
-    ];
-
-    /* ─── Mock 活动（path B 替换为 fetch /api/get-activities） ─── */
-    const MOCK_ACTIVITIES = [
-      { id: 'act_1', title: '苍洱海边野餐',   date: '2025-05-12' },
-      { id: 'act_2', title: '苍山徒步',       date: '2025-04-28' },
-      { id: 'act_3', title: 'Open Mic 之夜',  date: '2025-04-15' },
-      { id: 'act_4', title: '新书共读',       date: '2025-04-03' },
-      { id: 'act_5', title: '即兴戏剧工作坊', date: '2025-03-22' },
-      { id: 'act_6', title: '日出冥想',       date: '2025-03-10' },
-    ];
 
     /* ─── State ─── */
-    let _identity = null;
-    let _photos = [];
+    let _identity = null;        // { rec_id, name, nickname, avatar_token, token, expires_at, avatarDataUrl? }
+    let _photos = [];            // 已 normalize 的（含 id/dataUrl/date 别名供老渲染代码用）
+    let _allMembers = [];        // /api/members 返回的精简公开列表
+    let _allActivities = [];     // /api/get-activities 过去 6 个月
+    let _quota = null;           // { quota, count, remaining }
+    let _membersLoading = false;
+    let _membersErr = null;
     let _selectedForVerify = null;
     let _uploadDataUrl = null;
+
+    /* ─── 工具：ms timestamp → 'YYYY-MM-DD' ─── */
+    function tsToDateStr(ts) {
+      if (!ts) return '';
+      const d = new Date(Number(ts));
+      if (isNaN(d.getTime())) return '';
+      return d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+    }
+    /** 'YYYY-MM-DD' → ms（中午 12:00 +08:00 防时区跳天） */
+    function dateStrToTs(s) {
+      if (!s) return Date.now();
+      return new Date(s + 'T12:00:00+08:00').getTime();
+    }
+
+    /** 后端 photo 对象（record_id/blob_url/taken_at ms）→ 前端兼容版（含 id/dataUrl/date 别名） */
+    function normalizePhoto(p) {
+      return {
+        ...p,
+        id:      p.record_id,
+        dataUrl: p.blob_url,
+        date:    tsToDateStr(p.taken_at),
+      };
+    }
+
+    /* ─── 后端 API loaders ─── */
+    async function loadMembers(force = false) {
+      if (_allMembers.length && !force) return _allMembers;
+      if (_membersLoading) return _allMembers;
+      _membersLoading = true;
+      _membersErr = null;
+      try {
+        const res = await fetch('/api/members');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        _allMembers = (json.members || []);
+        return _allMembers;
+      } catch (err) {
+        _membersErr = err.message || '加载失败';
+        return [];
+      } finally {
+        _membersLoading = false;
+      }
+    }
+
+    async function loadActivities() {
+      if (_allActivities.length) return _allActivities;
+      const today = new Date();
+      const six   = new Date(today); six.setMonth(today.getMonth() - 6);
+      const fmt   = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      try {
+        const res = await fetch('/api/get-activities', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ weekStart: fmt(six), weekEnd: fmt(today) }),
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        _allActivities = (json.activities || []).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        return _allActivities;
+      } catch { return []; }
+    }
+
+    async function loadAndRenderPhotos() {
+      if (!_identity) return;
+      try {
+        const res = await fetch(
+          '/api/photos?member_rec_id=' + encodeURIComponent(_identity.rec_id),
+          { headers: { 'Authorization': 'Bearer ' + _identity.token } }
+        );
+        if (res.status === 401) {
+          // token 过期 → 退出身份
+          setActivity('Expired', '会话已过期，请重新关联身份。');
+          logoutIdentity(true);
+          return;
+        }
+        if (!res.ok) {
+          setActivity('Error', '拉取照片失败');
+          return;
+        }
+        const json = await res.json();
+        _photos = (json.photos || []).map(normalizePhoto);
+        _quota  = json.quota || null;
+        renderHero();
+        renderLineup();
+        renderScrubber();
+        renderIdentity();
+      } catch (err) {
+        setActivity('Error', '网络错误：' + err.message);
+      }
+    }
 
     /* ─── Mascot SVG (5 态, cyc-green 单色) ─── */
     const MOOD = {
@@ -1614,20 +1703,24 @@
     }
     function loadState() {
       try { _identity = JSON.parse(localStorage.getItem(KEY_IDENTITY) || 'null'); } catch {}
-      try { _photos = JSON.parse(localStorage.getItem(KEY_PHOTOS)   || '[]'); } catch {}
-      if (!Array.isArray(_photos)) _photos = [];
+      // token 过期则清掉
+      if (_identity && _identity.expires_at && Date.now() > _identity.expires_at) {
+        _identity = null;
+        localStorage.removeItem(KEY_IDENTITY);
+      }
     }
     function saveIdentity() {
       if (_identity) localStorage.setItem(KEY_IDENTITY, JSON.stringify(_identity));
       else localStorage.removeItem(KEY_IDENTITY);
     }
-    function savePhotos() { localStorage.setItem(KEY_PHOTOS, JSON.stringify(_photos)); }
 
     /* ──────────────────────────────────────────────
      *  Init / state machine
      * ────────────────────────────────────────────── */
     function init() {
       loadState();
+      // 启动就预热成员目录（picker 一打开就有数据）
+      loadMembers();
       if (_identity) showBound();
       else showOnboarding();
       loopActivity();
@@ -1646,12 +1739,15 @@
       document.getElementById('bound').classList.remove('hidden');
       renderTopbarIdentity();
       renderIdentity();
+      // 先用空状态渲染，立刻拉真实照片
+      _photos = [];
       renderHero();
       renderLineup();
       renderScrubber();
-      populateActivityOptions();
-      setActivity(_photos.length ? 'Recalling' : 'Listening',
-                  _photos.length ? '在整理你的社区记忆。' : '准备好接收你的第一张照片。');
+      // 后台拉照片 + 活动候选
+      loadAndRenderPhotos();
+      loadActivities();
+      setActivity('Recalling', '正在拉取你的社区记忆…');
     }
 
     /* ─── Topbar identity chip ─── */
@@ -1666,9 +1762,11 @@
           <span class="topbar-identity-name">${escHtml(_identity.name)}</span>
         </button>`;
     }
-    function logoutIdentity() {
-      if (!confirm('退出当前身份？已上传的照片和头像会保留在浏览器本地，下次同一身份登录后还在。')) return;
+    function logoutIdentity(silent) {
+      if (!silent && !confirm('退出当前身份？照片仍在云端保留，重新关联同一身份后还能看到。')) return;
       _identity = null;
+      _photos = [];
+      _quota = null;
       saveIdentity();
       showOnboarding();
     }
@@ -1759,6 +1857,10 @@
       document.getElementById('picker-search').value = '';
       renderPicker('');
       setTimeout(() => document.getElementById('picker-search').focus(), 250);
+      // 异步加载成员列表（如果未就绪则后台拉，完成后重渲）
+      if (!_allMembers.length && !_membersLoading) {
+        loadMembers().then(() => renderPicker(document.getElementById('picker-search').value.trim().toLowerCase()));
+      }
     }
     function closePicker() {
       document.getElementById('picker-modal').classList.remove('active');
@@ -1768,32 +1870,51 @@
     });
 
     function renderPicker(filter) {
-      const list = MOCK_MEMBERS.filter(m => {
+      const el = document.getElementById('picker-list');
+
+      // 加载状态
+      if (_membersLoading && !_allMembers.length) {
+        el.innerHTML = '<div class="picker-empty">⏳ 加载社区成员…</div>';
+        return;
+      }
+      if (_membersErr && !_allMembers.length) {
+        el.innerHTML = '<div class="picker-empty" style="color:#a93226;">'
+          + '😕 ' + escHtml(_membersErr)
+          + '<br><br><button class="btn-secondary" onclick="loadMembers(true).then(()=>renderPicker(\'\'))">重试</button>'
+          + '</div>';
+        return;
+      }
+
+      const list = _allMembers.filter(m => {
         if (!filter) return true;
-        const hay = (m.name + ' ' + (m.nickname || '') + ' ' + (m.cities || []).join(' ') + ' ' + (m.identity || []).join(' ')).toLowerCase();
+        const hay = ((m.name || '') + ' ' + (m.nickname || '') + ' ' + (m.cities || []).join(' ') + ' ' + (m.identity || []).join(' ')).toLowerCase();
         return hay.includes(filter);
       });
-      const el = document.getElementById('picker-list');
       if (!list.length) {
         el.innerHTML = '<div class="picker-empty">没有匹配的成员</div>';
         return;
       }
       el.innerHTML = list.map(m => {
-        const initials = m.name.slice(0, 1);
+        const initials = (m.name || m.nickname || '·').slice(0, 1);
         const meta = [(m.cities || []).join(' / '), (m.identity || []).join(' · ')].filter(Boolean).join('  ·  ');
+        // 头像：有 avatar_token 用 /api/poster，否则首字母
+        const avatarHtml = m.avatar_token
+          ? `<img src="/api/poster?token=${encodeURIComponent(m.avatar_token)}" alt="${escHtml(m.name)}" onerror="this.replaceWith(document.createTextNode('${escHtml(initials)}'))">`
+          : escHtml(initials);
         return `
-          <div class="picker-row" onclick="selectMember('${m.rec_id}')">
-            <div class="picker-avatar">${escHtml(initials)}</div>
+          <div class="picker-row" onclick="selectMember('${escHtml(m.record_id)}')">
+            <div class="picker-avatar">${avatarHtml}</div>
             <div class="picker-info">
-              <div class="picker-name">${escHtml(m.name)}${m.nickname ? ` <span style="color:var(--cyc-text-muted);font-weight:400">"${escHtml(m.nickname)}"</span>` : ''}</div>
+              <div class="picker-name">${escHtml(m.name || '（未填姓名）')}${m.nickname && m.nickname !== m.name ? ` <span style="color:var(--cyc-text-muted);font-weight:400">"${escHtml(m.nickname)}"</span>` : ''}</div>
               ${meta ? `<div class="picker-meta">${escHtml(meta)}</div>` : ''}
             </div>
           </div>`;
       }).join('');
     }
 
-    function selectMember(rec_id) {
-      _selectedForVerify = MOCK_MEMBERS.find(m => m.rec_id === rec_id);
+    function selectMember(record_id) {
+      _selectedForVerify = _allMembers.find(m => m.record_id === record_id);
+      if (!_selectedForVerify) return;
       closePicker();
       setTimeout(() => openVerify(), 220);
     }
@@ -1830,22 +1951,53 @@
       });
     });
 
-    function submitVerify() {
+    async function submitVerify() {
       const code = [...document.querySelectorAll('.verify-input')].map(i => i.value).join('');
+      const errEl = document.getElementById('verify-error');
+      errEl.textContent = '';
       if (code.length !== 4) {
-        document.getElementById('verify-error').textContent = '请填完 4 位';
+        errEl.textContent = '请填完 4 位';
         return;
       }
-      // mock：任意 4 位通过；path B 改为 POST /api/identity-verify
-      _identity = {
-        rec_id: _selectedForVerify.rec_id,
-        name:   _selectedForVerify.name,
-        nickname: _selectedForVerify.nickname || '',
-      };
-      saveIdentity();
-      document.getElementById('verify-modal').classList.remove('active');
-      showBound();
-      setActivity('Welcome', `欢迎，${_identity.name}。现在你可以开始上传回忆了。`);
+      if (!_selectedForVerify) {
+        errEl.textContent = '请先选成员';
+        return;
+      }
+
+      const btns = document.querySelectorAll('#verify-modal .modal-actions button');
+      btns.forEach(b => b.disabled = true);
+
+      try {
+        const res = await fetch('/api/identity-verify', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            member_rec_id: _selectedForVerify.record_id,
+            code,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) {
+          errEl.textContent = json.error || '验证失败';
+          return;
+        }
+        _identity = {
+          rec_id:       json.member.record_id,
+          name:         json.member.name || '',
+          nickname:     json.member.nickname || '',
+          avatar_token: json.member.avatar_token || null,
+          token:        json.token,
+          expires_at:   json.expires_at,
+        };
+        saveIdentity();
+        document.getElementById('verify-modal').classList.remove('active');
+        showBound();
+        setActivity('Welcome', `欢迎，${_identity.name}。现在你可以开始上传回忆了。`);
+      } catch (err) {
+        errEl.textContent = '网络错误：' + (err.message || err);
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
     }
 
     /* ──────────────────────────────────────────────
@@ -2015,7 +2167,7 @@
     }
 
     /* ──────────────────────────────────────────────
-     *  Upload (mock — 存 localStorage 的 dataURL)
+     *  Upload — 真上传到 Vercel Blob + 飞书 cyc-photos
      * ────────────────────────────────────────────── */
     function openUpload() {
       const m = document.getElementById('upload-modal');
@@ -2026,21 +2178,62 @@
       document.getElementById('upload-preview').src = '';
       document.getElementById('upload-title').value = '';
       document.getElementById('upload-date').value = new Date().toISOString().slice(0, 10);
-      document.getElementById('upload-activity').value = '';
       const pubRadio = document.querySelector('input[name="privacy"][value="public"]');
       if (pubRadio) pubRadio.checked = true;
       document.getElementById('upload-submit').disabled = true;
+      document.getElementById('upload-submit').textContent = '上传';
       _uploadDataUrl = null;
+
+      // 异步加载活动 select 候选（如果还没拉过）
+      const ensureActivities = _allActivities.length
+        ? Promise.resolve()
+        : loadActivities();
+      ensureActivities.then(() => populateActivityOptions(''));
+
+      // 配额提示
+      updateQuotaHint();
     }
     function closeUpload() {
       document.getElementById('upload-modal').classList.remove('active');
     }
 
-    function populateActivityOptions() {
+    /** 刷新 upload modal 顶部的配额提示行 */
+    function updateQuotaHint() {
+      const hint = document.getElementById('upload-quota-hint');
+      if (!hint) return;
+      hint.classList.remove('is-warn', 'is-full');
+      if (!_quota) {
+        hint.textContent = '配额加载中…';
+        return;
+      }
+      const { quota, count, remaining } = _quota;
+      if (remaining <= 0) {
+        hint.textContent = `已达 ${quota} 张上限 — 请删一张旧的，或联系社区管理员开权限。`;
+        hint.classList.add('is-full');
+        // 禁掉提交按钮（即使选了文件也不能上传）
+        const submit = document.getElementById('upload-submit');
+        submit.disabled = true;
+        submit.textContent = '已达上限';
+      } else if (remaining === 1) {
+        hint.textContent = `还能传 1 张 — 这是最后一张配额。`;
+        hint.classList.add('is-warn');
+      } else {
+        hint.textContent = `还能传 ${remaining} 张（共 ${quota} 张配额）。`;
+      }
+    }
+    function closeUpload() {
+      document.getElementById('upload-modal').classList.remove('active');
+    }
+
+    function populateActivityOptions(selectedId) {
       const sel = document.getElementById('upload-activity');
+      const list = _allActivities;
       sel.innerHTML = '<option value="">— 无 —</option>'
-        + MOCK_ACTIVITIES.map(a =>
-            `<option value="${a.id}">${escHtml(a.title)}（${fmtDate(a.date)}）</option>`).join('');
+        + list.map(a => {
+            const id = a.record_id;
+            const sel2 = (id === selectedId) ? ' selected' : '';
+            return `<option value="${escHtml(id)}"${sel2}>${escHtml(a.title || '（未命名）')}${a.date ? `（${fmtDate(a.date)}）` : ''}</option>`;
+          }).join('');
     }
 
     document.getElementById('upload-drop').addEventListener('click', () => {
@@ -2056,7 +2249,10 @@
         const img = document.getElementById('upload-preview');
         img.src = dataUrl;
         img.classList.add('has-image');
-        document.getElementById('upload-submit').disabled = false;
+        // 配额没满才启用提交按钮
+        if (!_quota || _quota.remaining > 0) {
+          document.getElementById('upload-submit').disabled = false;
+        }
         setActivity('Ready', '照片已就绪 — 填好信息点上传。');
       } catch (err) {
         setActivity('Error', '压缩失败：' + (err.message || err));
@@ -2089,33 +2285,65 @@
       });
     }
 
-    function submitUpload() {
+    async function submitUpload() {
       if (!_uploadDataUrl) return;
+      if (!_identity?.token) {
+        setActivity('Error', '身份会话已失效，请重新关联');
+        return;
+      }
       const title = document.getElementById('upload-title').value.trim() || '未命名';
       const date  = document.getElementById('upload-date').value || new Date().toISOString().slice(0, 10);
       const activity_id = document.getElementById('upload-activity').value;
+      const activityObj = _allActivities.find(a => a.record_id === activity_id);
+      const activity_title = activityObj ? (activityObj.title || '') : '';
       const privacy = (document.querySelector('input[name="privacy"]:checked') || {}).value || 'public';
 
-      const photo = {
-        id: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-        dataUrl: _uploadDataUrl,
-        title, date, activity_id, privacy,
-        uploaded_at: Date.now(),
-      };
-      _photos.push(photo);
+      const submitBtn = document.getElementById('upload-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '上传中…';
+      setActivity('Uploading', '正在上传 — 几秒就好。');
+
       try {
-        savePhotos();
+        const res = await fetch('/api/photo-upload', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + _identity.token,
+          },
+          body: JSON.stringify({
+            data_url:       _uploadDataUrl,
+            title,
+            taken_at:       dateStrToTs(date),
+            activity_id:    activity_id || '',
+            activity_title,
+            privacy,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          setActivity('Expired', '会话已过期，请重新关联身份。');
+          logoutIdentity(true);
+          return;
+        }
+        if (!res.ok) {
+          if (json.code === 'QUOTA_EXCEEDED') {
+            setActivity('Limit', json.error);
+          } else {
+            setActivity('Error', json.error || '上传失败（HTTP ' + res.status + '）');
+          }
+          return;
+        }
+        closeUpload();
+        // 重新拉一遍照片 + 配额（保证一致）
+        await loadAndRenderPhotos();
+        const remain = json.quota_remaining ?? (_quota?.remaining ?? '?');
+        setActivity('Saved', '已上传 — 还能传 ' + remain + ' 张。');
       } catch (err) {
-        // localStorage 配额可能溢出（dataURL 大）
-        setActivity('Error', '本地存满了 — 暂不能再加。后端打通后改用云端就没问题。');
-        return;
+        setActivity('Error', '网络错误：' + (err.message || err));
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '上传';
       }
-      closeUpload();
-      renderHero();
-      renderLineup();
-      renderScrubber();
-      renderIdentity();
-      setActivity('Saved', '本地存了一张 — 后端打通后会同步到飞书。');
     }
 
     /* ──────────────────────────────────────────────
@@ -2204,8 +2432,10 @@
         title.textContent = p.title || '未命名';
         const subParts = [];
         if (p.date) subParts.push(fmtDate(p.date));
-        const act = MOCK_ACTIVITIES.find(a => a.id === p.activity_id);
-        if (act) subParts.push(act.title);
+        // 优先用照片对象上冗余的 activity_title（后端写入时存了），fallback 到本地缓存匹配
+        const actTitle = p.activity_title
+          || (_allActivities.find(a => a.record_id === p.activity_id)?.title || '');
+        if (actTitle) subParts.push(actTitle);
         if (p.privacy === 'self') subParts.push('🔒 仅自己');
         sub.textContent = subParts.join(' · ');
         updateLightboxNav();
@@ -2359,9 +2589,11 @@
       // 关联活动 select 重新填，并选中当前值
       const sel = document.getElementById('pd-activity');
       sel.innerHTML = '<option value="">— 无 —</option>'
-        + MOCK_ACTIVITIES.map(a =>
-            `<option value="${a.id}" ${a.id === p.activity_id ? 'selected' : ''}>${escHtml(a.title)}（${fmtDate(a.date)}）</option>`
-          ).join('');
+        + _allActivities.map(a => {
+            const id = a.record_id;
+            const isSel = (id === p.activity_id) ? ' selected' : '';
+            return `<option value="${escHtml(id)}"${isSel}>${escHtml(a.title || '（未命名）')}${a.date ? `（${fmtDate(a.date)}）` : ''}</option>`;
+          }).join('');
 
       // 隐私 radio
       const privacy = p.privacy || 'public';
@@ -2378,37 +2610,71 @@
       _editingPhotoId = null;
     }
 
-    function savePhotoEdit() {
+    async function savePhotoEdit() {
       if (!_editingPhotoId) return;
-      const p = _photos.find(x => x.id === _editingPhotoId);
-      if (!p) return;
-      const newTitle = document.getElementById('pd-title').value.trim();
-      p.title = newTitle || '未命名';
-      p.date  = document.getElementById('pd-date').value || p.date;
-      p.activity_id = document.getElementById('pd-activity').value || '';
-      p.privacy = (document.querySelector('input[name="pd-privacy"]:checked') || {}).value || 'public';
-      savePhotos();
-      renderHero();
-      renderLineup();
-      renderScrubber();
-      renderIdentity();
-      closePhotoDetail();
-      setActivity('Updated', '改好了 — ' + p.title);
+      if (!_identity?.token) { setActivity('Error', '身份会话已失效'); return; }
+
+      const newTitle = document.getElementById('pd-title').value.trim() || '未命名';
+      const dateStr  = document.getElementById('pd-date').value;
+      const activity_id = document.getElementById('pd-activity').value || '';
+      const activityObj = _allActivities.find(a => a.record_id === activity_id);
+      const activity_title = activityObj ? (activityObj.title || '') : '';
+      const privacy = (document.querySelector('input[name="pd-privacy"]:checked') || {}).value || 'public';
+      const taken_at = dateStr ? dateStrToTs(dateStr) : Date.now();
+
+      try {
+        const res = await fetch('/api/photos', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + _identity.token,
+          },
+          body: JSON.stringify({
+            action:    'update',
+            record_id: _editingPhotoId,
+            title:     newTitle,
+            taken_at,
+            activity_id,
+            activity_title,
+            privacy,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 401) { logoutIdentity(true); return; }
+        if (!res.ok) { setActivity('Error', json.error || '保存失败'); return; }
+        closePhotoDetail();
+        await loadAndRenderPhotos();
+        setActivity('Updated', '改好了 — ' + newTitle);
+      } catch (err) {
+        setActivity('Error', '网络错误：' + (err.message || err));
+      }
     }
 
-    function deletePhoto() {
+    async function deletePhoto() {
       if (!_editingPhotoId) return;
+      if (!_identity?.token) { setActivity('Error', '身份会话已失效'); return; }
       const p = _photos.find(x => x.id === _editingPhotoId);
       const label = p && p.title ? `"${p.title}"` : '这张';
-      if (!confirm(`删除 ${label}？此操作不可撤销。`)) return;
-      _photos = _photos.filter(x => x.id !== _editingPhotoId);
-      savePhotos();
-      renderHero();
-      renderLineup();
-      renderScrubber();
-      renderIdentity();
-      closePhotoDetail();
-      setActivity('Deleted', '已删除。');
+      if (!confirm(`删除 ${label}？此操作不可撤销，云端的图片也会一起清。`)) return;
+
+      try {
+        const res = await fetch('/api/photos', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + _identity.token,
+          },
+          body: JSON.stringify({ action: 'delete', record_id: _editingPhotoId }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 401) { logoutIdentity(true); return; }
+        if (!res.ok) { setActivity('Error', json.error || '删除失败'); return; }
+        closePhotoDetail();
+        await loadAndRenderPhotos();
+        setActivity('Deleted', '已删除。');
+      } catch (err) {
+        setActivity('Error', '网络错误：' + (err.message || err));
+      }
     }
 
     /* ──────────────────────────────────────────────

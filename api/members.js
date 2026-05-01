@@ -1,38 +1,46 @@
 /**
  * GET /api/members
- * 给团队架构页的成员选择器用：返回去除私密字段的全员精简列表
  *
- * 鉴权：Authorization: Bearer <TEAM_PASSWORD>
- *   - 团队页登录时已经验证过 TEAM_PASSWORD，前端把它缓存在 sessionStorage，
- *     调用本 API 时通过 header 带上，服务端再次校验。
+ * 公开成员目录（精简字段）— 给 picker 用：团队架构页 + me/timeline 身份关联。
+ *
+ * v2 改动：
+ *   - 去掉 TEAM_PASSWORD 鉴权 — 返回字段已经是公开的（已过滤 hidden、剥
+ *     _wechat/_phone），跟 /community 公开成员页对外暴露的信息等价。
+ *     team 页旧的 Authorization header 也兼容（直接忽略）。
+ *   - 加 KV 缓存（5min）— 避免高频调用打满飞书 quota。
  *
  * 返回：{ success, count, members: [{ record_id, name, nickname, avatar_token, bio, cities, identity }] }
  *   - avatar_token：file_token 字符串，前端拼 /api/poster?token= 加载
- *   - bio：截断到前 80 字（picker 列表只需要扫一眼）
+ *   - bio：截断到前 80 字
  */
 
 import { applyCors } from './_feishu.js';
 import { fetchAllMembers, stripPrivate } from './_member.js';
+import { kvGet, kvSet, isKvConfigured } from './_kv.js';
+
+const KV_KEY = 'members:public_list';
+const KV_TTL = 300;   // 5min
 
 export default async function handler(req, res) {
   applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── 鉴权 ──
-  const TEAM_PASSWORD = process.env.TEAM_PASSWORD;
-  if (!TEAM_PASSWORD)
-    return res.status(500).json({ error: '管理密码未配置（TEAM_PASSWORD）' });
-
-  const auth = req.headers.authorization || '';
-  const password = auth.replace(/^Bearer\s+/i, '').trim();
-  if (password !== TEAM_PASSWORD)
-    return res.status(401).json({ error: '密码错误' });
-
-  // ── 环境变量检查（成员表用专属的 FEISHU_MEMBER_*）──
+  // ── 环境变量 ──
   const required = ['FEISHU_APP_ID', 'FEISHU_APP_SECRET', 'FEISHU_MEMBER_APP_TOKEN', 'FEISHU_MEMBER_TABLE_ID'];
   const missing = required.filter(k => !process.env[k]);
   if (missing.length)
     return res.status(500).json({ error: `服务端环境变量未配置: ${missing.join(', ')}` });
+
+  // ── KV cache ──
+  if (isKvConfigured()) {
+    try {
+      const cached = await kvGet(KV_KEY);
+      if (cached) {
+        const list = JSON.parse(cached);
+        return res.status(200).json({ success: true, count: list.length, members: list, cached: true });
+      }
+    } catch {}
+  }
 
   try {
     const all = await fetchAllMembers();
@@ -52,6 +60,10 @@ export default async function handler(req, res) {
       }))
       // 按姓名排序，稳定可读
       .sort((a, b) => (a.name || a.nickname || '').localeCompare(b.name || b.nickname || '', 'zh-Hans-CN'));
+
+    if (isKvConfigured()) {
+      try { await kvSet(KV_KEY, JSON.stringify(members), KV_TTL); } catch {}
+    }
 
     return res.status(200).json({ success: true, count: members.length, members });
 
