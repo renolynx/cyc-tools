@@ -24,10 +24,10 @@
  */
 
 import { applyCors, getAccessToken } from './_feishu.js';
-import { fetchMember, findMemberByWechat } from './_member.js';
+import { findMemberByWechat } from './_member.js';
 import { signToken, getMemberLast4, isPlaceholderWechat } from './_auth.js';
-import { kvGet, isKvConfigured, invalidate } from './_kv.js';
-import { appendAdminLog } from './_kv.js';
+import { invalidate, appendAdminLog } from './_kv.js';
+import { loadMemberOrError, sanitizedMemberPayload } from './_identity.js';
 
 const APP_TOKEN  = process.env.FEISHU_MEMBER_APP_TOKEN;
 const TABLE_ID   = process.env.FEISHU_MEMBER_TABLE_ID;
@@ -41,24 +41,14 @@ export default async function handler(req, res) {
   const member_rec_id = (body.member_rec_id || '').toString().trim();
   const mode = (body.mode || 'verify').toString();
 
-  if (!member_rec_id) {
-    return res.status(400).json({ error: '缺参数：member_rec_id' });
-  }
-
   const required = ['FEISHU_APP_ID', 'FEISHU_APP_SECRET', 'FEISHU_MEMBER_APP_TOKEN', 'FEISHU_MEMBER_TABLE_ID', 'TEAM_PASSWORD'];
   const missing = required.filter(k => !process.env[k]);
   if (missing.length) {
     return res.status(500).json({ error: `服务端环境变量未配置: ${missing.join(', ')}` });
   }
 
-  let member;
-  try {
-    member = await fetchMember(member_rec_id);
-  } catch (err) {
-    return res.status(500).json({ error: '查询成员失败：' + err.message });
-  }
-  if (!member) return res.status(404).json({ error: '成员不存在' });
-  if (member.hidden) return res.status(404).json({ error: '该成员已隐藏' });
+  const member = await loadMemberOrError(member_rec_id, res);
+  if (!member) return;
 
   // ────────────────────────────────────────
   //  Mode B · bootstrap · 第一次录入微信号
@@ -127,26 +117,16 @@ export default async function handler(req, res) {
       });
     } catch {}
 
-    // 颁发 token
+    // 颁发 token（注意：用 fresh member 让 sanitized 拉到刚写入的 nickname；
+    // 但写入的只是 wechat（私密），name/nickname 没变，直接用 member 对象）
     const sigToken = signToken(member_rec_id);
     const expires_at = Number(sigToken.split('|')[1]);
-    let avatar_url = null;
-    if (isKvConfigured()) {
-      try { avatar_url = await kvGet('avatar_url:' + member_rec_id); } catch {}
-    }
-
     return res.status(200).json({
       success: true,
       token: sigToken,
       expires_at,
       bootstrapped: true,
-      member: {
-        record_id:    member.record_id,
-        name:         member.name || '',
-        nickname:     member.nickname || '',
-        avatar_token: member.avatar?.file_token || null,
-        avatar_url,
-      },
+      member: await sanitizedMemberPayload(member),
     });
   }
 
@@ -174,21 +154,10 @@ export default async function handler(req, res) {
   const sigToken = signToken(member_rec_id);
   const expires_at = Number(sigToken.split('|')[1]);
 
-  let avatar_url = null;
-  if (isKvConfigured()) {
-    try { avatar_url = await kvGet('avatar_url:' + member_rec_id); } catch {}
-  }
-
   return res.status(200).json({
     success: true,
     token: sigToken,
     expires_at,
-    member: {
-      record_id:    member.record_id,
-      name:         member.name || '',
-      nickname:     member.nickname || '',
-      avatar_token: member.avatar?.file_token || null,
-      avatar_url,
-    },
+    member: await sanitizedMemberPayload(member),
   });
 }
