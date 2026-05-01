@@ -3,8 +3,12 @@
   "trailingSlash": false,
   "functions": {
     "api/community-write.js": { "maxDuration": 60 },
-    "api/photo-upload.js":    { "maxDuration": 60 }
+    "api/photo-upload.js":    { "maxDuration": 60 },
+    "api/health.js":          { "maxDuration": 30 }
   },
+  "crons": [
+    { "path": "/api/health", "schedule": "0 * * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
