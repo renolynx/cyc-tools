@@ -38,8 +38,24 @@ function getSelect(v) {
 }
 function getCheckbox(v) { return Boolean(v); }
 function getRelationIds(v) {
-  if (!v || typeof v !== 'object') return [];
-  return v.link_record_ids || v.linked_record_ids || [];
+  if (!v) return [];
+  // 飞书 SingleLink 字段可能返回数组形式（每项含 record_ids），也可能是对象
+  // （含 link_record_ids 数组）。兼容两种。
+  if (Array.isArray(v)) {
+    const out = [];
+    for (const item of v) {
+      if (typeof item === 'string') out.push(item);
+      else if (item && typeof item === 'object') {
+        if (Array.isArray(item.record_ids)) out.push(...item.record_ids);
+        else if (item.id) out.push(item.id);
+      }
+    }
+    return out;
+  }
+  if (typeof v === 'object') {
+    return v.link_record_ids || v.linked_record_ids || v.record_ids || [];
+  }
+  return [];
 }
 
 /** 飞书 record → Photo 对象（公开输出格式） */

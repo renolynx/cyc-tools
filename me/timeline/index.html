@@ -2644,6 +2644,19 @@
       const privacy = (document.querySelector('input[name="pd-privacy"]:checked') || {}).value || 'public';
       const taken_at = dateStr ? dateStrToTs(dateStr) : Date.now();
 
+      // 找保存按钮 — 立刻视觉反馈避免"点了没用"的体感
+      const saveBtn = document.querySelector('#photo-modal .modal-actions--split .btn-primary');
+      const cancelBtn = document.querySelector('#photo-modal .modal-actions--split .btn-secondary');
+      const delBtn = document.querySelector('#photo-modal .modal-actions--split .btn-danger');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '保存中…';
+        saveBtn.style.opacity = '0.7';
+      }
+      if (cancelBtn) cancelBtn.disabled = true;
+      if (delBtn)    delBtn.disabled = true;
+      setActivity('Saving', '正在保存改动…');
+
       try {
         const res = await fetch('/api/photos', {
           method:  'POST',
@@ -2662,13 +2675,23 @@
           }),
         });
         const json = await res.json().catch(() => ({}));
+        console.log('[savePhotoEdit] status', res.status, 'body', json);
         if (res.status === 401) { logoutIdentity(true); return; }
-        if (!res.ok) { setActivity('Error', json.error || '保存失败'); return; }
+        if (!res.ok) {
+          setActivity('Error', json.error || ('保存失败 (HTTP ' + res.status + ')'));
+          return;
+        }
         closePhotoDetail();
         await loadAndRenderPhotos();
         setActivity('Updated', '改好了 — ' + newTitle);
       } catch (err) {
+        console.error('[savePhotoEdit] network', err);
         setActivity('Error', '网络错误：' + (err.message || err));
+      } finally {
+        // 复位按钮
+        if (saveBtn)   { saveBtn.disabled = false; saveBtn.textContent = '保存'; saveBtn.style.opacity = ''; }
+        if (cancelBtn) cancelBtn.disabled = false;
+        if (delBtn)    delBtn.disabled = false;
       }
     }
 
@@ -2678,6 +2701,12 @@
       const p = _photos.find(x => x.id === _editingPhotoId);
       const label = p && p.title ? `"${p.title}"` : '这张';
       if (!confirm(`删除 ${label}？此操作不可撤销，云端的图片也会一起清。`)) return;
+
+      const delBtn = document.querySelector('#photo-modal .modal-actions--split .btn-danger');
+      const saveBtn = document.querySelector('#photo-modal .modal-actions--split .btn-primary');
+      if (delBtn)  { delBtn.disabled = true; delBtn.textContent = '删除中…'; }
+      if (saveBtn) saveBtn.disabled = true;
+      setActivity('Deleting', '正在删除…');
 
       try {
         const res = await fetch('/api/photos', {
@@ -2689,13 +2718,21 @@
           body: JSON.stringify({ action: 'delete', record_id: _editingPhotoId }),
         });
         const json = await res.json().catch(() => ({}));
+        console.log('[deletePhoto] status', res.status, 'body', json);
         if (res.status === 401) { logoutIdentity(true); return; }
-        if (!res.ok) { setActivity('Error', json.error || '删除失败'); return; }
+        if (!res.ok) {
+          setActivity('Error', json.error || ('删除失败 (HTTP ' + res.status + ')'));
+          return;
+        }
         closePhotoDetail();
         await loadAndRenderPhotos();
         setActivity('Deleted', '已删除。');
       } catch (err) {
+        console.error('[deletePhoto] network', err);
         setActivity('Error', '网络错误：' + (err.message || err));
+      } finally {
+        if (delBtn)  { delBtn.disabled = false; delBtn.textContent = '删除'; }
+        if (saveBtn) saveBtn.disabled = false;
       }
     }
 
