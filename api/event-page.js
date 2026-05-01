@@ -135,7 +135,7 @@ function renderEventDetail(act, rsvps = [], fromMemberId = '') {
 ${jsonLd}
 </script>
 </head>
-<body class="event-page">
+<body class="event-page atlas-canvas">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>

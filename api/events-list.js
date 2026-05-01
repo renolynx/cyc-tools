@@ -130,7 +130,7 @@ function renderEventsList(acts) {
 ${itemListLd}
 </script>
 </head>
-<body class="event-page el-page">
+<body class="event-page el-page atlas-canvas">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>

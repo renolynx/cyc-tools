@@ -2805,3 +2805,102 @@ body.aurora-canvas .cm-type-chip {
   color: oklch(0.85 0.06 150);
 }
 body.aurora-canvas .cm-type-chip em { color: oklch(0.65 0.02 150); }
+
+/* ═══════════════════════════════════════════════
+ * Atlas 层（editorial / 对外 — /events、/events/:id）
+ * 加 .atlas-canvas 到 body 时激活
+ * "Atlas-lite" 版：没现成大理风景照素材，用 cyc 配色渐变 + 黄昏氛围带
+ *   - 顶部 hero 区放渐变带（沙→落日橙→深绿）模拟大理黄昏
+ *   - 下方内容区保持沙底，活动卡可读性优先
+ *   - topbar 加深绿玻璃感（Atlas 标志性深色 chrome）
+ *   - tagline / hero 文字白色 + 70% opacity 跟 daybreak-os 规范一致
+ * ═══════════════════════════════════════════════ */
+
+body.atlas-canvas {
+  background:
+    /* 顶部 360px 高度的"黄昏氛围带" — 沙橙到深绿过渡 + 内容区沙底 */
+    linear-gradient(
+      to bottom,
+      oklch(0.32 0.06 50)  0px,        /* 顶部深暮沙橙 */
+      oklch(0.42 0.10 35)  120px,      /* 落日橙 */
+      oklch(0.55 0.12 60)  240px,      /* 暖光过渡 */
+      var(--cyc-sand)      360px,      /* 沙底（与下方内容区无缝接合）*/
+      var(--cyc-sand)      100%
+    );
+  background-attachment: fixed;
+  position: relative;
+  min-height: 100vh;
+}
+/* Atlas hero 区上方的"星点"texture — 让渐变不显得太干净 */
+body.atlas-canvas::before {
+  content: ''; position: fixed; inset: 0 0 auto 0;
+  height: 360px;
+  background:
+    radial-gradient(2px 2px at 20% 30%, oklch(1 0 0 / 0.08), transparent),
+    radial-gradient(1.5px 1.5px at 75% 60%, oklch(1 0 0 / 0.06), transparent),
+    radial-gradient(2px 2px at 50% 80%, oklch(1 0 0 / 0.05), transparent);
+  background-size: 200px 200px, 250px 250px, 180px 180px;
+  pointer-events: none; z-index: 0;
+  mix-blend-mode: screen;
+}
+
+/* topbar 在 Atlas 暮色里 */
+body.atlas-canvas .event-topbar {
+  background: oklch(0.20 0.04 150 / 0.55);
+  backdrop-filter: blur(28px) saturate(1.4);
+  border-bottom-color: oklch(1 0 0 / 0.10);
+}
+body.atlas-canvas .event-back,
+body.atlas-canvas .event-site {
+  color: oklch(1 0 0 / 0.90);
+}
+body.atlas-canvas .event-back:active {
+  background: oklch(1 0 0 / 0.10);
+}
+
+/* 列表页 hero — Atlas 标志性大字 + tagline 70% white */
+body.atlas-canvas .el-hero {
+  padding: 28px 0 8px;
+}
+body.atlas-canvas .el-hero h1 {
+  color: oklch(1 0 0 / 0.96);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px oklch(0 0 0 / 0.25);
+}
+body.atlas-canvas .el-hero-sub {
+  color: oklch(1 0 0 / 0.70);
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+/* 详情页 hero — meta-row + title 在暮色背景上 */
+body.atlas-canvas .event-meta-row {
+  margin-top: 8px;
+}
+body.atlas-canvas .event-date-pill {
+  background: oklch(1 0 0 / 0.18);
+  color: oklch(1 0 0 / 0.96);
+  backdrop-filter: blur(16px);
+}
+body.atlas-canvas .event-time-pill {
+  background: oklch(1 0 0 / 0.10);
+  color: oklch(1 0 0 / 0.92);
+  border-color: oklch(1 0 0 / 0.18);
+}
+body.atlas-canvas .event-past-pill {
+  background: oklch(0 0 0 / 0.30);
+  color: oklch(1 0 0 / 0.75);
+}
+body.atlas-canvas .event-confirm-pill {
+  background: oklch(0.78 0.18 35 / 0.32);
+  color: oklch(1 0 0 / 0.98);
+}
+body.atlas-canvas .event-title {
+  color: oklch(1 0 0 / 0.98);
+  text-shadow: 0 2px 16px oklch(0 0 0 / 0.30);
+}
+
+/* 旧 blob 在 Atlas 模式下完全隐去 — 渐变带已经足够 */
+body.atlas-canvas .blob { display: none; }
