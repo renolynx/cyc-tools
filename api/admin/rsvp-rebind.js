@@ -85,6 +85,19 @@ export default async function handler(req, res) {
   const dryRun = body.dryRun !== false;        // 默认 dryRun=true，要显式传 false 才执行
   const autoCreate = body.autoCreate !== false; // 默认 autoCreate=true
 
+  // manual_overrides: 让 admin 把 ambiguous 里的合并字段拆成多人
+  //   [{ from: '野人&离奇', splits: ['野人', '离奇'] }, ...]
+  //   - splits.length === 1: 把 from 重命名为 splits[0]，按真人处理
+  //   - splits.length > 1: splits[0] 作 primary（绑该 RSVP），其余建档不绑 RSVP
+  const manualOverrides = Array.isArray(body.manual_overrides) ? body.manual_overrides : [];
+  const overrideMap = new Map();
+  for (const o of manualOverrides) {
+    if (o && typeof o.from === 'string' && Array.isArray(o.splits)) {
+      const splits = o.splits.map(s => String(s).trim()).filter(Boolean);
+      if (splits.length) overrideMap.set(o.from, splits);
+    }
+  }
+
   try {
     // ── 1. 拉数据 ──
     const [allMembers, allRsvps] = await Promise.all([
@@ -113,40 +126,65 @@ export default async function handler(req, res) {
     }
 
     // ── 2. 按 (姓名, 微信号) 去重 RSVP ──
-    //   两步策略避免"同一人因有/无微信号被分成两个" :
-    //   step A: 优先按非空 wechat 分组
-    //   step B: 没 wechat 的 RSVP 看姓名是否能合并到 step A 已建的组
+    //   - 处理 manual_overrides：把"野人&离奇"这种合并字段重映射到 splits[0]
+    //     作 primary，其余 splits 加入 auxSplitNames（独立建档不绑 RSVP）
+    //   - 然后两步走：Step A 按 wechat 分组，Step B 同名合并
     const personMap = new Map();   // canonical_key → { name, wechat, rsvp_records: [...] }
-    const nameToKey = new Map();    // name → canonical_key（仅取第一个出现的，用于 step B 合并）
+    const nameToKey = new Map();
+    const auxSplitNames = new Set();   // 需要独立建档但不绑 RSVP 的人名
 
-    // Step A: 按 wechat 分组
-    for (const r of allRsvps) {
-      const wechat = normalizeWechat(r._wechat || r.wechat || '');
-      if (!wechat) continue;
-      const key = 'w:' + wechat;
+    function getOrCreateGroup(name, wechat) {
+      const key = wechat ? ('w:' + wechat) : ('n:' + name);
       if (!personMap.has(key)) {
-        personMap.set(key, { name: (r.name || '').trim(), wechat, rsvp_records: [] });
-        const n = (r.name || '').trim();
-        if (n && !nameToKey.has(n)) nameToKey.set(n, key);
+        personMap.set(key, { name, wechat, rsvp_records: [] });
+        if (name && !nameToKey.has(name)) nameToKey.set(name, key);
       }
-      personMap.get(key).rsvp_records.push({
-        record_id: r.record_id,
-        current_link_id: r.member_rec_id || '',
-      });
+      return personMap.get(key);
+    }
+
+    // Step A: 按 wechat 分组（含 override 处理）
+    for (const r of allRsvps) {
+      const origName = (r.name || '').trim();
+      if (!origName) continue;
+      const wechat = normalizeWechat(r._wechat || r.wechat || '');
+
+      // override：合并字段 → 拆出 primary 名字
+      let useName = origName;
+      if (overrideMap.has(origName)) {
+        const splits = overrideMap.get(origName);
+        useName = splits[0];
+        for (let i = 1; i < splits.length; i++) auxSplitNames.add(splits[i]);
+      }
+
+      if (wechat) {
+        const grp = getOrCreateGroup(useName, wechat);
+        grp.rsvp_records.push({
+          record_id: r.record_id,
+          current_link_id: r.member_rec_id || '',
+        });
+      }
     }
     // Step B: 没 wechat 的 RSVP — 同名优先合并，否则建 'n:<name>' 组
     for (const r of allRsvps) {
+      const origName = (r.name || '').trim();
+      if (!origName) continue;
       const wechat = normalizeWechat(r._wechat || r.wechat || '');
       if (wechat) continue;
-      const name = (r.name || '').trim();
-      if (!name) continue;
-      let key = nameToKey.get(name);
+
+      let useName = origName;
+      if (overrideMap.has(origName)) {
+        const splits = overrideMap.get(origName);
+        useName = splits[0];
+        for (let i = 1; i < splits.length; i++) auxSplitNames.add(splits[i]);
+      }
+
+      let key = nameToKey.get(useName);
       if (!key) {
-        key = 'n:' + name;
+        key = 'n:' + useName;
         if (!personMap.has(key)) {
-          personMap.set(key, { name, wechat: '', rsvp_records: [] });
+          personMap.set(key, { name: useName, wechat: '', rsvp_records: [] });
         }
-        nameToKey.set(name, key);
+        nameToKey.set(useName, key);
       }
       personMap.get(key).rsvp_records.push({
         record_id: r.record_id,
@@ -225,6 +263,29 @@ export default async function handler(req, res) {
       p._needs_create = true;
     }
 
+    // 计算 aux_to_create：split 拆出的次要人，独立建档不绑 RSVP
+    const auxToCreate = [];
+    for (const auxName of auxSplitNames) {
+      // 看是否已经被 to_create / matched 覆盖
+      let alreadyHandled = false;
+      for (const p of personMap.values()) {
+        if (p.name === auxName && (p._target_rec_id || p._needs_create)) {
+          alreadyHandled = true;
+          break;
+        }
+      }
+      if (alreadyHandled) {
+        auxToCreate.push({ name: auxName, action: 'covered_by_primary' });
+        continue;
+      }
+      // 总表已有
+      if (memberByName.has(auxName) && memberByName.get(auxName).length === 1) {
+        auxToCreate.push({ name: auxName, action: 'already_in_table', rec_id: memberByName.get(auxName)[0].record_id });
+        continue;
+      }
+      auxToCreate.push({ name: auxName, action: 'will_create' });
+    }
+
     // ── 4. dry run 模式 — 直接返回 plan ──
     if (dryRun) {
       return res.status(200).json({
@@ -239,6 +300,9 @@ export default async function handler(req, res) {
         to_create: toCreate,
         ambiguous_count: ambiguous.length,
         ambiguous,
+        manual_overrides_applied: manualOverrides.length,
+        aux_to_create_count: auxToCreate.length,
+        aux_to_create: auxToCreate,
         next_step: autoCreate
           ? '若同意此 plan，调用同端点 body 加 { dryRun: false } 执行（autoCreate 默认 true，会新建找不到的真人）'
           : '若同意，body { dryRun: false, autoCreate: false } 执行（仅重绑能找到的，跳过新建）',
@@ -265,6 +329,34 @@ export default async function handler(req, res) {
           createdCount++;
         } catch (err) {
           errors.push({ stage: 'create', name: p.name, error: err.message });
+        }
+      }
+    }
+
+    // Step A.5: 处理 aux_splits — split 拆出的次要人独立建档（不绑 RSVP）
+    const auxCreatedDetail = [];
+    if (autoCreate) {
+      for (const auxName of auxSplitNames) {
+        // 已经被某个 person primary 处理过的，跳过
+        let alreadyHandled = false;
+        for (const p of personMap.values()) {
+          if (p.name === auxName && p._target_rec_id) { alreadyHandled = true; break; }
+        }
+        if (alreadyHandled) continue;
+        // 总表已有
+        if (memberByName.has(auxName) && memberByName.get(auxName).length === 1) {
+          auxCreatedDetail.push({ name: auxName, action: 'already_in_table', rec_id: memberByName.get(auxName)[0].record_id });
+          continue;
+        }
+        try {
+          const newId = await autoCreateMember({
+            name:   auxName,
+            source: 'rsvp-rebind 拆分合并字段',
+          });
+          auxCreatedDetail.push({ name: auxName, action: 'created', rec_id: newId });
+          createdCount++;
+        } catch (err) {
+          errors.push({ stage: 'aux-create', name: auxName, error: err.message });
         }
       }
     }
@@ -303,7 +395,11 @@ export default async function handler(req, res) {
     return res.status(200).json({
       dryRun: false,
       total_rsvps: allRsvps.length,
-      executed: { created: createdCount, rebound_rsvps: reboundCount },
+      executed: {
+        created: createdCount,
+        rebound_rsvps: reboundCount,
+        aux_created: auxCreatedDetail,
+      },
       matched_count: matched.length,
       to_create_count: toCreate.length,
       ambiguous_count: ambiguous.length,
