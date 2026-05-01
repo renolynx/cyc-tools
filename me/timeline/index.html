@@ -1987,9 +1987,12 @@
       el.innerHTML = list.map(m => {
         const initials = (m.name || m.nickname || '·').slice(0, 1);
         const meta = [(m.cities || []).join(' / '), (m.identity || []).join(' · ')].filter(Boolean).join('  ·  ');
-        // 头像：有 avatar_token 用 /api/poster，否则首字母
-        const avatarHtml = m.avatar_token
-          ? `<img src="/api/poster?token=${encodeURIComponent(m.avatar_token)}" alt="${escHtml(m.name)}" onerror="this.replaceWith(document.createTextNode('${escHtml(initials)}'))">`
+        // 头像优先级：用户上传的云端 avatar_url > 飞书原生 avatar_token > 首字母
+        let avatarSrc = '';
+        if (m.avatar_url)        avatarSrc = m.avatar_url;
+        else if (m.avatar_token) avatarSrc = '/api/poster?token=' + encodeURIComponent(m.avatar_token);
+        const avatarHtml = avatarSrc
+          ? `<img src="${avatarSrc}" alt="${escHtml(m.name)}" onerror="this.replaceWith(document.createTextNode('${escHtml(initials)}'))">`
           : escHtml(initials);
         return `
           <div class="picker-row" onclick="selectMember('${escHtml(m.record_id)}')">

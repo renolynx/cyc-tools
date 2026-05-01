@@ -27,6 +27,29 @@ export async function kvGet(key) {
   }
 }
 
+/** 批量读 keys（Upstash REST: GET /mget/k1/k2/...）；
+ *  返回与 keys 等长的数组（缺失项 = null）；失败整体 null */
+export async function kvMget(keys) {
+  if (!isKvConfigured() || !Array.isArray(keys) || !keys.length) {
+    return new Array(keys?.length || 0).fill(null);
+  }
+  try {
+    const path = keys.map(encodeURIComponent).join('/');
+    const res = await fetch(`${KV_URL}/mget/${path}`, {
+      headers: { Authorization: `Bearer ${KV_TOKEN}` },
+    });
+    if (!res.ok) return new Array(keys.length).fill(null);
+    const data = await res.json();
+    if (data.error || !Array.isArray(data.result)) {
+      return new Array(keys.length).fill(null);
+    }
+    return data.result;
+  } catch (err) {
+    console.error('[kv mget]', err.message);
+    return new Array(keys.length).fill(null);
+  }
+}
+
 /** 删 key；KV 没配置 / 不存在都视为成功（幂等） */
 export async function kvDel(key) {
   if (!isKvConfigured()) return false;

@@ -16,7 +16,7 @@
 
 import { applyCors } from './_feishu.js';
 import { fetchAllMembers, stripPrivate } from './_member.js';
-import { kvGet, kvSet, isKvConfigured } from './_kv.js';
+import { kvGet, kvSet, kvMget, isKvConfigured } from './_kv.js';
 
 const KV_KEY = 'members:public_list';
 const KV_TTL = 300;   // 5min
@@ -54,12 +54,24 @@ export default async function handler(req, res) {
         name:         m.name || '',
         nickname:     m.nickname || '',
         avatar_token: m.avatar?.file_token || null,
+        avatar_url:   null,           // 占位，下面 KV 批量填
         bio:          (m.bio || '').slice(0, 80),
         cities:       m.cities || [],
         identity:     m.identity || [],
       }))
       // 按姓名排序，稳定可读
       .sort((a, b) => (a.name || a.nickname || '').localeCompare(b.name || b.nickname || '', 'zh-Hans-CN'));
+
+    // 批量从 KV 拉用户上传过的头像 URL，覆盖到 avatar_url
+    if (isKvConfigured()) {
+      try {
+        const keys = members.map(m => 'avatar_url:' + m.record_id);
+        const urls = await kvMget(keys);
+        members.forEach((m, i) => { if (urls[i]) m.avatar_url = urls[i]; });
+      } catch (err) {
+        console.warn('[members] mget avatar_url 失败：', err.message);
+      }
+    }
 
     if (isKvConfigured()) {
       try { await kvSet(KV_KEY, JSON.stringify(members), KV_TTL); } catch {}
