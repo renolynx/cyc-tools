@@ -6,19 +6,90 @@
 /* ── Reset ── */
 *{box-sizing:border-box;margin:0;padding:0}
 
-/* ── Tokens ── */
+/* ── Tokens ──
+ * 跟 DESIGN.md 一一对应。第一阶段 token 迁移：新 token 用 --cyc-* 命名空间
+ * 注入到 :root，旧 token (--green / --orange / --muted 等) 改为指向新 token
+ * 的别名 —— 现有所有 .panel / .act-card / etc 用 var(--green) 透明继续工作，
+ * 新组件 (Atlas / Aurora / Daybook 三层) 直接用 --cyc-* 命名。
+ *
+ * 详见 DESIGN.md "Migration Map" 章节。
+ */
 :root{
-  --green:   #1c3d2e;
-  --green2:  #2a5740;
-  --orange:  #d9652a;
-  --sand:    #f2ede6;
-  --card:    rgba(255,255,255,0.75);
-  --border:  rgba(255,255,255,0.6);
-  --stroke:  rgba(0,0,0,0.08);
-  --text:    #1a1a1a;
-  --muted:   #6b6b6b;
-  --r:       16px;
-  --r-sm:    10px;
+  /* === 新 token 系统（DESIGN.md 命名）=== */
+
+  /* Brand palette — 不变 */
+  --cyc-green:        #1c3d2e;
+  --cyc-green-2:      #2a5740;
+  --cyc-orange:       #d9652a;
+  --cyc-sand:         #f2ede6;
+  --cyc-tan:          #c8a96e;
+
+  /* Neutral system — AAA-passing on sand */
+  --cyc-text:         #1a1a1a;   /* 11.8:1 ✅ AAA */
+  --cyc-text-strong:  #0d0d0d;   /* 14:1   ✅ AAA */
+  --cyc-text-muted:   #4d4d4d;   /* 7.4:1  ✅ AAA — 替换旧 #6b6b6b */
+  --cyc-text-subtle:  #5c5c5c;   /* 5.9:1 — 仅 ≥14px bold 或 ≥18px 常规 */
+  --cyc-text-faint:   #757575;   /* 3.5:1 — 仅 placeholder / tag */
+
+  /* Status colors */
+  --cyc-success:        #157a59;
+  --cyc-success-light:  #1d9e75;
+  --cyc-danger:         #a93226;
+  --cyc-danger-light:   #c0392b;
+  --cyc-warning:        #b04a18;
+
+  /* Surfaces */
+  --cyc-surface-glass:        rgba(255, 255, 255, 0.75);
+  --cyc-surface-glass-strong: rgba(255, 255, 255, 0.88);
+  --cyc-surface-glass-light:  rgba(255, 255, 255, 0.60);
+  --cyc-surface-pure:         #ffffff;
+  --cyc-surface-tinted:       rgba(28, 61, 46, 0.04);
+  --cyc-border-glass: rgba(255, 255, 255, 0.6);
+  --cyc-stroke:       rgba(0, 0, 0, 0.08);
+  --cyc-stroke-soft:  rgba(0, 0, 0, 0.05);
+  --cyc-inset-shine:  rgba(255, 255, 255, 0.7);
+
+  /* Radius */
+  --cyc-r-pill:    9999px;
+  --cyc-r-card:    16px;
+  --cyc-r-card-lg: 24px;
+  --cyc-r-inner:   10px;
+  --cyc-r-tight:   6px;
+  --cyc-r-dot:     50%;
+
+  /* Spacing */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-6: 24px; --sp-8: 32px; --sp-12: 48px; --sp-16: 64px;
+
+  /* Type scale */
+  --cyc-text-xs:   12px;
+  --cyc-text-sm:   14px;
+  --cyc-text-base: 16px;
+  --cyc-text-lg:   20px;
+  --cyc-text-xl:   28px;
+  --cyc-text-2xl:  40px;
+  --cyc-text-3xl:  56px;
+
+  /* Motion */
+  --ease-out-iox:  cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-instant: 100ms;
+  --dur-fast:    150ms;
+  --dur-base:    240ms;
+  --dur-slow:    320ms;
+
+  /* === 旧 token 别名 — 指向新 token，保留向后兼容 === */
+  --green:   var(--cyc-green);
+  --green2:  var(--cyc-green-2);
+  --orange:  var(--cyc-orange);
+  --sand:    var(--cyc-sand);
+  --card:    var(--cyc-surface-glass);
+  --border:  var(--cyc-border-glass);
+  --stroke:  var(--cyc-stroke);
+  --text:    var(--cyc-text);
+  --muted:   var(--cyc-text-muted);   /* 自动从 #6b6b6b → #4d4d4d AAA */
+  --r:       var(--cyc-r-card);
+  --r-sm:    var(--cyc-r-inner);
 }
 
 /* ── Base ── */
