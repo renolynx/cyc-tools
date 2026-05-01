@@ -855,6 +855,12 @@
       font-weight: 700;
       color: var(--cyc-green);
       letter-spacing: 0;
+      overflow: hidden;        /* 防止 <img> 溢出（之前没加 → 第一张原图占满整个 picker-list） */
+    }
+    .picker-avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
     }
     .picker-info { flex: 1; min-width: 0; }
     .picker-name {
