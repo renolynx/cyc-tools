@@ -1768,14 +1768,24 @@
     /* ─── Topbar identity chip ─── */
     function renderTopbarIdentity() {
       const slot = document.getElementById('topbar-identity-slot');
-      const avatarInner = _identity.avatarDataUrl
-        ? `<img src="${_identity.avatarDataUrl}" alt="${escHtml(_identity.name)}">`
+      const url = currentAvatarUrl();
+      const avatarInner = url
+        ? `<img src="${url}" alt="${escHtml(_identity.name)}">`
         : escHtml(_identity.name.slice(0, 1));
       slot.innerHTML = `
         <button class="topbar-identity" onclick="logoutIdentity()" aria-label="退出当前身份">
           <span class="topbar-identity-avatar">${avatarInner}</span>
           <span class="topbar-identity-name">${escHtml(_identity.name)}</span>
         </button>`;
+    }
+
+    /** 头像渲染优先级：用户上传的云端 URL > 飞书原生附件 token > 旧 dataURL > 无 */
+    function currentAvatarUrl() {
+      if (!_identity) return null;
+      if (_identity.avatar_url)   return _identity.avatar_url;
+      if (_identity.avatar_token) return '/api/poster?token=' + encodeURIComponent(_identity.avatar_token);
+      if (_identity.avatarDataUrl) return _identity.avatarDataUrl;   // 旧本地版兼容
+      return null;
     }
     function logoutIdentity(silent) {
       if (!silent && !confirm('退出当前身份？照片仍在云端保留，重新关联同一身份后还能看到。')) return;
@@ -1795,8 +1805,9 @@
         `在 CYC 度过了 <span class="accent">${days}</span> 天 · 已贡献 <span class="accent">${count}</span> 张`;
       // 头像优先 — 没传则显示默认笑脸 mascot（content：轻微笑）
       const frame = document.getElementById('identity-mood');
-      if (_identity.avatarDataUrl) {
-        frame.innerHTML = `<img src="${_identity.avatarDataUrl}" alt="${escHtml(_identity.name)}">`;
+      const url = currentAvatarUrl();
+      if (url) {
+        frame.innerHTML = `<img src="${url}" alt="${escHtml(_identity.name)}">`;
         frame.classList.add('has-image');
       } else {
         frame.innerHTML = moodSvg('content');
@@ -1814,19 +1825,50 @@
     async function handleAvatarChange(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      if (!_identity?.token) {
+        setActivity('Error', '身份会话已失效，请重新关联');
+        e.target.value = '';
+        return;
+      }
       setActivity('Cropping', '正在处理头像…');
       try {
         // 头像压到 256×256 中心方裁，体积小 + 快
         const dataUrl = await compressAvatar(file, 256, 0.85);
-        _identity.avatarDataUrl = dataUrl;
+
+        // 上传到云端（Vercel Blob + KV 持久化映射）
+        setActivity('Uploading', '正在保存到云端…');
+        const res = await fetch('/api/avatar-upload', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + _identity.token,
+          },
+          body: JSON.stringify({ data_url: dataUrl }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 401) { logoutIdentity(true); return; }
+        if (!res.ok) {
+          // 云端失败 → 退而求其次：本地 dataUrl（旧行为，至少这次会话能看到）
+          console.warn('[avatar] 云端上传失败，仅本地显示：', json.error);
+          _identity.avatarDataUrl = dataUrl;
+          saveIdentity();
+          renderIdentity();
+          renderTopbarIdentity();
+          setActivity('Warning', '头像云端保存失败（' + (json.error || res.status) + '），仅本次会话可见');
+          return;
+        }
+
+        // 成功 — 把云端 URL 存到 _identity（持久），清掉旧的 local dataURL
+        _identity.avatar_url = json.avatar_url;
+        delete _identity.avatarDataUrl;
         saveIdentity();
         renderIdentity();
         renderTopbarIdentity();
-        setActivity('Saved', '头像换好了。');
+        setActivity('Saved', '头像换好了 — 下次登录还在。');
       } catch (err) {
-        setActivity('Error', '处理失败：' + (err.message || '未知错误'));
+        console.error('[avatar] 处理/上传失败', err);
+        setActivity('Error', '失败：' + (err.message || '未知错误'));
       } finally {
-        // 清掉 input value 让用户可以再次上传同一张文件触发 change
         e.target.value = '';
       }
     }
@@ -2008,6 +2050,7 @@
           name:         json.member.name || '',
           nickname:     json.member.nickname || '',
           avatar_token: json.member.avatar_token || null,
+          avatar_url:   json.member.avatar_url   || null,   // 用户上传过的云端头像
           token:        json.token,
           expires_at:   json.expires_at,
         };

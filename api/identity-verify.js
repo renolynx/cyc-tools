@@ -13,6 +13,7 @@
 import { applyCors } from './_feishu.js';
 import { fetchMember } from './_member.js';
 import { signToken, getMemberLast4 } from './_auth.js';
+import { kvGet, isKvConfigured } from './_kv.js';
 
 export default async function handler(req, res) {
   applyCors(res);
@@ -54,15 +55,22 @@ export default async function handler(req, res) {
   // 解析 token 拿 expiresAt（避免重复算）
   const expires_at = Number(token.split('|')[1]);
 
+  // 顺手拉一下用户上传过的云端头像（KV 永久映射），让前端再次登录时立刻有头像
+  let avatar_url = null;
+  if (isKvConfigured()) {
+    try { avatar_url = await kvGet('avatar_url:' + member_rec_id); } catch {}
+  }
+
   return res.status(200).json({
     success: true,
     token,
     expires_at,
-    member: {                 // 返回简版成员信息让前端立刻显示
-      record_id: member.record_id,
-      name:      member.name || '',
-      nickname:  member.nickname || '',
-      avatar_token: member.avatar?.file_token || null,
+    member: {
+      record_id:    member.record_id,
+      name:         member.name || '',
+      nickname:     member.nickname || '',
+      avatar_token: member.avatar?.file_token || null,   // 飞书"照片"附件 token（admin 维护的原始头像）
+      avatar_url,                                          // 用户自己上传的云端头像（优先级更高）
     },
   });
 }
