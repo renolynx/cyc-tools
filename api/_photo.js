@@ -13,7 +13,7 @@
  */
 
 import { getAccessToken } from './_feishu.js';
-import { kvGet, kvSet, kvDel, isKvConfigured } from './_kv.js';
+import { kvGet, kvSet, kvDel, isKvConfigured, invalidate } from './_kv.js';
 
 const APP_TOKEN  = process.env.FEISHU_MEMBER_APP_TOKEN;
 const TABLE_ID   = process.env.FEISHU_PHOTOS_TABLE_ID || 'tblsxsPPy9LMEbm8';
@@ -300,14 +300,9 @@ export async function deletePhotoRecord(record_id, member_rec_id) {
   return { success: true };
 }
 
-/** 失效该成员相关的所有 cache */
+/** 失效该成员相关的所有 cache（薄壳，转 _kv.js 集中管理） */
 async function invalidatePhotoCache(member_rec_id) {
-  if (!isKvConfigured() || !member_rec_id) return;
-  await Promise.all([
-    kvDel('photos:member:' + member_rec_id),
-    kvDel('photos:public'),
-    kvDel('photo_count:' + member_rec_id),
-  ]).catch(() => {});
+  await invalidate('photo', member_rec_id);
 }
 
 export { DEFAULT_PHOTO_QUOTA };

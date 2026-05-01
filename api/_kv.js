@@ -111,15 +111,17 @@ const SCOPES = {
     'sitemap:acts',
     'members:大理',          // 活动 types/loc 变 → 成员列表聚合可能变
     'members:上海',
+    'members:public_list',   // /api/members 公开 picker 列表
     'member_activity_cities',
   ],
 
-  // 写一条成员后清
+  // 写一条成员后清（含头像/资料/identity 改）
   member: (id) => [
     id ? 'member:' + id : null,
     id ? 'rsvp:member:' + id : null,
     'members:大理',
     'members:上海',
+    'members:public_list',   // 改头像/称呼后 picker 也要刷
     'member_activity_cities',
   ],
 
@@ -131,13 +133,24 @@ const SCOPES = {
     'member_activity_cities',
     'members:大理',
     'members:上海',
+    'members:public_list',
+  ],
+
+  // 写一张照片（个人 timeline 上传/编辑/删除）
+  photo: (memberId) => [
+    'photos:public',
+    memberId ? 'photos:member:' + memberId : null,
+    memberId ? 'photo_count:'   + memberId : null,
+    // 不清 photo_quota:{id} —— quota 是 admin 长期设的额度，不是计数
   ],
 
   // admin 兜底（schema 改动后强制刷新；clear-cache action 用）
   all: () => [
     'members:大理',
     'members:上海',
+    'members:public_list',
     'rsvp:all',
+    'photos:public',
     'member_activity_cities',
   ],
 };

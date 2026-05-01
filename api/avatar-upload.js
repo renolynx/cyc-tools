@@ -17,7 +17,7 @@
 import { applyCors } from './_feishu.js';
 import { authFromRequest } from './_auth.js';
 import { put, del } from '@vercel/blob';
-import { kvGet, kvSet, kvDel, isKvConfigured } from './_kv.js';
+import { kvGet, kvSet, isKvConfigured, invalidate } from './_kv.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '2mb' } },   // 头像比照片小，2MB 够用
@@ -91,9 +91,9 @@ export default async function handler(req, res) {
     try { await kvSet('avatar_url:' + auth.member_rec_id, blob.url); } catch (err) {
       console.warn('[avatar-upload] KV 写入失败（云端图存了，但无法持久化映射）:', err.message);
     }
-    // 失效公开成员目录的 cache，让 picker / community 立刻看到新头像
-    try { await kvDel('members:public_list'); } catch {}
   }
+  // 头像变 → 成员资料展示变（picker / community 列表 / 详情 / 公开 list 都得刷）
+  await invalidate('member', auth.member_rec_id);
 
   return res.status(200).json({ success: true, avatar_url: blob.url });
 }

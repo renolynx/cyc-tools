@@ -29,7 +29,7 @@
 import { applyCors, getAccessToken } from '../_feishu.js';
 import { fetchAllMembers, autoCreateMember } from '../_member.js';
 import { fetchAllRsvps } from '../_rsvp.js';
-import { invalidate, kvDel } from '../_kv.js';
+import { invalidate } from '../_kv.js';
 
 const APP_TOKEN = process.env.FEISHU_MEMBER_APP_TOKEN;
 const RSVP_TABLE_ID = process.env.FEISHU_RSVP_TABLE_ID || 'tbl887iFA41eI0iS';
@@ -383,14 +383,8 @@ export default async function handler(req, res) {
       }
     }
 
-    // Step C: 失效相关 cache
-    try {
-      await Promise.all([
-        invalidate('all'),
-        kvDel('rsvp:all'),
-        kvDel('members:public_list'),
-      ]);
-    } catch {}
+    // Step C: 失效相关 cache（'all' scope 已经包含 rsvp:all + members:public_list）
+    try { await invalidate('all'); } catch {}
 
     return res.status(200).json({
       dryRun: false,
