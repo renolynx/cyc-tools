@@ -1081,6 +1081,125 @@
     .modal-actions--split > .modal-actions-right > button { flex: 0 1 auto; }
 
     /* ──────────────────────────────────────────────
+     *  Lightbox · stack 点击的沉浸式放大查看
+     *  - 黑底全屏，仅大图 + 标题 + 操作图标
+     *  - 不带表单 — stack 是"看故事"的，编辑要去 lineup
+     * ────────────────────────────────────────────── */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 110;       /* 高于其他 modal-overlay (100) */
+      background: rgba(0, 0, 0, 0.86);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 24px 16px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-4);
+      cursor: zoom-out;
+      animation: fadeOnly var(--dur-fast) ease;
+    }
+    .lightbox-overlay.active { display: flex; }
+    @keyframes fadeOnly { from { opacity: 0; } to { opacity: 1; } }
+
+    .lightbox-content {
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-4);
+      max-width: 100%;
+    }
+    .lightbox-img {
+      max-width: 92vw;
+      max-height: 72vh;
+      object-fit: contain;
+      border-radius: var(--r-card);
+      box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.6);
+      display: block;
+      background: #1a1a1a;       /* 防止透明图片露出 overlay */
+    }
+    .lightbox-meta {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.92);
+      max-width: 92vw;
+    }
+    .lightbox-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .lightbox-sub {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: var(--sp-1);
+      letter-spacing: 0;
+    }
+
+    /* lightbox 右上角 icon 按钮（关闭 / 跳到编辑） */
+    .lightbox-actions {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 16px);
+      right: 16px;
+      display: flex;
+      gap: var(--sp-2);
+      z-index: 1;
+    }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: var(--r-dot);
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 0.5px solid rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      transition: background var(--dur-fast), transform var(--dur-instant);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .icon-btn:hover  { background: rgba(255, 255, 255, 0.26); }
+    .icon-btn:active { transform: scale(0.94); }
+    .icon-btn:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.6);
+      outline-offset: 2px;
+    }
+    /* ⓘ 用衬线斜体的 i 显得更"information"图标味 */
+    .icon-btn-info { font-style: italic; font-family: 'Times New Roman', serif; font-size: 18px; }
+
+    /* ──────────────────────────────────────────────
+     *  Lineup polaroid 被 lightbox 跳转过来后的一次高亮
+     * ────────────────────────────────────────────── */
+    .polaroid.is-flashing {
+      animation: polaroid-flash 1.6s ease;
+    }
+    @keyframes polaroid-flash {
+      0%, 100% {
+        box-shadow:
+          0 2px 4px rgba(0, 0, 0, 0.08),
+          0 12px 24px -8px rgba(28, 61, 46, 0.15);
+      }
+      25%, 60% {
+        /* coral ring — 合法 temporal accent (active state)，1.6s 后消失 */
+        box-shadow:
+          0 2px 4px rgba(0, 0, 0, 0.08),
+          0 12px 24px -8px rgba(28, 61, 46, 0.15),
+          0 0 0 3px rgba(217, 101, 42, 0.55),
+          0 0 28px rgba(217, 101, 42, 0.35);
+      }
+    }
+
+    /* ──────────────────────────────────────────────
      *  Responsive
      * ────────────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -1347,6 +1466,24 @@
           <button class="btn-secondary" onclick="closePhotoDetail()">取消</button>
           <button class="btn-primary" onclick="savePhotoEdit()">保存</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Lightbox · stack 点击的放大查看 ═══════════ -->
+  <div class="lightbox-overlay" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+    <div class="lightbox-actions">
+      <button type="button" class="icon-btn icon-btn-info"
+              onclick="lightboxJumpToEdit()" aria-label="编辑这张（跳到下方时光区）"
+              title="编辑这张">i</button>
+      <button type="button" class="icon-btn"
+              onclick="closeLightbox()" aria-label="关闭">✕</button>
+    </div>
+    <div class="lightbox-content">
+      <img class="lightbox-img" id="lb-image" alt="">
+      <div class="lightbox-meta">
+        <div class="lightbox-title" id="lb-title"></div>
+        <div class="lightbox-sub" id="lb-sub"></div>
       </div>
     </div>
   </div>
@@ -1954,19 +2091,92 @@
      * ────────────────────────────────────────────── */
     let _editingPhotoId = null;
 
-    // 全局事件委托：任意 .polaroid 点击 / 回车 → 打开详情
+    // 全局事件委托：
+    //   stack  内 polaroid → openLightbox（轻量放大，只看不改）
+    //   lineup 内 polaroid → openPhotoDetail（编辑表单）
+    function dispatchPolaroidClick(pol) {
+      if (!pol || !pol.dataset.photoId) return;
+      if (pol.closest('.stack')) openLightbox(pol.dataset.photoId);
+      else                       openPhotoDetail(pol.dataset.photoId);
+    }
     document.body.addEventListener('click', e => {
-      const pol = e.target.closest('.polaroid');
-      if (pol && pol.dataset.photoId) openPhotoDetail(pol.dataset.photoId);
+      dispatchPolaroidClick(e.target.closest('.polaroid'));
     });
     document.body.addEventListener('keydown', e => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const pol = e.target.closest && e.target.closest('.polaroid');
       if (pol && pol.dataset.photoId) {
         e.preventDefault();
-        openPhotoDetail(pol.dataset.photoId);
+        dispatchPolaroidClick(pol);
       }
     });
+    // ESC 关 lightbox / photo-detail
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const lb = document.getElementById('lightbox');
+      if (lb && lb.classList.contains('active')) { closeLightbox(); return; }
+      const pm = document.getElementById('photo-modal');
+      if (pm && pm.classList.contains('active')) { closePhotoDetail(); return; }
+    });
+
+    /* ──────────────────────────────────────────────
+     *  Lightbox（stack 点击）
+     * ────────────────────────────────────────────── */
+    let _lightboxPhotoId = null;
+
+    function openLightbox(photoId) {
+      const p = _photos.find(x => x.id === photoId);
+      if (!p) return;
+      _lightboxPhotoId = photoId;
+
+      const img = document.getElementById('lb-image');
+      img.src = p.dataUrl || '';
+      img.alt = p.title || '';
+
+      document.getElementById('lb-title').textContent = p.title || '未命名';
+
+      // sub 行：日期 · 关联活动 · 隐私（仅"仅自己"时显示锁标）
+      const sub = [];
+      if (p.date) sub.push(fmtDate(p.date));
+      const act = MOCK_ACTIVITIES.find(a => a.id === p.activity_id);
+      if (act) sub.push(act.title);
+      if (p.privacy === 'self') sub.push('🔒 仅自己');
+      document.getElementById('lb-sub').textContent = sub.join(' · ');
+
+      document.getElementById('lightbox').classList.add('active');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+      _lightboxPhotoId = null;
+    }
+
+    /** 从 lightbox 跳到 lineup 里的对应照片：
+     *  - 关 lightbox
+     *  - scrollIntoView 该 polaroid（lineup-row 在 surface 内，月份 section 顶部）
+     *  - 加 .is-flashing 高亮 1.6s（coral ring）
+     *  不直接打开编辑 modal —— 让用户先看到"哦在这"，然后自己决定要不要点开
+     */
+    function lightboxJumpToEdit() {
+      const id = _lightboxPhotoId;
+      if (!id) return;
+      closeLightbox();
+      setTimeout(() => {
+        const target = document.querySelector(`.lineup-row .polaroid[data-photo-id="${id}"]`);
+        if (!target) return;
+        // 先滚到月份 section 顶部，再把 polaroid 横向 scroll 到可见
+        const section = target.closest('.month-section');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const row = target.closest('.lineup-row');
+        if (row) {
+          // 让该 polaroid 在 row 内水平居中
+          const targetLeft = target.offsetLeft - (row.clientWidth - target.clientWidth) / 2;
+          row.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+        }
+        target.classList.add('is-flashing');
+        setTimeout(() => target.classList.remove('is-flashing'), 1700);
+      }, 250);
+    }
 
     function openPhotoDetail(photoId) {
       const p = _photos.find(x => x.id === photoId);
