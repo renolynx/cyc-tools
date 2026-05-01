@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="社区的回忆 — 来到 CYC 后发生的一切">
 
-  <!-- exifr lite — 从用户上传照片的 EXIF 元信息读取拍摄日期，自动填表
-       jsdelivr 国内可达，加载失败时 readExifDate 优雅降级（用户仍可手填）
-       仅 ~20KB，async 加载不阻塞首屏 -->
-  <script async src="https://cdn.jsdelivr.net/npm/exifr@7/dist/lite.umd.js"></script>
+  <!-- exifr full — 读照片 EXIF 拍摄日期。full 版本（~110KB）相比 lite 多支持
+       HEIC 解析（iPhone 原图常用），且各家相机 / 修图 app 的细节标签更全
+       async 加载不阻塞首屏；CDN 失败时按钮上文案不变，点击会优雅降级 -->
+  <script async src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 
   <style>
     /* ──────────────────────────────────────────────
@@ -990,6 +990,37 @@
     .upload-quota-hint.is-warn { color: var(--cyc-warning); }   /* AAA orange */
     .upload-quota-hint.is-full { color: #a93226; }             /* danger */
 
+    /* form-label 行内 + 右侧"从照片读取"小按钮 */
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-2);
+    }
+    .form-label-row .form-label { margin-bottom: 0; }
+
+    /* 文字链按钮 — 用在 form 行内，比 btn-secondary 轻 */
+    .btn-text-link {
+      background: none;
+      border: none;
+      padding: 4px var(--sp-2);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cyc-green);
+      cursor: pointer;
+      font-family: inherit;
+      border-radius: var(--r-tight);
+      transition: background var(--dur-fast), color var(--dur-fast);
+      letter-spacing: 0;
+    }
+    .btn-text-link:hover { background: rgba(28, 61, 46, 0.06); }
+    .btn-text-link:active { transform: scale(0.97); }
+    .btn-text-link:disabled {
+      color: var(--cyc-text-faint);
+      cursor: not-allowed;
+      background: none;
+    }
+
     .form-group { margin-bottom: var(--sp-4); }
     .form-label {
       display: block;
@@ -1472,7 +1503,13 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">日期</label>
+        <div class="form-label-row">
+          <label class="form-label" for="upload-date">日期</label>
+          <button type="button" class="btn-text-link" id="upload-read-exif"
+                  onclick="manualReadExif()" disabled>
+            📷 从照片读取
+          </button>
+        </div>
         <input type="date" class="form-input" id="upload-date">
       </div>
 
@@ -1617,6 +1654,7 @@
     let _membersErr = null;
     let _selectedForVerify = null;
     let _uploadDataUrl = null;
+    let _uploadFile = null;          // 当前上传的原始 File 对象（给 manualReadExif 复用）
 
     /* ─── 工具：ms timestamp → 'YYYY-MM-DD' ─── */
     function tsToDateStr(ts) {
@@ -2450,6 +2488,13 @@
       document.getElementById('upload-submit').disabled = true;
       document.getElementById('upload-submit').textContent = '上传';
       _uploadDataUrl = null;
+      _uploadFile = null;
+      // EXIF 按钮重置：还没选文件 → disabled
+      const exifBtn = document.getElementById('upload-read-exif');
+      if (exifBtn) {
+        exifBtn.disabled = true;
+        exifBtn.textContent = '📷 从照片读取';
+      }
 
       // 异步加载活动 select 候选（如果还没拉过）
       const ensureActivities = _allActivities.length
@@ -2509,24 +2554,28 @@
     document.getElementById('upload-file-input').addEventListener('change', async e => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      _uploadFile = file;       // 保留供 manualReadExif 用
 
-      // 1. 先尝试从 EXIF 读拍摄日期 — 比压缩快，且不阻塞流程
-      //    用户没改过日期才覆盖（避免抢走用户已经手填的日期）
+      // EXIF 按钮 enable（"从照片读取"）
+      const exifBtn = document.getElementById('upload-read-exif');
+      if (exifBtn) exifBtn.disabled = false;
+
+      // 1. 先尝试静默自动读 EXIF 日期 — 仅当用户没改过日期时填入
       try {
         const exifDate = await readExifDate(file);
         if (exifDate) {
           const dateInput = document.getElementById('upload-date');
           const today = new Date().toISOString().slice(0, 10);
-          // 仅当 date 输入还是默认的"今天"时才覆盖（用户已改过则保留他的）
           if (!dateInput.value || dateInput.value === today) {
-            dateInput.value = exifDate.toISOString().slice(0, 10);
+            dateInput.value = formatDateForInput(exifDate);
             dateInput.title = '从照片 EXIF 自动读取';
             setActivity('Read', `从照片元信息读到拍摄日期：${dateInput.value}`);
           }
         }
+        // 如果 exifDate 是 null（EXIF 被剥 / 不支持），不出错也不弹提示，
+        // 用户可以手动点"从照片读取"按钮再试一次（带明确反馈）
       } catch (err) {
-        // EXIF 失败不影响主流程，静默
-        console.warn('[exif] read failed:', err);
+        console.warn('[exif] auto read failed:', err);
       }
 
       // 2. 压缩
@@ -2537,7 +2586,6 @@
         const img = document.getElementById('upload-preview');
         img.src = dataUrl;
         img.classList.add('has-image');
-        // 配额没满才启用提交按钮
         if (!_quota || _quota.remaining > 0) {
           document.getElementById('upload-submit').disabled = false;
         }
@@ -2547,11 +2595,62 @@
       }
     });
 
+    /** 把 Date 转成 YYYY-MM-DD（本地时区，避免 toISOString 时区跳天） */
+    function formatDateForInput(d) {
+      return d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+    }
+
+    /** 用户点击"从照片读取"按钮 — 显式触发 EXIF 解析，带明确反馈 */
+    async function manualReadExif() {
+      const btn = document.getElementById('upload-read-exif');
+      if (!_uploadFile) {
+        setActivity('Empty', '先选一张照片');
+        return;
+      }
+
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = '读取中…';
+      setActivity('Reading', '正在读取照片元信息…');
+
+      try {
+        // 等 exifr CDN 加载完毕（最多 3s）— iOS 网络慢时常见
+        if (!window.exifr) {
+          for (let i = 0; i < 30 && !window.exifr; i++) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
+        if (!window.exifr) {
+          setActivity('Error', 'EXIF 解析库加载失败（网络问题），请手填日期');
+          return;
+        }
+
+        const exifDate = await readExifDate(_uploadFile);
+        if (exifDate) {
+          const dateInput = document.getElementById('upload-date');
+          dateInput.value = formatDateForInput(exifDate);
+          dateInput.title = '从照片 EXIF 读取';
+          setActivity('Read', `已填入 EXIF 日期：${dateInput.value}`);
+          btn.textContent = '✓ 已读取';
+          setTimeout(() => { btn.textContent = origText; }, 2000);
+          return;
+        }
+        // 读不到 — 给明确反馈，告诉用户为什么
+        setActivity('Empty', '这张照片没有拍摄日期信息（可能被压缩过 / 是截图 / 已去元数据）');
+      } catch (err) {
+        setActivity('Error', 'EXIF 读取失败：' + (err.message || err));
+      } finally {
+        btn.disabled = false;
+        if (btn.textContent === '读取中…') btn.textContent = origText;
+      }
+    }
+
     /** 从图片 EXIF 读拍摄日期；exifr 没加载或没 EXIF 时返回 null */
     async function readExifDate(file) {
-      if (!window.exifr) return null;     // CDN 还没加载（async）或加载失败 — 优雅降级
+      if (!window.exifr) return null;
       try {
-        // pick 指定字段加快速度（lite 版本默认就只读最小集）
         const data = await window.exifr.parse(file, ['DateTimeOriginal', 'CreateDate', 'DateTime']);
         if (!data) return null;
         const raw = data.DateTimeOriginal || data.CreateDate || data.DateTime;
@@ -2559,7 +2658,8 @@
         const dt = raw instanceof Date ? raw : new Date(raw);
         if (isNaN(dt.getTime())) return null;
         return dt;
-      } catch {
+      } catch (err) {
+        console.warn('[exifr.parse]', err);
         return null;
       }
     }
