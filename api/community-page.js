@@ -54,9 +54,10 @@ export default async function handler(req, res) {
         msg: '链接可能错了。', msgEn: 'The URL may be invalid.',
       }));
     }
+    const bypassCache = req.query.refresh === '1';
     let member;
     try {
-      member = await fetchMember(id);
+      member = await fetchMember(id, { bypassCache });
     } catch (err) {
       console.error('[community-page detail]', err.message);
       return res.status(500).send(renderErrorPage({
@@ -73,7 +74,7 @@ export default async function handler(req, res) {
 
     // 反向查 ta 参加过的活动 + 拼上活动真实日期（注册时间通常是 backfill 当天，对用户没意义）
     let rsvps = [];
-    try { rsvps = await fetchRsvpsByMember(id); }
+    try { rsvps = await fetchRsvpsByMember(id, { bypassCache }); }
     catch (err) { console.warn('[community-page] member rsvps fetch failed:', err.message); }
 
     let acts = [];

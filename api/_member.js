@@ -193,11 +193,11 @@ export async function fetchAllMembers() {
   return all;
 }
 
-/** 拉单个成员（带缓存） */
-export async function fetchMember(rec_id) {
+/** 拉单个成员（带缓存）；opts.bypassCache=true 强制重拉（admin 改完想立刻看）*/
+export async function fetchMember(rec_id, opts = {}) {
   if (!rec_id) return null;
   const cacheKey = 'member:' + rec_id;
-  if (isKvConfigured()) {
+  if (!opts.bypassCache && isKvConfigured()) {
     try {
       const cached = await kvGet(cacheKey);
       if (cached) return JSON.parse(cached);

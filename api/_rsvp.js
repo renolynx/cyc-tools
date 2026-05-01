@@ -128,12 +128,12 @@ export async function fetchAllRsvps() {
 }
 
 /** 拉某成员所有 RSVP 记录（成员主页用）：含已发起 / 嘉宾 / 参与
- *  缓存 10 min，按报名时间倒序
+ *  缓存 10 min，按报名时间倒序；opts.bypassCache=true 强制重拉
  */
-export async function fetchRsvpsByMember(member_rec_id) {
+export async function fetchRsvpsByMember(member_rec_id, opts = {}) {
   if (!member_rec_id) return [];
   const cacheKey = 'rsvp:member:' + member_rec_id;
-  if (isKvConfigured()) {
+  if (!opts.bypassCache && isKvConfigured()) {
     try {
       const cached = await kvGet(cacheKey);
       if (cached) return JSON.parse(cached);

@@ -11,7 +11,7 @@ import { fetchRsvpsForActivity } from './_rsvp.js';
 import { kvGet, kvSet, isKvConfigured } from './_kv.js';
 
 const CACHE_TTL_SEC = 600;     // KV 10 分钟
-const EDGE_CACHE    = 'public, s-maxage=300, stale-while-revalidate=3600';
+const EDGE_CACHE    = 'public, s-maxage=60, stale-while-revalidate=3600';
 
 const SITE_URL  = 'https://cyc.center';
 const SITE_NAME = 'CYC 链岛青年社区';
@@ -608,10 +608,11 @@ export default async function handler(req, res) {
     return res.status(500).send('Server config error');
   }
 
-  // 1. 尝试 KV 缓存
+  // 1. 尝试 KV 缓存（?refresh=1 跳过：admin 改完想立刻看时用）
   const cacheKey = 'event:' + id;
+  const bypassCache = req.query.refresh === '1';
   let act = null;
-  if (isKvConfigured()) {
+  if (!bypassCache && isKvConfigured()) {
     try {
       const cached = await kvGet(cacheKey);
       if (cached) act = JSON.parse(cached);
