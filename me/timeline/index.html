@@ -1793,6 +1793,26 @@
       _photos = [];
       _quota = null;
       saveIdentity();
+      // 显式清掉所有 photo / lineup / scrubber DOM —— 即使父级 hidden，
+      // backdrop-filter blur 在某些浏览器会"漏出"display:none 子树的内容，
+      // 退出后立刻再开 picker 容易看到上一次的照片色块"鬼影"。
+      const safeSet = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+      safeSet('stack', '');
+      safeSet('months', '');
+      safeSet('scrubber', '');
+      safeSet('topbar-identity-slot', '');
+      // 上一次登录可能残留的编辑/light box modal img 也清，避免缩略图被 blur 漏出
+      const lbImg = document.getElementById('lb-image');
+      if (lbImg) lbImg.src = '';
+      const pdImg = document.getElementById('pd-image');
+      if (pdImg) pdImg.src = '';
+      const upPreview = document.getElementById('upload-preview');
+      if (upPreview) { upPreview.src = ''; upPreview.classList.remove('has-image'); }
+      // hero 空状态恢复显示（下次 showBound 会再切回去）
+      const heroEmpty = document.getElementById('hero-empty');
+      if (heroEmpty) heroEmpty.classList.remove('hidden');
+      const lineupEmpty = document.getElementById('lineup-empty');
+      if (lineupEmpty) lineupEmpty.classList.remove('hidden');
       showOnboarding();
     }
 
