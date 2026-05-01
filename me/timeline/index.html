@@ -1599,16 +1599,31 @@
       if (_membersLoading) return _allMembers;
       _membersLoading = true;
       _membersErr = null;
+
+      // 30s 超时（飞书全表拉取首次 cold 会到 4-8s，KV 缓存命中后 < 1s）
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 30000);
+
       try {
-        const res = await fetch('/api/members');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const res = await fetch('/api/members', { signal: ctrl.signal });
+        if (!res.ok) {
+          let detail = '';
+          try { detail = (await res.json()).error || ''; } catch {}
+          throw new Error('HTTP ' + res.status + (detail ? ' · ' + detail : ''));
+        }
         const json = await res.json();
         _allMembers = (json.members || []);
+        if (!_allMembers.length) {
+          _membersErr = '成员目录为空（飞书可能配置异常）';
+        }
         return _allMembers;
       } catch (err) {
-        _membersErr = err.message || '加载失败';
+        _membersErr = err.name === 'AbortError'
+          ? '加载超时（>30s），请检查网络或刷新重试'
+          : (err.message || '加载失败');
         return [];
       } finally {
+        clearTimeout(timeoutId);
         _membersLoading = false;
       }
     }
@@ -1874,13 +1889,20 @@
 
       // 加载状态
       if (_membersLoading && !_allMembers.length) {
-        el.innerHTML = '<div class="picker-empty">⏳ 加载社区成员…</div>';
+        el.innerHTML = '<div class="picker-empty">'
+          + '<div style="font-size: 28px; margin-bottom: 12px; opacity: 0.6;">⏳</div>'
+          + '<div style="font-weight: 600; color: var(--cyc-text-strong);">加载社区成员中…</div>'
+          + '<div style="font-size: 12px; color: var(--cyc-text-faint); margin-top: 8px; line-height: 1.5;">'
+          +   '首次访问会从飞书拉一份完整目录<br>需要 5-10 秒，之后就快了'
+          + '</div>'
+          + '</div>';
         return;
       }
       if (_membersErr && !_allMembers.length) {
-        el.innerHTML = '<div class="picker-empty" style="color:#a93226;">'
-          + '😕 ' + escHtml(_membersErr)
-          + '<br><br><button class="btn-secondary" onclick="loadMembers(true).then(()=>renderPicker(\'\'))">重试</button>'
+        el.innerHTML = '<div class="picker-empty">'
+          + '<div style="font-size: 28px; margin-bottom: 12px;">😕</div>'
+          + '<div style="color: #a93226; font-weight: 600;">' + escHtml(_membersErr) + '</div>'
+          + '<button class="btn-secondary" style="margin-top: 16px;" onclick="loadMembers(true).then(()=>renderPicker(\'\'))">重试</button>'
           + '</div>';
         return;
       }
