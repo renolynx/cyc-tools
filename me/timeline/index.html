@@ -513,6 +513,7 @@
       justify-content: center;
       font-size: 32px;
       overflow: hidden;
+      position: relative;
     }
     .polaroid__photo img {
       width: 100%; height: 100%;
@@ -520,8 +521,20 @@
       display: block;
     }
     /* emoji 占位时灰阶柔化，避免装饰用色 */
-    .polaroid__photo:not(.has-image) {
+    .polaroid__photo:not(.has-image):not(.img-error) {
       filter: grayscale(1) opacity(0.5);
+    }
+    /* 图片加载失败时的占位（替换大字号 alt 文字撑爆容器的尴尬） */
+    .polaroid__photo.img-error::after {
+      content: '🖼️ 加载失败';
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      letter-spacing: 0;
+      position: absolute;
+      inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--cyc-surface-tinted);
     }
     .polaroid__cap {
       padding-top: var(--sp-3);
@@ -1672,6 +1685,8 @@
         const json = await res.json();
         _photos = (json.photos || []).map(normalizePhoto);
         _quota  = json.quota || null;
+        // 调试钩子：浏览器 console 输入 cyc 看 photos / identity / quota
+        window.cyc = { photos: _photos, identity: _identity, quota: _quota, members: _allMembers, activities: _allActivities };
         renderHero();
         renderLineup();
         renderScrubber();
@@ -2167,8 +2182,11 @@
     }
     function polaroidContent(p) {
       const photoCls = p.dataUrl ? 'has-image' : '';
+      // alt 故意留空 — 图加载失败时不会让 alt 文字以 32px 字号撑爆 polaroid_photo 容器
+      // onerror 改用 .img-error class + CSS ::after 显示明确的"加载失败"占位
       const photoHtml = p.dataUrl
-        ? `<img src="${p.dataUrl}" alt="${escHtml(p.title)}">`
+        ? `<img src="${escHtml(p.dataUrl)}" alt=""
+                onerror="console.warn('[polaroid] 图加载失败:', this.src); this.style.display='none'; this.parentNode.classList.remove('has-image'); this.parentNode.classList.add('img-error');">`
         : '<span>📷</span>';
       return `
         <div class="polaroid__photo ${photoCls}">${photoHtml}</div>
