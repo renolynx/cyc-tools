@@ -6,6 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="社区的回忆 — 来到 CYC 后发生的一切">
 
+  <!-- exifr lite — 从用户上传照片的 EXIF 元信息读取拍摄日期，自动填表
+       jsdelivr 国内可达，加载失败时 readExifDate 优雅降级（用户仍可手填）
+       仅 ~20KB，async 加载不阻塞首屏 -->
+  <script async src="https://cdn.jsdelivr.net/npm/exifr@7/dist/lite.umd.js"></script>
+
   <style>
     /* ──────────────────────────────────────────────
      *  /me/timeline · Daybook layer
@@ -2504,6 +2509,27 @@
     document.getElementById('upload-file-input').addEventListener('change', async e => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+
+      // 1. 先尝试从 EXIF 读拍摄日期 — 比压缩快，且不阻塞流程
+      //    用户没改过日期才覆盖（避免抢走用户已经手填的日期）
+      try {
+        const exifDate = await readExifDate(file);
+        if (exifDate) {
+          const dateInput = document.getElementById('upload-date');
+          const today = new Date().toISOString().slice(0, 10);
+          // 仅当 date 输入还是默认的"今天"时才覆盖（用户已改过则保留他的）
+          if (!dateInput.value || dateInput.value === today) {
+            dateInput.value = exifDate.toISOString().slice(0, 10);
+            dateInput.title = '从照片 EXIF 自动读取';
+            setActivity('Read', `从照片元信息读到拍摄日期：${dateInput.value}`);
+          }
+        }
+      } catch (err) {
+        // EXIF 失败不影响主流程，静默
+        console.warn('[exif] read failed:', err);
+      }
+
+      // 2. 压缩
       setActivity('Compressing', '正在压缩照片…');
       try {
         const dataUrl = await compressImage(file, 1600, 0.85);
@@ -2520,6 +2546,23 @@
         setActivity('Error', '压缩失败：' + (err.message || err));
       }
     });
+
+    /** 从图片 EXIF 读拍摄日期；exifr 没加载或没 EXIF 时返回 null */
+    async function readExifDate(file) {
+      if (!window.exifr) return null;     // CDN 还没加载（async）或加载失败 — 优雅降级
+      try {
+        // pick 指定字段加快速度（lite 版本默认就只读最小集）
+        const data = await window.exifr.parse(file, ['DateTimeOriginal', 'CreateDate', 'DateTime']);
+        if (!data) return null;
+        const raw = data.DateTimeOriginal || data.CreateDate || data.DateTime;
+        if (!raw) return null;
+        const dt = raw instanceof Date ? raw : new Date(raw);
+        if (isNaN(dt.getTime())) return null;
+        return dt;
+      } catch {
+        return null;
+      }
+    }
 
     function compressImage(file, maxWidth, quality) {
       return new Promise((resolve, reject) => {
