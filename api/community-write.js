@@ -16,7 +16,7 @@
  * }
  */
 
-import { applyCors } from './_feishu.js';
+import { applyCors, fetchTableFields } from './_feishu.js';
 import { verifyPassword } from './_password.js';
 import {
   fetchAllMembers,
@@ -687,6 +687,7 @@ export default async function handler(req, res) {
     'merge-preview':         handleMergePreview,
     'list-activity-types':   handleListActivityTypes,
     'get-admin-log':         handleGetAdminLog,
+    'inspect-feishu-fields': handleInspectFeishuFields,
     // 写 action（自动 log）：
     'create':                handleCreate,
     'update':                handleUpdate,
@@ -779,4 +780,54 @@ async function handleGetAdminLog(req, res) {
   const limit = Math.min(500, Math.max(1, Number(req.body?.limit || 100)));
   const log = await readAdminLog(limit);
   return res.status(200).json({ success: true, count: log.length, log });
+}
+
+/**
+ * action='inspect-feishu-fields' { table?: 'activities' | 'members' | 'rsvps' | 'locations' }
+ *   admin 查飞书表的实际字段名 + ID + 类型 + multi-select 选项。
+ *   缺 table 时返回 4 张表全部 schema。
+ *
+ *   用途：
+ *     - 飞书 admin 改了字段名，前端读不到时排查
+ *     - 看 multi-select 字段当前的全部 options（如「活动类型」「社群身份」「目前状态」）
+ *     - 未来 field_id 寻址重构的数据源
+ */
+async function handleInspectFeishuFields(req, res) {
+  const TABLES = {
+    activities: { app: process.env.FEISHU_APP_TOKEN,        table: process.env.FEISHU_TABLE_ID,           label: '活动表' },
+    members:    { app: process.env.FEISHU_MEMBER_APP_TOKEN, table: process.env.FEISHU_MEMBER_TABLE_ID,    label: '成员表' },
+    rsvps:      { app: process.env.FEISHU_MEMBER_APP_TOKEN, table: process.env.FEISHU_RSVP_TABLE_ID,      label: 'RSVP 表' },
+    locations:  { app: process.env.FEISHU_MEMBER_APP_TOKEN, table: process.env.FEISHU_LOCATIONS_TABLE_ID, label: '据点表' },
+  };
+
+  const wanted = req.body?.table;
+  const targets = wanted && TABLES[wanted] ? { [wanted]: TABLES[wanted] } : TABLES;
+
+  const out = {};
+  for (const [key, t] of Object.entries(targets)) {
+    if (!t.app || !t.table) {
+      out[key] = { label: t.label, error: 'env 未配置' };
+      continue;
+    }
+    try {
+      const fields = await fetchTableFields(t.app, t.table);
+      out[key] = {
+        label: t.label,
+        app_token: t.app,
+        table_id: t.table,
+        field_count: fields.length,
+        fields: fields.map(f => ({
+          name:    f.field_name,
+          id:      f.field_id,
+          type:    f.type,
+          ui_type: f.ui_type,
+          primary: !!f.is_primary,
+          options: f.property?.options?.map(o => o.name) || undefined,
+        })),
+      };
+    } catch (err) {
+      out[key] = { label: t.label, error: err.message };
+    }
+  }
+  return res.status(200).json({ success: true, schemas: out });
 }

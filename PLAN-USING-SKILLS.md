@@ -160,7 +160,18 @@ cyc.center 是**一个产品两条节奏**：
 - [ ] 跑竞品分析
 
   **Prompt**:
-  > 用 discover-competitive-analysis 对标分析：(1) Read.cv，(2) Substack，(3) 数字游民公社（DNA），(4) 706 青年空间，(5) BAY Area Slack 社群。维度：定位、目标用户、收费模式、社区粘性机制。最后输出 cyc.center 在这个 lane 的差异化机会。
+  > 用 discover-competitive-analysis 跑两组竞品（cyc.center 是双轨产品，要分别对标）：
+  >
+  > **A. 实体 coliving / 社区空间** — 看他们怎么做转化漏斗（A/B/C 路径）
+  > - 国内：706 青年空间、DNA 数字游民公社、安福路 OnTheRoad、阿那亚社区
+  > - 海外：Outsite、Selina、Roam、Sun and Co.
+  > - 维度：首屏叙事、房型展示、社区文化呈现、定价透明度、预订路径长度
+  >
+  > **B. 社区软件 / 工具站** — 看他们怎么做留存（L2-L3-L1）
+  > - Read.cv、Substack、Discord、Notion Community、Slack 早期
+  > - 维度：成员 profile 设计、活动机制、归属感设计、付费转化
+  >
+  > 最后输出 cyc.center 在 **[Selina × Notion]** 这个交叉 lane 的差异化机会 —— 这个组合就是你的市场定位。
 
 #### 2.3 机会优先级
 
@@ -189,28 +200,70 @@ cyc.center 是**一个产品两条节奏**：
 
 ### Phase 3 — 构建缺失层（10-14 天）
 
-**目标**：把 L4（公共面）、L3（客厅）、L1（深度看见）按优先级补齐。每个 feature 都用 design + psychology + onboarding 三件套打磨。
+**目标**：按"双轨漏斗"补齐 cyc.center —— 公共面（L4）按 A/B/C 路径优先级搭建，内部（L3/L1）按当前痛点强度推进。每个 feature 都走 design + psychology + onboarding 三件套。
 
-> 注：L1 不是一次建完，先建一两个核心机制（比如照片墙 + 感谢系统）。
+> **优先级原则（v2 更新）：**
+> - L4 公共面：**Path A 优先（0 → 1）**，其次 Path B，Path C 已强只优化
+> - L3/L1 内部：用 Phase 2.5 的 hypothesis 选第一个建什么
+> - L1 不一次建完，先核心两件（照片墙 + 感谢系统）
 
-#### 3.1 L4 公共面：/events 详情页（投资人也会看）
+---
 
-- [ ] 设计
+#### 3.1 L4 — Path A 闭环：「CYC 是什么？」（最优先）
 
-  **Prompt**:
-  > 用 daybreak-os 的 Atlas 层 + impeccable craft 设计 /events/:id 页面：hero 用大理风景照 + 活动海报；下方多卡片展示 时间地点 / 活动描述 / 发起人 / RSVP 按钮 / 已报名头像；底部社区品牌叙事 + 关注 cyc.center 入口。SSR 渲染，含 OG meta。
+完全空白 → 0 到 1。投资人也会走这条路径。
 
-- [ ] 用心理学审视
-
-  **Prompt**:
-  > 用 ux-psychology 审 /events/:id 页面。重点：social proof（已报名头像）、scarcity（剩余名额）、commitment（一键 RSVP 后的强化）、peak-end（活动结束页面应该长什么样）。给出 3-5 个最相关原则的具体实现建议。
-
-- [ ] 实现
+- [ ] 设计 Path A 整段
 
   **Prompt**:
-  > 给我完整 vanilla HTML/CSS/JS 实现，遵守 DESIGN.md 的 token 系统，AAA 对比度，PingFang SC + Inter 中英混排。
+  > 用 daybreak-os Atlas 层 + impeccable craft 设计 Path A 完整闭环：
+  > 1. **首屏品牌叙事**（hero）— 一句话 + 大理实景照 + 一个唯一 CTA "了解 CYC"
+  > 2. **空间相册**（scroll section）— 照片墙 + 故事标注，参考 Selina 官网
+  > 3. **社区文化**（scroll section）— 现有成员故事卡片（3-6 个），手写感引言
+  > 4. **加入入口**（CTA section）— 三选一：申请居住 / 来活动 / 关注
+  >
+  > 所有 section 复用 daybreak-os Atlas tokens，移动端单列、桌面端 60/40 非对称。
 
-#### 3.2 L3 客厅：成员 profile 页
+- [ ] 用 ux-psychology 装上心理学钩子
+
+  **Prompt**:
+  > 用 ux-psychology 审 Path A 设计。重点原则：curiosity gap（首屏不要把答案给完）、storytelling（活动页用具体人物名字，不用"会员们"）、identity-fit signal（首屏第二屏让目标用户认出"这是给我做的"）。给具体文案样例。
+
+- [ ] 实现 + SEO + OG
+
+  **Prompt**:
+  > 给我完整 vanilla HTML/CSS/JS，含 OG meta（让微信卡片显示得好），lazy-load 图片，AAA 对比度，遵守 DESIGN.md token。
+
+#### 3.2 L4 — Path B 闭环：「我要不要去住？」（次优先）
+
+- [ ] 房型 / 价格 / 评价 / 预订页
+
+  **Prompt**:
+  > 用 daybreak-os Atlas + ux-psychology 设计 Path B 闭环：
+  > 1. **房型展示** — 卡片 grid，每张：照片 + 价格 + 容纳 + 现可入住日期
+  > 2. **设施 / 公区** — 时间线展示一天能做什么（餐桌/工位/活动空间）
+  > 3. **现有成员评价** — Identity Card grid + 短引言，附他们待了多久
+  > 4. **预订 CTA** — 风险逆转（试住一周）+ 联系入口（飞书 / 微信群）
+  >
+  > 心理学武器：social proof（评价）、risk reversal（试住）、concrete specifics（具体日期/价格不模糊）。
+
+#### 3.3 L4 — Path C 闭环：「有什么好玩的？」（已强 → 只优化）
+
+Path C 你已经做得最多（活动通告、events 列表、约饭工具）。Phase 3 只做**收口优化**：
+
+- [ ] /events SSR 详情页（你 PLAN.md 已规划）
+
+  **Prompt**:
+  > 用 daybreak-os Atlas + impeccable 把 /events/:id 做成 SSR 页面：hero（活动海报 + 标题）+ 多卡片（时间地点 / 描述 / 发起人 + Identity Avatar / 已报名头像 stack / RSVP CTA）+ 底部品牌引流（"链岛社区还有这些"）。带 OG meta，让微信群链接预览成卡片。
+
+- [ ] 活动结束页（peak-end 实现）
+
+  **Prompt**:
+  > 用 ux-psychology 的 peak-end rule 设计活动结束后的页面：照片墙 + 参与者头像 + 一句感谢 + "下次活动预告"。这个页面是 Path C → 留存的关键钩子。
+
+---
+
+#### 3.4 L3 客厅：成员 profile 页（当 Phase 2.5 hypothesis 选了 "profile = 激活关键" 时做）
 
 - [ ] 三种 onboarding 设计
 
@@ -227,7 +280,7 @@ cyc.center 是**一个产品两条节奏**：
   **Prompt**:
   > 用 ux-psychology 审 profile 页：endowed progress（让用户想继续完善）、IKEA effect（自己填的内容更珍惜）、social proof（被多少人感谢过）、curiosity gap（鼓励别人点开你的 profile 的钩子）。
 
-#### 3.3 L1 深度看见：感谢系统（你产品最不一样的部分）
+#### 3.5 L1 深度看见：感谢系统（你产品最不一样的部分）
 
 - [ ] 机制设计
 
@@ -244,14 +297,14 @@ cyc.center 是**一个产品两条节奏**：
   **Prompt**:
   > 设计感谢系统对应的飞书 Bitable schema：感谢记录表、感谢类型枚举、月度排行榜聚合视图。给我 lark MCP 可以直接执行的 schema 创建命令。
 
-#### 3.4 L1 深度看见：照片墙 / 时间线
+#### 3.6 L1 深度看见：照片墙 / 时间线
 
 - [ ] 用 daybreak-os Artifact 模式 + Stack ↔ Lineup view-mode toggle
 
   **Prompt**:
   > 用 daybreak-os 的 Artifact + view-mode toggle 设计 /community 的"社区照片墙"页面。Stack 模式做月度概览（"上个月发生了好多事"），Lineup 模式按日期分组浏览。点开一张照片进入活动回顾页。完整 vanilla HTML/CSS。
 
-#### 3.5 每个 feature 收工时
+#### 3.7 每个 feature 收工时
 
 - [ ] 写 release notes
 
@@ -276,7 +329,16 @@ cyc.center 是**一个产品两条节奏**：
 - [ ] 触发 pitch-deck founder interview
 
   **Prompt**:
-  > 启动 pitch-deck 的 founder interview。我做 cyc.center 这个项目（社区 OS for 大理在地创意人），目标是 [pre-seed / seed / 战略合作]。请你按 Shaan Puri 15-slide 框架开始问我，每次一题，挖深。准备好后通过 4-critic-role（怀疑型 VC / 领域专家 / 故事讲述者 / 首次读者）压力测试。
+  > 启动 pitch-deck 的 founder interview。
+  >
+  > **核心叙事（v2 关键）**：cyc.center 不是工具站，是 **"[Selina × Notion]" 跨界产品** —— 把一个实体 coliving 社区数字化成可推广的社区 OS，工具是 traction 证据，OS 是 scale 路径。当前在大理 PMF 阶段，目标 [pre-seed / seed / 战略合作]。
+  >
+  > 请按 Shaan Puri 15-slide 框架开始问我，每次一题，挖深。重点 stress-test：
+  > - **Why now / why us**：为什么 coliving 类产品需要 OS 层？为什么是我做？
+  > - **可推广性**：这套从大理验证的模式，怎么复制到其他空间？
+  > - **双轨收入**：to-C（成员订阅）+ to-B（OS 授权给其他空间运营者）的 unit economics
+  >
+  > 准备好后通过 4-critic-role（怀疑型 VC / 领域专家 / 故事讲述者 / 首次读者）压力测试。
 
 - [ ] 把已有产出喂给它
 
