@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>社区的回忆 · CYC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="链岛社区的共同回忆 — 由社区成员一起贡献">
+
+  <style>
+    /* ──────────────────────────────────────────────
+     *  /community/memories · Daybook layer
+     *  共享 me/timeline 的 token 系统（DESIGN.md），但去掉个人化
+     *  组件（mood-frame / picker / verify / upload）。
+     *  纯只读聚合页 — fetch /api/photos?public=1 + /api/members 渲染。
+     * ────────────────────────────────────────────── */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Brand */
+      --cyc-green:    #1c3d2e;
+      --cyc-green-2:  #2a5740;
+      --cyc-orange:   #d9652a;
+      --cyc-warning:  #b04a18;
+      --cyc-sand:     #f2ede6;
+      --cyc-tan:      #c8a96e;
+
+      /* Text (AAA on sand) */
+      --cyc-text:         #1a1a1a;
+      --cyc-text-strong:  #0d0d0d;
+      --cyc-text-muted:   #4d4d4d;
+      --cyc-text-subtle:  #5c5c5c;
+      --cyc-text-faint:   #757575;
+
+      /* Surfaces */
+      --cyc-surface-glass:        rgba(255, 255, 255, 0.75);
+      --cyc-surface-glass-strong: rgba(255, 255, 255, 0.88);
+      --cyc-surface-pure:         #fefcfa;
+      --cyc-surface-tinted:       rgba(28, 61, 46, 0.04);
+      --cyc-border-glass: rgba(255, 255, 255, 0.6);
+      --cyc-stroke:       rgba(0, 0, 0, 0.08);
+
+      /* Spacing */
+      --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+      --sp-6: 24px; --sp-8: 32px; --sp-12: 48px; --sp-16: 64px;
+
+      /* Radius */
+      --r-pill: 9999px; --r-card: 16px; --r-card-lg: 24px;
+      --r-inner: 10px; --r-tight: 6px; --r-dot: 50%;
+
+      /* Type */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC',
+                   'Inter Variable', 'Inter', 'Helvetica Neue', sans-serif;
+
+      /* Motion */
+      --ease-out-iox:  cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+      --dur-instant: 100ms; --dur-fast: 150ms; --dur-base: 240ms;
+    }
+
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--cyc-sand);
+      color: var(--cyc-text);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Three blobs（DESIGN.md 不可省略） ─── */
+    .blob { position: fixed; border-radius: 50%; filter: blur(90px);
+            pointer-events: none; z-index: 0; }
+    .blob.b1 { width: 380px; height: 380px; opacity: 0.22;
+               background: radial-gradient(circle, var(--cyc-orange), transparent 70%);
+               top: -100px; right: -60px; }
+    .blob.b2 { width: 320px; height: 320px; opacity: 0.20;
+               background: radial-gradient(circle, var(--cyc-green), transparent 70%);
+               bottom: 60px; left: -80px; }
+    .blob.b3 { width: 220px; height: 220px; opacity: 0.18;
+               background: radial-gradient(circle, var(--cyc-tan), transparent 70%);
+               top: 50%; left: 50%; }
+    @media (prefers-reduced-motion: reduce) {
+      .blob { opacity: 0.10; filter: blur(60px); }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ─── Topbar ─── */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-4); height: 56px; padding: 0 var(--sp-4);
+      background: var(--cyc-surface-glass-strong);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+      border-bottom: 0.5px solid var(--cyc-stroke);
+    }
+    .topbar-back, .topbar-cta {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--cyc-text-muted);
+      flex-shrink: 0;
+    }
+    .topbar-back:hover { color: var(--cyc-text-strong); }
+    .topbar-cta {
+      color: var(--cyc-green);
+      padding: 6px var(--sp-3);
+      border-radius: var(--r-pill);
+      background: rgba(28, 61, 46, 0.06);
+      transition: background var(--dur-fast);
+    }
+    .topbar-cta:hover { background: rgba(28, 61, 46, 0.12); }
+    .topbar-title {
+      font-size: 15px; font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.01em;
+    }
+
+    /* ─── Page container ─── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 880px; margin: 0 auto;
+      padding: var(--sp-12) var(--sp-4) var(--sp-16);
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      text-align: center;
+      padding: var(--sp-8) 0 var(--sp-12);
+    }
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cyc-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--sp-3);
+    }
+    .hero-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: var(--sp-3);
+    }
+    .hero-sub {
+      font-size: 15px;
+      color: var(--cyc-text-muted);
+      line-height: 1.6;
+    }
+    .hero-sub .accent {
+      color: var(--cyc-warning);
+      font-weight: 600;
+    }
+    @media (max-width: 640px) {
+      .page { padding: var(--sp-6) var(--sp-3) var(--sp-12); }
+      .hero { padding: var(--sp-4) 0 var(--sp-8); }
+      .hero-title { font-size: 26px; }
+    }
+
+    /* ─── Month section / lineup ─── */
+    .month-section {
+      margin-bottom: var(--sp-12);
+      scroll-margin-top: 80px;
+    }
+    .month-section:last-child { margin-bottom: 0; }
+    .month-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 0 var(--sp-2);
+      margin-bottom: var(--sp-3);
+    }
+    .month-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.01em;
+    }
+    .month-metric {
+      font-size: 12px;
+      color: var(--cyc-text-muted);
+    }
+    .lineup-row {
+      display: flex;
+      gap: var(--sp-4);
+      overflow-x: auto;
+      padding: var(--sp-3) var(--sp-2) var(--sp-6);
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .lineup-row::-webkit-scrollbar { display: none; }
+
+    /* ─── Polaroid（社区聚合版 — 多一行贡献者） ─── */
+    .polaroid {
+      width: 180px;
+      flex-shrink: 0;
+      scroll-snap-align: start;
+      background: var(--cyc-surface-pure);
+      padding: 8px 8px 16px;
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 12px 24px -8px rgba(28, 61, 46, 0.15);
+      transform: rotate(var(--tilt, 0deg));
+      cursor: pointer;
+      transition: transform var(--dur-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .polaroid:nth-child(odd)  { --tilt: -2.5deg; }
+    .polaroid:nth-child(even) { --tilt:  2.5deg; }
+    .polaroid:hover, .polaroid:focus-visible {
+      transform: rotate(0deg) scale(1.03);
+      outline: none;
+    }
+    .polaroid:focus-visible {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 12px 24px -8px rgba(28, 61, 46, 0.15),
+        0 0 0 3px rgba(28, 61, 46, 0.4);
+    }
+    .polaroid__photo {
+      aspect-ratio: 1;
+      background: var(--cyc-surface-tinted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      overflow: hidden;
+      position: relative;
+    }
+    .polaroid__photo img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .polaroid__photo:not(.has-image):not(.img-error) {
+      filter: grayscale(1) opacity(0.5);
+    }
+    .polaroid__photo.img-error::after {
+      content: '🖼️ 加载失败';
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--cyc-surface-tinted);
+    }
+    .polaroid__cap {
+      padding-top: var(--sp-3);
+    }
+    .polaroid__title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+      margin-bottom: var(--sp-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .polaroid__contrib {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: var(--sp-1);
+    }
+    .polaroid__contrib-avatar {
+      width: 16px; height: 16px;
+      border-radius: var(--r-dot);
+      background: rgba(28, 61, 46, 0.10);
+      flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--cyc-green);
+      letter-spacing: 0;
+      overflow: hidden;
+    }
+    .polaroid__contrib-avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .polaroid__contrib-name {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .polaroid__date {
+      font-size: 11px;
+      color: var(--cyc-text-faint);
+      letter-spacing: 0;
+    }
+    @media (max-width: 640px) {
+      .polaroid { width: 160px; }
+    }
+
+    /* ─── Empty / loading state ─── */
+    .empty-state {
+      padding: var(--sp-12) var(--sp-6);
+      text-align: center;
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      filter: grayscale(1) opacity(0.4);
+      margin-bottom: var(--sp-4);
+    }
+    .empty-state-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyc-text-strong);
+      margin-bottom: var(--sp-3);
+      letter-spacing: -0.01em;
+    }
+    .empty-state-sub {
+      font-size: 14px;
+      color: var(--cyc-text-muted);
+      max-width: 360px;
+      margin: 0 auto var(--sp-6);
+      line-height: 1.6;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-2);
+      background: linear-gradient(135deg, var(--cyc-green), var(--cyc-green-2));
+      color: var(--cyc-sand);
+      border: none;
+      border-radius: var(--r-pill);
+      padding: 12px var(--sp-6);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(28, 61, 46, 0.25);
+      font-family: inherit;
+      min-height: 44px;
+      text-decoration: none;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* ─── Right scrubber ─── */
+    .scrubber {
+      position: fixed;
+      right: var(--sp-4);
+      top: 96px;
+      bottom: 32px;
+      width: 36px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-1);
+      padding: var(--sp-2) 0;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .scrubber::-webkit-scrollbar { display: none; }
+    .scrubber__entry {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cyc-text-muted);
+      text-decoration: none;
+      text-align: center;
+      padding: var(--sp-1);
+      border-radius: var(--r-tight);
+      transition: background var(--dur-fast), color var(--dur-fast);
+      letter-spacing: 0;
+    }
+    .scrubber__entry:hover { background: var(--cyc-surface-tinted); }
+    .scrubber__entry[data-active] {
+      background: var(--cyc-orange);
+      color: var(--cyc-sand);
+      font-weight: 700;
+    }
+    @media (max-width: 480px) { .scrubber { display: none; } }
+
+    /* ─── Lightbox（只看不改） ─── */
+    .lightbox-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0, 0, 0, 0.86);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 24px 16px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-4);
+      cursor: zoom-out;
+    }
+    .lightbox-overlay.active { display: flex; }
+    .lightbox-content {
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--sp-4);
+      max-width: 100%;
+    }
+    .lightbox-img {
+      max-width: 92vw;
+      max-height: 72vh;
+      object-fit: contain;
+      border-radius: var(--r-card);
+      box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.6);
+      display: block;
+      background: #1a1a1a;
+    }
+    .lightbox-meta {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.92);
+      max-width: 92vw;
+    }
+    .lightbox-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .lightbox-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: var(--sp-1);
+    }
+
+    .lightbox-actions {
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 16px);
+      right: 16px;
+      z-index: 1;
+    }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: var(--r-dot);
+      background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 0.5px solid rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit;
+      transition: background var(--dur-fast), transform var(--dur-instant);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.26); }
+    .icon-btn:active { transform: scale(0.94); }
+    .lightbox-nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      width: 44px; height: 44px;
+      font-size: 22px;
+    }
+    .lightbox-nav-btn[data-dir="prev"] { left: 16px; }
+    .lightbox-nav-btn[data-dir="next"] { right: 16px; }
+    .lightbox-nav-btn[aria-disabled="true"] {
+      opacity: 0.25;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    @media (max-width: 480px) {
+      .lightbox-nav-btn { width: 40px; height: 40px; font-size: 20px; }
+      .lightbox-nav-btn[data-dir="prev"] { left: 8px; }
+      .lightbox-nav-btn[data-dir="next"] { right: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three blobs -->
+  <div class="blob b1" aria-hidden="true"></div>
+  <div class="blob b2" aria-hidden="true"></div>
+  <div class="blob b3" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a href="/" class="topbar-back">cyc.center</a>
+    <div class="topbar-title">社区的回忆</div>
+    <a href="/me/timeline" class="topbar-cta">我也来贡献 →</a>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-eyebrow">来自社区</div>
+      <h1 class="hero-title" id="hero-title">大家的共同回忆</h1>
+      <p class="hero-sub" id="hero-sub">
+        正在加载…
+      </p>
+    </section>
+
+    <div id="months"></div>
+
+    <div class="empty-state hidden" id="empty-state">
+      <div class="empty-state-icon">🌱</div>
+      <div class="empty-state-title">还没有人公开过回忆</div>
+      <div class="empty-state-sub">
+        社区共同回忆由每位成员的"公开"上传共同构成。<br>
+        来 me/timeline 上传你的第一张吧。
+      </div>
+      <a href="/me/timeline" class="btn-primary">去贡献第一张 →</a>
+    </div>
+  </main>
+
+  <nav class="scrubber" id="scrubber" aria-label="时间轴导航"></nav>
+
+  <!-- Lightbox -->
+  <div class="lightbox-overlay" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+    <div class="lightbox-actions">
+      <button type="button" class="icon-btn" onclick="closeLightbox()" aria-label="关闭">✕</button>
+    </div>
+    <button type="button" class="icon-btn lightbox-nav-btn" id="lb-prev" data-dir="prev"
+            onclick="lightboxPrev()" aria-label="上一张">‹</button>
+    <button type="button" class="icon-btn lightbox-nav-btn" id="lb-next" data-dir="next"
+            onclick="lightboxNext()" aria-label="下一张">›</button>
+    <div class="lightbox-content">
+      <img class="lightbox-img" id="lb-image" alt="">
+      <div class="lightbox-meta">
+        <div class="lightbox-title" id="lb-title"></div>
+        <div class="lightbox-sub" id="lb-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ──────────────────────────────────────────────
+     *  /community/memories · 公共聚合页（只读）
+     *
+     *  数据：
+     *    /api/photos?public=1   → 全社区公开 + 审核通过的照片
+     *    /api/members           → rec_id → name/avatar 字典
+     *
+     *  渲染：按 YYYY-MM 分组倒序，每月一个横向 strip。
+     *       每张 polaroid 多一行"贡献者头像 + 名字"。
+     *       点击 → lightbox 大图查看。
+     *       不带任何编辑入口（别人的照片不能改）。
+     * ────────────────────────────────────────────── */
+
+    /* ─── State ─── */
+    let _photos = [];
+    let _membersById = {};
+
+    /* ─── Util ─── */
+    function escHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function tsToYM(ts) {
+      if (!ts) return 'unknown';
+      const d = new Date(Number(ts));
+      if (isNaN(d.getTime())) return 'unknown';
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+    function fmtDate(ts) {
+      if (!ts) return '';
+      const d = new Date(Number(ts));
+      if (isNaN(d.getTime())) return '';
+      const yr = (new Date()).getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      if (d.getFullYear() === yr) return month + '月' + day + '日';
+      return String(d.getFullYear()).slice(2) + '年' + month + '月' + day + '日';
+    }
+
+    /* ─── Init ─── */
+    async function init() {
+      try {
+        const [photosRes, membersRes] = await Promise.all([
+          fetch('/api/photos?public=1'),
+          fetch('/api/members'),
+        ]);
+
+        if (!photosRes.ok) {
+          showError('加载社区回忆失败 (HTTP ' + photosRes.status + ')');
+          return;
+        }
+        const photosJson = await photosRes.json();
+        _photos = photosJson.photos || [];
+
+        if (membersRes.ok) {
+          const mj = await membersRes.json();
+          _membersById = Object.fromEntries((mj.members || []).map(m => [m.record_id, m]));
+        }
+
+        renderHero();
+        renderLineup();
+        renderScrubber();
+
+        // 调试
+        window.cyc = { photos: _photos, membersById: _membersById };
+      } catch (err) {
+        showError('网络错误：' + (err.message || err));
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('hero-sub').textContent = msg;
+      document.getElementById('hero-sub').style.color = '#a93226';
+    }
+
+    /* ─── Hero ─── */
+    function renderHero() {
+      const sub = document.getElementById('hero-sub');
+      if (!_photos.length) {
+        sub.textContent = '还没有人公开过回忆 — 你可以做第一个。';
+        document.getElementById('empty-state').classList.remove('hidden');
+        return;
+      }
+      const contributors = new Set(_photos.map(p => p.uploader_rec_id).filter(Boolean));
+      sub.innerHTML = `由 <span class="accent">${contributors.size}</span> 位成员贡献的 <span class="accent">${_photos.length}</span> 张瞬间`;
+      document.getElementById('empty-state').classList.add('hidden');
+    }
+
+    /* ─── Lineup by month ─── */
+    function renderLineup() {
+      const el = document.getElementById('months');
+      el.innerHTML = '';
+      if (!_photos.length) return;
+
+      // 按 YYYY-MM 分组
+      const groups = {};
+      for (const p of _photos) {
+        const ym = tsToYM(p.taken_at);
+        (groups[ym] = groups[ym] || []).push(p);
+      }
+      const months = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+      months.forEach((ym, mi) => {
+        const items = groups[ym].sort((a, b) => (b.taken_at || 0) - (a.taken_at || 0));
+        const sec = document.createElement('section');
+        sec.className = 'month-section';
+        sec.id = 'month-' + mi;
+        sec.dataset.ym = ym;
+        const label = ym === 'unknown' ? '未注明日期' : (() => {
+          const [y, m] = ym.split('-');
+          return `${y} · ${parseInt(m)}月`;
+        })();
+        sec.innerHTML = `
+          <div class="month-head">
+            <div class="month-name">${escHtml(label)}</div>
+            <div class="month-metric">${items.length} 张</div>
+          </div>
+          <div class="lineup-row">
+            ${items.map(polaroidHtml).join('')}
+          </div>`;
+        el.appendChild(sec);
+      });
+    }
+
+    /* ─── Polaroid（带贡献者）─── */
+    function polaroidHtml(p) {
+      const c = _membersById[p.uploader_rec_id] || {};
+      const name = c.name || c.nickname || '匿名';
+      const initial = name.slice(0, 1);
+
+      // 贡献者头像优先级：avatar_url（用户上传） > avatar_token（飞书原生） > 首字母
+      let avatarSrc = '';
+      if (c.avatar_url)        avatarSrc = c.avatar_url;
+      else if (c.avatar_token) avatarSrc = '/api/poster?token=' + encodeURIComponent(c.avatar_token);
+
+      const avatarHtml = avatarSrc
+        ? `<img src="${escHtml(avatarSrc)}" alt="" onerror="this.replaceWith(document.createTextNode('${escHtml(initial)}'))">`
+        : escHtml(initial);
+
+      return `
+        <div class="polaroid" data-photo-id="${escHtml(p.record_id)}"
+             tabindex="0" role="button" aria-label="查看：${escHtml(p.title || '未命名')}">
+          <div class="polaroid__photo has-image">
+            <img src="${escHtml(p.blob_url)}" alt=""
+                 onerror="console.warn('[memories] 图加载失败:', this.src); this.style.display='none'; this.parentNode.classList.remove('has-image'); this.parentNode.classList.add('img-error');">
+          </div>
+          <div class="polaroid__cap">
+            <div class="polaroid__title">${escHtml(p.title || '未命名')}</div>
+            <div class="polaroid__contrib">
+              <span class="polaroid__contrib-avatar">${avatarHtml}</span>
+              <span class="polaroid__contrib-name">${escHtml(name)}</span>
+            </div>
+            <div class="polaroid__date">${fmtDate(p.taken_at)}</div>
+          </div>
+        </div>`;
+    }
+
+    /* ─── Scrubber ─── */
+    function renderScrubber() {
+      const el = document.getElementById('scrubber');
+      el.innerHTML = '';
+      const sections = document.querySelectorAll('.month-section');
+      if (sections.length <= 1) return;
+
+      sections.forEach(sec => {
+        const ym = sec.dataset.ym;
+        const m = ym && ym !== 'unknown' ? ym.split('-')[1] : '?';
+        const label = ym === 'unknown' ? '?' : (parseInt(m) + '月');
+        const a = document.createElement('a');
+        a.className = 'scrubber__entry';
+        a.href = '#' + sec.id;
+        a.dataset.target = sec.id;
+        a.textContent = label;
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        el.appendChild(a);
+      });
+
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          if (en.isIntersecting) {
+            el.querySelectorAll('.scrubber__entry').forEach(a => a.removeAttribute('data-active'));
+            const a = el.querySelector(`[data-target="${en.target.id}"]`);
+            if (a) a.setAttribute('data-active', '');
+          }
+        });
+      }, { rootMargin: '-30% 0px -55% 0px' });
+      sections.forEach(s => obs.observe(s));
+    }
+
+    /* ─── Lightbox（只读，无编辑） ─── */
+    let _lightboxList = [];
+    let _lightboxIdx = 0;
+
+    document.body.addEventListener('click', e => {
+      const pol = e.target.closest('.polaroid');
+      if (pol && pol.dataset.photoId) openLightbox(pol.dataset.photoId);
+    });
+    document.body.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const pol = e.target.closest && e.target.closest('.polaroid');
+      if (pol && pol.dataset.photoId) {
+        e.preventDefault();
+        openLightbox(pol.dataset.photoId);
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      const lb = document.getElementById('lightbox');
+      if (!lb || !lb.classList.contains('active')) return;
+      if (e.key === 'Escape')        closeLightbox();
+      else if (e.key === 'ArrowLeft')  { e.preventDefault(); lightboxPrev(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); lightboxNext(); }
+    });
+
+    function openLightbox(photoId) {
+      // 列表 = 按当前展示顺序的 _photos（已 group 但平铺时按 taken_at desc 总体一致）
+      _lightboxList = [..._photos].sort((a, b) => (b.taken_at || 0) - (a.taken_at || 0));
+      const idx = _lightboxList.findIndex(p => p.record_id === photoId);
+      _lightboxIdx = idx >= 0 ? idx : 0;
+      if (!_lightboxList.length) return;
+      document.getElementById('lightbox').classList.add('active');
+      renderLightbox();
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('active');
+      _lightboxList = [];
+      _lightboxIdx = 0;
+    }
+    function lightboxPrev() {
+      if (_lightboxIdx <= 0) return;
+      _lightboxIdx--;
+      renderLightbox(true);
+    }
+    function lightboxNext() {
+      if (_lightboxIdx >= _lightboxList.length - 1) return;
+      _lightboxIdx++;
+      renderLightbox(true);
+    }
+    function renderLightbox(animate) {
+      const p = _lightboxList[_lightboxIdx];
+      if (!p) return;
+      const img = document.getElementById('lb-image');
+      const apply = () => {
+        img.src = p.blob_url || '';
+        img.alt = p.title || '';
+        document.getElementById('lb-title').textContent = p.title || '未命名';
+        const c = _membersById[p.uploader_rec_id] || {};
+        const sub = [];
+        if (p.taken_at) sub.push(fmtDate(p.taken_at));
+        if (c.name)     sub.push(c.name);
+        if (p.activity_title) sub.push(p.activity_title);
+        document.getElementById('lb-sub').textContent = sub.join(' · ');
+        // nav 状态
+        document.getElementById('lb-prev').setAttribute('aria-disabled',
+          _lightboxIdx <= 0 ? 'true' : 'false');
+        document.getElementById('lb-next').setAttribute('aria-disabled',
+          _lightboxIdx >= _lightboxList.length - 1 ? 'true' : 'false');
+      };
+      if (!animate) { apply(); return; }
+      img.style.transition = 'opacity 160ms ease';
+      img.style.opacity = '0';
+      setTimeout(() => {
+        apply();
+        img.style.opacity = '1';
+      }, 160);
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

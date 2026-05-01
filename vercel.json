@@ -35,6 +35,7 @@
     { "source": "/events", "destination": "/api/events-list" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap-xml" },
     { "source": "/community/admin", "destination": "/api/community-page?mode=admin" },
+    { "source": "/community/memories", "destination": "/community/memories/index.html" },
     { "source": "/community/:id", "destination": "/api/community-page?id=:id" },
     { "source": "/community", "destination": "/api/community-page" }
   ]
