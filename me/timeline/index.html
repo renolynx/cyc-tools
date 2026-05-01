@@ -1395,14 +1395,12 @@
     </div>
   </div>
 
-  <!-- ═══════════ Verify Modal ═══════════ -->
+  <!-- ═══════════ Verify Modal · 已有凭证：末 4 位验证 ═══════════ -->
   <div class="modal-overlay" id="verify-modal">
     <div class="modal-sheet" style="max-width: 380px;">
       <div class="modal-handle"></div>
       <h3 class="modal-title">确认是你</h3>
-      <p class="modal-sub">为防误选，请输入你<strong style="color:var(--cyc-text-strong)">微信号最后 4 位</strong>。<br>
-        <span style="font-size:12px;color:var(--cyc-text-faint);">mock 阶段：任意 4 位均通过</span>
-      </p>
+      <p class="modal-sub" id="verify-sub">为防误选，请输入你<strong style="color:var(--cyc-text-strong)">微信号最后 4 位</strong>。</p>
       <div class="verify-input-wrap">
         <input type="text" class="verify-input" maxlength="1" data-i="0" inputmode="text" autocomplete="off">
         <input type="text" class="verify-input" maxlength="1" data-i="1" inputmode="text" autocomplete="off">
@@ -1413,6 +1411,34 @@
       <div class="modal-actions">
         <button class="btn-secondary" onclick="cancelVerify()">返回选择</button>
         <button class="btn-primary" onclick="submitVerify()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Bootstrap Modal · 第一次录入完整微信号 ═══════════ -->
+  <div class="modal-overlay" id="bootstrap-modal">
+    <div class="modal-sheet" style="max-width: 420px;">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">第一次关联身份</h3>
+      <p class="modal-sub" id="bootstrap-sub">
+        我们注意到 <strong id="bootstrap-name" style="color:var(--cyc-text-strong)">这位成员</strong> 还没填过微信号。
+        请输入你的<strong style="color:var(--cyc-text-strong)">完整微信号</strong>，会写入到飞书成员档案。
+        <br>
+        <span style="font-size: 12px; color: var(--cyc-text-faint); display: block; margin-top: 8px; line-height: 1.5;">
+          请确认这真的是你 — 录入后任何人都需要末 4 位才能再登录。<br>
+          填错的话联系社区管理员重置。
+        </span>
+      </p>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label class="form-label">你的微信号</label>
+        <input type="text" class="form-input" id="bootstrap-wechat"
+               placeholder="例如 jiujiu_dali"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="verify-error" id="bootstrap-error"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="cancelBootstrap()">返回选择</button>
+        <button class="btn-primary" id="bootstrap-submit" onclick="submitBootstrap()">录入并登录</button>
       </div>
     </div>
   </div>
@@ -2020,17 +2046,45 @@
       }).join('');
     }
 
-    function selectMember(record_id) {
+    async function selectMember(record_id) {
       _selectedForVerify = _allMembers.find(m => m.record_id === record_id);
       if (!_selectedForVerify) return;
       closePicker();
-      setTimeout(() => openVerify(), 220);
+
+      // 先查该成员是否已填微信号 — 决定走"末 4 位验证"还是"首次录入"
+      setActivity('Listening', '正在查验该成员状态…');
+      try {
+        const res = await fetch('/api/identity-check?member_rec_id=' + encodeURIComponent(record_id));
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          // 出错也走 verify 兜底（用户填末 4 位失败时后端会给 NO_CREDENTIAL 提示再切到 bootstrap）
+          console.warn('[identity-check]', json.error || res.status);
+          setTimeout(() => openVerify(), 220);
+          return;
+        }
+        // 用 check 返回的 member（含云端 avatar_url）覆盖 picker 那条精简数据
+        if (json.member) _selectedForVerify = { ..._selectedForVerify, ...json.member };
+        if (json.has_credential) {
+          setTimeout(() => openVerify(), 220);
+        } else {
+          setTimeout(() => openBootstrap(), 220);
+        }
+      } catch (err) {
+        console.warn('[identity-check] 网络错', err);
+        setTimeout(() => openVerify(), 220);
+      }
     }
 
     /* ──────────────────────────────────────────────
-     *  Verify (4 位微信号)
+     *  Verify (4 位微信号) — 已填凭证的成员走这里
      * ────────────────────────────────────────────── */
     function openVerify() {
+      // 顶部姓名提示
+      const m = _selectedForVerify;
+      const nameEl = document.getElementById('verify-sub');
+      if (m && nameEl) {
+        nameEl.innerHTML = '为防误选，<strong style="color:var(--cyc-text-strong)">' + escHtml(m.name || m.nickname || '') + '</strong>，请输入你<strong style="color:var(--cyc-text-strong)">微信号最后 4 位</strong>。';
+      }
       document.getElementById('verify-modal').classList.add('active');
       document.querySelectorAll('.verify-input').forEach(i => { i.value = ''; });
       document.getElementById('verify-error').textContent = '';
@@ -2039,6 +2093,96 @@
     function cancelVerify() {
       document.getElementById('verify-modal').classList.remove('active');
       setTimeout(openPicker, 220);
+    }
+
+    /* ──────────────────────────────────────────────
+     *  Bootstrap (第一次录入完整微信号) — 未填凭证的成员走这里
+     * ────────────────────────────────────────────── */
+    function openBootstrap() {
+      const m = _selectedForVerify;
+      const nameEl = document.getElementById('bootstrap-name');
+      if (m && nameEl) nameEl.textContent = m.name || m.nickname || '这位成员';
+      document.getElementById('bootstrap-modal').classList.add('active');
+      document.getElementById('bootstrap-wechat').value = '';
+      document.getElementById('bootstrap-error').textContent = '';
+      const submitBtn = document.getElementById('bootstrap-submit');
+      submitBtn.disabled = false;
+      submitBtn.textContent = '录入并登录';
+      setTimeout(() => document.getElementById('bootstrap-wechat').focus(), 250);
+    }
+    function cancelBootstrap() {
+      document.getElementById('bootstrap-modal').classList.remove('active');
+      setTimeout(openPicker, 220);
+    }
+    document.getElementById('bootstrap-wechat').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitBootstrap();
+    });
+
+    async function submitBootstrap() {
+      const wechat = document.getElementById('bootstrap-wechat').value.trim();
+      const errEl = document.getElementById('bootstrap-error');
+      const submitBtn = document.getElementById('bootstrap-submit');
+      errEl.textContent = '';
+
+      if (!wechat) { errEl.textContent = '请输入微信号'; return; }
+      if (wechat.length < 4 || wechat.length > 40) {
+        errEl.textContent = '微信号长度看起来不对（4-40 位）';
+        return;
+      }
+      if (!_selectedForVerify) {
+        errEl.textContent = '请先选成员';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '录入中…';
+
+      try {
+        const res = await fetch('/api/identity-verify', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            member_rec_id: _selectedForVerify.record_id,
+            mode:          'bootstrap',
+            wechat,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) {
+          if (json.code === 'ALREADY_BOUND') {
+            errEl.textContent = '这位成员已经填过微信号了，请用末 4 位验证。';
+            // 自动切到 verify 模式
+            setTimeout(() => {
+              document.getElementById('bootstrap-modal').classList.remove('active');
+              setTimeout(openVerify, 220);
+            }, 1500);
+          } else if (json.code === 'WECHAT_TAKEN') {
+            errEl.textContent = '这个微信号已被另一位成员绑定。如果是误绑请联系管理员。';
+          } else {
+            errEl.textContent = json.error || '录入失败';
+          }
+          return;
+        }
+        // 写入并颁发 token 成功
+        _identity = {
+          rec_id:       json.member.record_id,
+          name:         json.member.name || '',
+          nickname:     json.member.nickname || '',
+          avatar_token: json.member.avatar_token || null,
+          avatar_url:   json.member.avatar_url || null,
+          token:        json.token,
+          expires_at:   json.expires_at,
+        };
+        saveIdentity();
+        document.getElementById('bootstrap-modal').classList.remove('active');
+        showBound();
+        setActivity('Welcome', `欢迎，${_identity.name}。微信号已录入，下次登录用末 4 位即可。`);
+      } catch (err) {
+        errEl.textContent = '网络错误：' + (err.message || err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '录入并登录';
+      }
     }
 
     document.querySelectorAll('.verify-input').forEach(input => {
@@ -2086,6 +2230,12 @@
         });
         const json = await res.json().catch(() => ({}));
         if (!res.ok || !json.success) {
+          // 兜底：如果后端说"没凭证"，自动切到 bootstrap 模式
+          if (json.code === 'NO_CREDENTIAL') {
+            document.getElementById('verify-modal').classList.remove('active');
+            setTimeout(openBootstrap, 220);
+            return;
+          }
           errEl.textContent = json.error || '验证失败';
           return;
         }
@@ -2919,6 +3069,9 @@
     attachSheetSwipe('picker-modal', closePicker);
     attachSheetSwipe('verify-modal', () => {
       document.getElementById('verify-modal').classList.remove('active');
+    });
+    attachSheetSwipe('bootstrap-modal', () => {
+      document.getElementById('bootstrap-modal').classList.remove('active');
     });
 
     /* ─── Stack 散开范围跟随 viewport / surface 宽度 ─── */
