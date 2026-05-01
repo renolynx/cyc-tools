@@ -119,7 +119,7 @@ body{
 }
 .topbar-back{
   display:inline-flex;align-items:center;gap:4px;
-  font-size:14px;font-weight:500;color:var(--green);
+  font-size:14px;font-weight:600;color:var(--green);
   text-decoration:none;padding:6px 10px 6px 4px;border-radius:8px;
   -webkit-tap-highlight-color:transparent;
 }
@@ -271,7 +271,7 @@ body{
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border:1px solid var(--border);
   border-radius:100px;
-  font-size:13px;font-weight:500;color:var(--green);
+  font-size:13px;font-weight:600;color:var(--green);
   box-shadow:0 1px 4px rgba(0,0,0,0.06);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
@@ -303,7 +303,7 @@ body{
 .day-btn.selected .day-tag{color:#fff!important}
 .day-btn.has-dot .dot{width:5px;height:5px;background:var(--orange);border-radius:50%;margin-top:2px}
 .day-btn.selected.has-dot .dot{background:rgba(255,255,255,0.7)}
-.day-name{font-size:10px;color:var(--muted);font-weight:500}
+.day-name{font-size:10px;color:var(--muted);font-weight:600}
 .day-num{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
 .day-tag{font-size:9px;color:var(--orange);font-weight:600}
 
@@ -357,7 +357,7 @@ body{
   font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
-.act-preview{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.act-preview{flex:1;font-size:13px;font-weight:600;color:var(--text)}
 .del-btn{
   background:none;border:none;color:#ccc;
   font-size:18px;padding:2px 6px;border-radius:6px;line-height:1;cursor:pointer;
@@ -370,7 +370,7 @@ body{
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em}
 .opt{
-  font-size:10px;font-weight:500;color:#aaa;
+  font-size:10px;font-weight:600;color:#aaa;
   background:rgba(0,0,0,0.05);
   padding:1px 5px;border-radius:4px;margin-left:3px;
 }
@@ -461,7 +461,7 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
   padding:5px 12px;border-radius:100px;
   border:1px solid var(--stroke);
   background:rgba(255,255,255,0.7);
-  font-size:12px;font-weight:500;color:var(--muted);
+  font-size:12px;font-weight:600;color:var(--muted);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
   transition:all 0.15s;
 }
@@ -560,7 +560,7 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
   border:1.5px dashed rgba(28,61,46,0.25);
   border-radius:var(--r-sm);
   background:rgba(28,61,46,0.03);
-  font-size:13px;font-weight:500;color:var(--muted);
+  font-size:13px;font-weight:600;color:var(--muted);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
   transition:all 0.15s;
 }
@@ -578,7 +578,7 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .flow-row .rm:active,.spk-row .rm:active{color:#e24b4a;border-color:#e24b4a}
 .spk-row{display:grid;grid-template-columns:1fr 2fr auto;gap:5px;align-items:start}
 .add-sub{
-  font-size:12px;font-weight:500;color:var(--green);
+  font-size:12px;font-weight:600;color:var(--green);
   background:none;border:none;padding:2px 0;
   text-align:left;margin-top:3px;cursor:pointer;
 }
@@ -802,14 +802,14 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .cal-drawer-title{flex:1;font-size:15px;font-weight:600;color:var(--text)}
 .cal-close{
   display:inline-flex;align-items:center;gap:4px;
-  font-size:13px;font-weight:500;color:var(--green);
+  font-size:13px;font-weight:600;color:var(--green);
   background:rgba(28,61,46,0.08);border:none;border-radius:8px;
   padding:6px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
 .cal-close:active{background:rgba(28,61,46,0.15)}
 .cal-refresh{
   display:inline-flex;align-items:center;gap:3px;
-  font-size:12px;font-weight:500;color:var(--muted);
+  font-size:12px;font-weight:600;color:var(--muted);
   background:none;border:none;padding:6px 8px;cursor:pointer;
   border-radius:8px;-webkit-tap-highlight-color:transparent;
 }
@@ -823,7 +823,7 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
   -webkit-overflow-scrolling:touch;
 }
 .cal-range-label{
-  font-size:12px;color:var(--muted);font-weight:500;
+  font-size:12px;color:var(--muted);font-weight:600;
   text-align:center;margin-bottom:14px;
 }
 .cal-group{margin-bottom:18px}
@@ -993,7 +993,7 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .pwd-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
 .pwd-cancel{
   padding:12px;border:1px solid var(--stroke);border-radius:var(--r-sm);
-  background:none;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;
+  background:none;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;
 }
 .pwd-confirm{
   padding:12px;border:none;border-radius:var(--r-sm);
@@ -1024,7 +1024,7 @@ body.event-page {
 }
 .event-back, .event-site {
   display: inline-flex; align-items: center;
-  font-size: 14px; font-weight: 500; color: var(--green);
+  font-size: 14px; font-weight:600; color: var(--green);
   text-decoration: none; padding: 6px 10px; border-radius: 8px;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1291,7 +1291,7 @@ body.event-page {
 .event-404-en {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight:600;
   letter-spacing: 0.04em;
   margin-top: -4px;
   margin-bottom: 14px;
@@ -1592,7 +1592,7 @@ body.event-page {
   border-radius: var(--r-sm);
   background: none;
   font-size: 14px;
-  font-weight: 500;
+  font-weight:600;
   color: var(--muted);
   cursor: pointer;
 }
@@ -2014,7 +2014,7 @@ body.event-page {
   font-style: normal;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 500;
+  font-weight:600;
   margin-left: 2px;
 }
 .cm-detail-types .cm-type-chip,
@@ -2281,7 +2281,7 @@ body.event-page {
 .cm-edit-checkbox label {
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; color: var(--text);
-  font-weight: 500;
+  font-weight:600;
   text-transform: none;
   letter-spacing: 0;
   margin: 0;
@@ -2291,7 +2291,7 @@ body.event-page {
 
 /* ── multi-select chip 编辑器（社群身份）── */
 .cm-edit-hint {
-  font-weight: 500;
+  font-weight:600;
   font-size: 11px;
   color: var(--muted);
   margin-left: 6px;
@@ -2371,7 +2371,7 @@ body.event-page {
 .cm-edit-rsvps-count {
   text-transform: none;
   letter-spacing: 0;
-  font-weight: 500;
+  font-weight:600;
   color: var(--muted);
   font-size: 11px;
 }
