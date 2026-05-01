@@ -11,6 +11,7 @@
  */
 
 import { getCurrentPassword, setPassword, verifyPassword, isKvConfigured } from './_password.js';
+import { verifyTeamPassword } from './_security.js';
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin',  '*');
@@ -20,16 +21,10 @@ function setCors(res) {
 
 // ─────────── action: verify (默认) ───────────
 
-function verifyTeamPassword(req, res) {
+function handleVerify(req, res) {
   const { password } = req.body || {};
-  const TEAM_PASSWORD = process.env.TEAM_PASSWORD;
-
-  if (!TEAM_PASSWORD)
-    return res.status(500).json({ error: '管理密码未配置' });
-
-  if (!password || password !== TEAM_PASSWORD)
+  if (!verifyTeamPassword(password))
     return res.status(401).json({ error: '密码错误' });
-
   return res.status(200).json({ success: true });
 }
 
@@ -74,7 +69,7 @@ export default async function handler(req, res) {
   const action = req.query.action || 'verify';
 
   if (action === 'change-password') return handleChangePassword(req, res);
-  if (action === 'verify')          return verifyTeamPassword(req, res);
+  if (action === 'verify')          return handleVerify(req, res);
 
   return res.status(400).json({ error: `unknown action: ${action}` });
 }

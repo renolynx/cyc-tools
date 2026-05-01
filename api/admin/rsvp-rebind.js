@@ -30,6 +30,7 @@ import { applyCors, getAccessToken } from '../_feishu.js';
 import { fetchAllMembers, autoCreateMember } from '../_member.js';
 import { fetchAllRsvps } from '../_rsvp.js';
 import { invalidate } from '../_kv.js';
+import { verifyTeamPassword } from '../_security.js';
 
 const APP_TOKEN = process.env.FEISHU_MEMBER_APP_TOKEN;
 const RSVP_TABLE_ID = process.env.FEISHU_RSVP_TABLE_ID || 'tbl887iFA41eI0iS';
@@ -74,12 +75,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')    return res.status(405).json({ error: 'POST only' });
 
-  // 鉴权
-  const TEAM_PASSWORD = process.env.TEAM_PASSWORD;
-  if (!TEAM_PASSWORD) return res.status(500).json({ error: 'TEAM_PASSWORD 未配置' });
+  // 鉴权（TEAM_PASSWORD —— 见 _security.js 用法表）
   const auth = req.headers.authorization || '';
   const password = auth.replace(/^Bearer\s+/i, '').trim();
-  if (password !== TEAM_PASSWORD) return res.status(401).json({ error: '密码错误' });
+  if (!verifyTeamPassword(password)) return res.status(401).json({ error: '密码错误' });
 
   const body = req.body || {};
   const dryRun = body.dryRun !== false;        // 默认 dryRun=true，要显式传 false 才执行

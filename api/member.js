@@ -18,19 +18,16 @@ import { applyCors } from './_feishu.js';
 import { fetchMember, stripPrivate } from './_member.js';
 import { fetchRsvpsByMember } from './_rsvp.js';
 import { fetchAllActivities } from './_activity.js';
+import { verifyTeamPassword } from './_security.js';
 
 export default async function handler(req, res) {
   applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── 鉴权 ──
-  const TEAM_PASSWORD = process.env.TEAM_PASSWORD;
-  if (!TEAM_PASSWORD)
-    return res.status(500).json({ error: '管理密码未配置（TEAM_PASSWORD）' });
-
+  // ── 鉴权（TEAM_PASSWORD —— 见 _security.js 用法表） ──
   const auth = req.headers.authorization || '';
   const password = auth.replace(/^Bearer\s+/i, '').trim();
-  if (password !== TEAM_PASSWORD)
+  if (!verifyTeamPassword(password))
     return res.status(401).json({ error: '密码错误' });
 
   // ── 参数：支持单 ID 或逗号分隔的批量 ──
