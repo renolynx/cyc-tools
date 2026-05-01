@@ -43,18 +43,20 @@ function looksLikeOrgOrMerge(name) {
   if (!name) return true;
   const s = name.trim();
   if (s.length > 20) return true;          // 太长，多半是合并字段
-  // 含中文空格或多个词块 + 长度较长
-  if (/[ 　]/.test(s) && s.length > 12) return true;
-  // 显著组织关键词
+  // 双空格（"  "）= 强烈的合并标记（如"杨圆圆  李带菓"）
+  if (/[ 　]{2,}/.test(s)) return true;
+  // 单个空格 + 长度较长（中英混排姓名一般 < 12，更长多半是组织或合并）
+  if (/[ 　]/.test(s) && s.length > 10) return true;
+  // 组织关键词 — 长度阈值放宽到 ≥5（"清华大学" 4 字 + 任意后缀就算）
   const orgKeywords = [
     '社区', '团队', '小组', '协会', '工作室', '工作坊', '中心',
-    '召集人', '主理人', '成员', '支队', '俱乐部', '协作', '客厅',
-    '机构', '公司', '工作室主理人', 'cyc活动体验', 'P社成员',
-    '工作坊主理人', '设计师', // 多人合并的标志
+    '召集人', '主理人', '支队', '俱乐部', '协作', '客厅',
+    '机构', '公司', '大学', '学校', '集体', '联盟', '编辑部',
+    'cyc活动体验', 'P社成员', '工作坊主理人',
   ];
-  if (orgKeywords.some(k => s.includes(k)) && s.length > 8) return true;
-  // 包含"  "（多空格）/"&"/"，"等多人分隔符
-  if (/[&，、]/.test(s)) return true;
+  if (orgKeywords.some(k => s.includes(k)) && s.length >= 5) return true;
+  // 多人分隔符
+  if (/[&，、/]/.test(s)) return true;
   return false;
 }
 
@@ -111,13 +113,40 @@ export default async function handler(req, res) {
     }
 
     // ── 2. 按 (姓名, 微信号) 去重 RSVP ──
-    const personMap = new Map();   // key = name|wechat → { name, wechat, rsvp_records: [ { record_id, current_link_id } ] }
+    //   两步策略避免"同一人因有/无微信号被分成两个" :
+    //   step A: 优先按非空 wechat 分组
+    //   step B: 没 wechat 的 RSVP 看姓名是否能合并到 step A 已建的组
+    const personMap = new Map();   // canonical_key → { name, wechat, rsvp_records: [...] }
+    const nameToKey = new Map();    // name → canonical_key（仅取第一个出现的，用于 step B 合并）
+
+    // Step A: 按 wechat 分组
     for (const r of allRsvps) {
-      const name = (r.name || '').trim();
       const wechat = normalizeWechat(r._wechat || r.wechat || '');
-      const key = name + '|' + wechat;
+      if (!wechat) continue;
+      const key = 'w:' + wechat;
       if (!personMap.has(key)) {
-        personMap.set(key, { name, wechat, rsvp_records: [] });
+        personMap.set(key, { name: (r.name || '').trim(), wechat, rsvp_records: [] });
+        const n = (r.name || '').trim();
+        if (n && !nameToKey.has(n)) nameToKey.set(n, key);
+      }
+      personMap.get(key).rsvp_records.push({
+        record_id: r.record_id,
+        current_link_id: r.member_rec_id || '',
+      });
+    }
+    // Step B: 没 wechat 的 RSVP — 同名优先合并，否则建 'n:<name>' 组
+    for (const r of allRsvps) {
+      const wechat = normalizeWechat(r._wechat || r.wechat || '');
+      if (wechat) continue;
+      const name = (r.name || '').trim();
+      if (!name) continue;
+      let key = nameToKey.get(name);
+      if (!key) {
+        key = 'n:' + name;
+        if (!personMap.has(key)) {
+          personMap.set(key, { name, wechat: '', rsvp_records: [] });
+        }
+        nameToKey.set(name, key);
       }
       personMap.get(key).rsvp_records.push({
         record_id: r.record_id,
