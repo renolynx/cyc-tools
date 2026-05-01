@@ -1698,36 +1698,56 @@
       wrapEl.classList.remove('hidden');
       emptyEl.classList.add('hidden');
 
-      const layouts = computeFanLayout(top.length);
+      const tilts = computeStackTilts(top.length);
       top.forEach((p, i) => {
-        const L = layouts[i];
+        const T = tilts[i];
         const card = document.createElement('div');
         card.className = 'polaroid';
-        card.dataset.photoId = p.id;            // 用于事件委托打开详情
+        card.dataset.photoId = p.id;
         card.setAttribute('tabindex', '0');
         card.setAttribute('role', 'button');
         card.setAttribute('aria-label', '查看回忆：' + (p.title || '未命名'));
-        card.style.setProperty('--tilt',     L.tilt + 'deg');
-        card.style.setProperty('--fanX',     L.fanX + 'px');
-        card.style.setProperty('--fanTilt',  L.fanTilt + 'deg');
+        card.style.setProperty('--tilt',    T.tilt + 'deg');
+        card.style.setProperty('--fanTilt', T.fanTilt + 'deg');
         card.style.setProperty('--z', i + 1);
+        // --fanX 不在这里设；交给 relayoutStack 根据屏幕宽度算
         card.innerHTML = polaroidContent(p);
         stackEl.appendChild(card);
       });
+      relayoutStack();   // 立刻按当前 surface 宽度散开
     }
-    function computeFanLayout(n) {
-      // tilt 范围 ±8°（DESIGN.md / SKILL.md hard rule #9）
+
+    /** 倾斜角度仅与 index 相关，不依赖屏幕（DESIGN.md hard rule #9：±8°） */
+    function computeStackTilts(n) {
       const out = [];
       for (let i = 0; i < n; i++) {
         const t = n === 1 ? 0 : (i / (n - 1)) * 16 - 8;
-        const fx = n === 1 ? 0 : (i / (n - 1)) * 440 - 220;
         out.push({
-          tilt:    Math.round(t  * 100) / 100,
-          fanX:    Math.round(fx),
-          fanTilt: Math.round(t  * 2 * 100) / 100,
+          tilt:    Math.round(t * 100) / 100,
+          fanTilt: Math.round(t * 2 * 100) / 100,
         });
       }
       return out;
+    }
+
+    /** 按 surface 实际宽度计算每张 polaroid 的 fan-out 横向偏移
+     *  - fan 总宽 = surface 内宽 - 一张 polaroid 宽（160）- 16 边距
+     *  - 上限 480px（再宽就显得空旷，散开失去 stack 感）
+     *  - 在 ResizeObserver / window resize 时重新计算 */
+    function relayoutStack() {
+      const stack = document.getElementById('stack');
+      if (!stack) return;
+      const cards = stack.querySelectorAll('.polaroid');
+      if (!cards.length) return;
+      const surface = stack.closest('.surface-halo');
+      const surfaceW = surface ? surface.clientWidth : window.innerWidth - 32;
+      // surface 左右各 16-24 padding，再扣一张 polaroid 宽度（160），剩下作 fan range
+      const fanTotal = Math.max(120, Math.min(surfaceW - 200, 480));
+      const n = cards.length;
+      cards.forEach((card, i) => {
+        const fx = n === 1 ? 0 : Math.round((i / (n - 1)) * fanTotal - fanTotal / 2);
+        card.style.setProperty('--fanX', fx + 'px');
+      });
     }
     function polaroidContent(p) {
       const photoCls = p.dataUrl ? 'has-image' : '';
@@ -2037,6 +2057,95 @@
       applyActivityDom(label, sub);
     }
     function loopActivity() { applyIdleActivity(); }
+
+    /* ──────────────────────────────────────────────
+     *  Swipe-down 关闭 modal（仅 mobile / bottom-sheet 模式 < 600px）
+     *  - touchstart 在 sheet 顶部时进入 dragging（避免和内容滚动冲突）
+     *  - touchmove 仅向下：translateY 跟随手指
+     *  - touchend：dy > 120px → 关闭，否则回弹
+     * ────────────────────────────────────────────── */
+    function attachSheetSwipe(overlayId, closeFn) {
+      const overlay = document.getElementById(overlayId);
+      if (!overlay) return;
+      const sheet = overlay.querySelector('.modal-sheet');
+      if (!sheet) return;
+
+      let startY = 0, currentY = 0, dragging = false;
+
+      sheet.addEventListener('touchstart', e => {
+        // 仅 mobile bottom-sheet 模式启用；desktop 居中 modal 不需要 swipe
+        if (window.innerWidth >= 600) return;
+        if (sheet.scrollTop > 0) return;        // sheet 内容已滚动，让滚动优先
+        if (e.touches.length !== 1) return;     // 多指不处理
+        startY = currentY = e.touches[0].clientY;
+        dragging = true;
+        sheet.style.transition = 'none';
+      }, { passive: true });
+
+      sheet.addEventListener('touchmove', e => {
+        if (!dragging) return;
+        currentY = e.touches[0].clientY;
+        const dy = currentY - startY;
+        // 上拉无视；下拉跟随
+        sheet.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      }, { passive: true });
+
+      sheet.addEventListener('touchend', () => {
+        if (!dragging) return;
+        dragging = false;
+        const dy = currentY - startY;
+        // 让 transition 重新接管收尾动画
+        sheet.style.transition = 'transform 220ms cubic-bezier(0.32, 0.72, 0, 1)';
+        if (dy > 120) {
+          sheet.style.transform = 'translateY(100%)';
+          // 等动画结束再 closeFn（否则关闭瞬间 sheet 直接消失，没有滑出感）
+          setTimeout(() => {
+            sheet.style.transition = '';
+            sheet.style.transform = '';
+            closeFn();
+          }, 220);
+        } else {
+          sheet.style.transform = '';   // 回弹到原位
+          setTimeout(() => { sheet.style.transition = ''; }, 220);
+        }
+      }, { passive: true });
+
+      // 触摸取消（来电、系统手势）也要复位
+      sheet.addEventListener('touchcancel', () => {
+        if (!dragging) return;
+        dragging = false;
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+      }, { passive: true });
+    }
+
+    /* 给四个 modal 挂上 swipe-down 关闭 */
+    attachSheetSwipe('photo-modal',  closePhotoDetail);
+    attachSheetSwipe('upload-modal', closeUpload);
+    attachSheetSwipe('picker-modal', closePicker);
+    attachSheetSwipe('verify-modal', () => {
+      document.getElementById('verify-modal').classList.remove('active');
+    });
+
+    /* ─── Stack 散开范围跟随 viewport / surface 宽度 ─── */
+    let _stackResizeT;
+    window.addEventListener('resize', () => {
+      clearTimeout(_stackResizeT);
+      _stackResizeT = setTimeout(relayoutStack, 100);
+    });
+    if (window.ResizeObserver) {
+      const obs = new ResizeObserver(() => {
+        clearTimeout(_stackResizeT);
+        _stackResizeT = setTimeout(relayoutStack, 80);
+      });
+      // 等 DOM 里 surface 出现后再 observe（bound section 一开始 hidden）
+      const tryObserve = () => {
+        const surface = document.querySelector('.bound .surface-halo');
+        if (surface) obs.observe(surface);
+        else setTimeout(tryObserve, 200);
+      };
+      tryObserve();
+    }
 
     /* ─── 启动 ─── */
     init();
