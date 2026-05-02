@@ -258,7 +258,7 @@ function renderAvatarGroups(speakers, attendees, total) {
       ` data-url="${escapeHtml(p.avatar_url || '')}"` +
       ` data-token="${escapeHtml(p.avatar_token || '')}"` +
       ` data-mid="${escapeHtml(p.member_rec_id || '')}"` +
-      ` onclick="event.stopPropagation();openPersonModal(this)"` +
+      ` onclick="event.preventDefault();event.stopPropagation();openPersonModal(this)"` +
       ` aria-label="${escapeHtml(p.name)}">${content}</button>`;
   }
 
