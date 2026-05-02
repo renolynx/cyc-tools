@@ -7,7 +7,14 @@
   "engines": {
     "node": ">=20"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@vercel/blob": "^1.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
   }
 }
