@@ -30,6 +30,7 @@ describe('KNOWN_EVENTS', () => {
   it('包含活动卡 / 活动详情交互事件', () => {
     expect(KNOWN_EVENTS.has('event_card_click')).toBe(true);
     expect(KNOWN_EVENTS.has('event_card_avatar_click')).toBe(true);
+    expect(KNOWN_EVENTS.has('event_card_poster_click')).toBe(true);
     expect(KNOWN_EVENTS.has('rsvp_click')).toBe(true);
     expect(KNOWN_EVENTS.has('open_pill_seen')).toBe(true);
     expect(KNOWN_EVENTS.has('share_prompt_seen')).toBe(true);

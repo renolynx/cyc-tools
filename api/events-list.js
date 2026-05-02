@@ -31,6 +31,14 @@ function thumbUrl(act) {
   return null;
 }
 
+function thumbHtml(act) {
+  const url = thumbUrl(act);
+  if (!url) return '<div class="el-card-thumb el-card-thumb-empty">📅</div>';
+  const tok = act.poster.file_token;
+  const title = escapeHtml(act.title || '');
+  return `<img class="el-card-thumb" data-zoomable src="${url}" alt="${title}" loading="lazy" onclick="openPosterLightbox(event, '${escapeHtml(tok)}', '${title}')">`;
+}
+
 // ── 头像组 HTML（嘉宾 + 报名 stack）──
 function renderAvatarGroups(speakers, attendees, total) {
   if (!speakers.length && !attendees.length) return '';
@@ -112,7 +120,7 @@ function buildAvatarsByActivity(allRsvps, memberMap) {
 }
 
 function renderCard(a, isPast, avatarData) {
-  const thumb = thumbUrl(a);
+  const thumb = thumbHtml(a);
   let status = '';
   if (isPast) status = '<span class="el-card-status past">已结束</span>';
   else if (a.status === '确认举办') status = '<span class="el-card-status confirm">✓ 确认举办</span>';
@@ -134,7 +142,7 @@ function renderCard(a, isPast, avatarData) {
 
   // ⚠️ 用 <article> 而非 <a>：避免与展开区里"📝 详情"<a>嵌套
   return `<article class="el-card${isPast ? ' is-past' : ''}" data-href="/events/${a.record_id}" onclick="toggleCardExpand(event, this)">
-  ${thumb ? `<img class="el-card-thumb" src="${thumb}" alt="" loading="lazy">` : '<div class="el-card-thumb el-card-thumb-empty">📅</div>'}
+  ${thumb}
   <div class="el-card-body">
     <div class="el-card-title">${escapeHtml(a.title)}</div>
     <div class="el-card-meta">
@@ -285,6 +293,13 @@ ${itemListLd}
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
 
+<!-- 海报 lightbox（点击卡片海报触发）-->
+<div class="poster-lightbox-overlay" id="posterLightbox" onclick="if(event.target.id==='posterLightbox')closePosterLightbox()">
+  <button class="poster-lightbox-close" type="button" onclick="closePosterLightbox()" aria-label="关闭">×</button>
+  <img class="poster-lightbox-img" id="plImg" src="" alt="">
+  <div class="poster-lightbox-caption" id="plCaption"></div>
+</div>
+
 <!-- 人物 modal（点击活动卡片头像触发）-->
 <div class="person-modal-overlay" id="personModal" onclick="if(event.target.id==='personModal')closePersonModal()">
   <div class="person-modal">
@@ -385,6 +400,26 @@ ${itemListLd}
     e.preventDefault();
     const href = card.dataset.href;
     if (href) window.open(href, '_blank');
+  });
+
+  // 海报 lightbox
+  window.openPosterLightbox = function (e, token, title) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    if (!token) return;
+    document.getElementById('plImg').src = '/api/poster?token=' + encodeURIComponent(token);
+    document.getElementById('plImg').alt = title || '';
+    document.getElementById('plCaption').textContent = title || '';
+    document.getElementById('posterLightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (typeof cycTrack === 'function') cycTrack('event_card_poster_click', { token: token });
+  };
+  window.closePosterLightbox = function () {
+    var overlay = document.getElementById('posterLightbox');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closePosterLightbox();
   });
 })();
 </script>

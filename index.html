@@ -82,6 +82,13 @@
   <p>CYC 链岛青年社区 · Connected Youth Community in Dali</p>
 </footer>
 
+<!-- 海报 lightbox（点击卡片海报触发）-->
+<div class="poster-lightbox-overlay" id="posterLightbox" onclick="if(event.target.id==='posterLightbox')closePosterLightbox()">
+  <button class="poster-lightbox-close" type="button" onclick="closePosterLightbox()" aria-label="关闭">×</button>
+  <img class="poster-lightbox-img" id="plImg" src="" alt="">
+  <div class="poster-lightbox-caption" id="plCaption"></div>
+</div>
+
 <!-- 人物 modal（点击活动卡片头像触发）-->
 <div class="person-modal-overlay" id="personModal" onclick="if(event.target.id==='personModal')closePersonModal()">
   <div class="person-modal">
@@ -170,6 +177,30 @@
   });
 })();
 
+// ── 海报 lightbox（点击卡片海报 / 详情页海报触发）──
+(function () {
+  window.openPosterLightbox = function (e, token, title) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    if (!token) return;
+    document.getElementById('plImg').src = '/api/poster?token=' + encodeURIComponent(token);
+    document.getElementById('plImg').alt = title || '';
+    document.getElementById('plCaption').textContent = title || '';
+    document.getElementById('posterLightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (typeof cycTrack === 'function') {
+      cycTrack('event_card_poster_click', { token: token });
+    }
+  };
+  window.closePosterLightbox = function () {
+    var overlay = document.getElementById('posterLightbox');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closePosterLightbox();
+  });
+})();
+
 // ── 活动卡片流：未来 4 周 + 最近 2 周历史（含 RSVP 头像数据）──
 //   未来活动按时间升序在前（最近的在最前面），最近过去活动倒序补在后（已结束 desaturate）
 //   总数限 12 张，避免首页过长
@@ -214,7 +245,7 @@ function renderCard(a) {
   const isPast = a.date && a.date < new Date().toISOString().slice(0, 10);
   const dateStr = formatDate(a.date);
   const thumbHtml = a.poster?.file_token
-    ? `<img class="home-act-thumb" src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="" loading="lazy">`
+    ? `<img class="home-act-thumb" data-zoomable src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="${escapeHtml(a.title || '海报')}" loading="lazy" onclick="openPosterLightbox(event, '${escapeAttr(a.poster.file_token)}', '${escapeAttr(a.title || '')}')">`
     : `<div class="home-act-thumb home-act-thumb-empty">📅</div>`;
   const avatarHtml = renderAvatarGroups(
     a.card_speakers || [],

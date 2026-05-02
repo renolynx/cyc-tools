@@ -164,12 +164,12 @@ ${jsonLd}
 <div class="blob b3"></div>
 
 <header class="event-topbar">
-  <a href="${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? `/community/${fromMemberId}` : '/events'}" class="event-back">${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? '‹ 返回成员主页' : '‹ 全部活动'}</a>
+  <a href="${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? `/community/${fromMemberId}` : '/events'}" class="event-back" onclick="smartBack(event)">${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? '‹ 返回成员主页' : '‹ 返回'}</a>
   <a href="${SITE_URL}" class="event-site">CYC.center</a>
 </header>
 
 <main class="event-detail">
-  ${posterUrl(act) ? `<img class="event-poster" src="/api/poster?token=${encodeURIComponent(act.poster.file_token)}" alt="${title} 海报" loading="eager">` : ''}
+  ${posterUrl(act) ? `<img class="event-poster" data-zoomable src="/api/poster?token=${encodeURIComponent(act.poster.file_token)}" alt="${title} 海报" loading="eager" onclick="openPosterLightbox(event, '${escapeHtml(act.poster.file_token)}', '${title}')">` : ''}
 
   <div class="event-meta-row">
     ${dateStr ? `<span class="event-date-pill">${dateStr}</span>` : ''}
@@ -259,6 +259,13 @@ ${jsonLd}
   <p class="event-footer-tagline">链接每一座孤岛</p>
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
+
+<!-- 海报 lightbox（点击详情页 hero 海报触发）-->
+<div class="poster-lightbox-overlay" id="posterLightbox" onclick="if(event.target.id==='posterLightbox')closePosterLightbox()">
+  <button class="poster-lightbox-close" type="button" onclick="closePosterLightbox()" aria-label="关闭">×</button>
+  <img class="poster-lightbox-img" id="plImg" src="" alt="">
+  <div class="poster-lightbox-caption" id="plCaption"></div>
+</div>
 
 <!-- 人物 modal（点击 嘉宾 / 报名 头像或行触发）-->
 <div class="person-modal-overlay" id="personModal" onclick="if(event.target.id==='personModal')closePersonModal()">
@@ -478,6 +485,41 @@ async function submitRsvp() {
     if (e.key === 'Escape') window.closePersonModal();
   });
 })();
+
+// ─────────── 海报 lightbox ───────────
+(function () {
+  window.openPosterLightbox = function (e, token, title) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    if (!token) return;
+    document.getElementById('plImg').src = '/api/poster?token=' + encodeURIComponent(token);
+    document.getElementById('plImg').alt = title || '';
+    document.getElementById('plCaption').textContent = title || '';
+    document.getElementById('posterLightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (typeof cycTrack === 'function') cycTrack('event_card_poster_click', { token: token });
+  };
+  window.closePosterLightbox = function () {
+    var overlay = document.getElementById('posterLightbox');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closePosterLightbox();
+  });
+})();
+
+// ─────────── 智能返回 ───────────
+// ?from= 显式指定 → 走 anchor href（已设为 /community/:id）
+// 同源 referrer 存在 → history.back()，保留滚动位置 + 卡片展开状态
+// 否则 → anchor href fallback（/events，让用户至少看到列表）
+window.smartBack = function (e) {
+  if (location.search.indexOf('from=') >= 0) return;
+  var ref = document.referrer || '';
+  if (ref && ref.indexOf(location.origin) === 0 && ref !== location.href) {
+    e.preventDefault();
+    history.back();
+  }
+};
 
 // ─────────── 删除报名（admin 用，密码保护） ───────────
 const _ACT_REC_ID = ${JSON.stringify(act.record_id)};

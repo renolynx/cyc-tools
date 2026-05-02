@@ -26,6 +26,7 @@ export const KNOWN_EVENTS = new Set([
   // 活动卡片
   'event_card_click',
   'event_card_avatar_click',
+  'event_card_poster_click',     // 点海报 → lightbox
   // 活动详情页
   'event_detail_view',
   'rsvp_click',
