@@ -12,7 +12,7 @@
 import { applyCors, checkFeishuEnv } from './_feishu.js';
 import { fetchAllActivities }        from './_activity.js';
 import { fetchAllRsvps }             from './_rsvp.js';
-import { kvGet, isKvConfigured }     from './_kv.js';
+import { fetchMember }               from './_member.js';
 
 export default async function handler(req, res) {
   applyCors(res);
@@ -39,40 +39,42 @@ export default async function handler(req, res) {
     // 可选：附加 RSVP 头像数据（供首页卡片头像组用）
     if (include_rsvps && activities.length) {
       try {
-        const [allRsvps, memberListRaw] = await Promise.all([
-          fetchAllRsvps(),
-          isKvConfigured()
-            ? kvGet('members:public_list').catch(() => null)
-            : Promise.resolve(null),
-        ]);
+        const allRsvps = await fetchAllRsvps();
 
-        // 成员 record_id → { avatar_token, name, bio }
-        const memberMap = {};
-        if (memberListRaw) {
-          try {
-            const members = JSON.parse(memberListRaw);
-            for (const m of members) {
-              if (m.record_id) memberMap[m.record_id] = m;
-            }
-          } catch {}
-        }
-
-        // 按活动 ID 分组 RSVP
+        // 按活动 ID 分组 RSVP（只关心当前 weekStart-weekEnd 内的活动）
+        const validIds = new Set(activities.map(a => a.record_id));
         const rsvpByActivity = {};
         for (const r of allRsvps) {
-          if (!r.activity_rec_id) continue;
+          if (!validIds.has(r.activity_rec_id)) continue;
           if (!rsvpByActivity[r.activity_rec_id]) rsvpByActivity[r.activity_rec_id] = [];
           rsvpByActivity[r.activity_rec_id].push(r);
         }
 
+        // 仅给会进入 stack 的成员拉资料（每条 30min KV cache，比 public_list 更稳）
+        const uniqueMemberIds = [...new Set(
+          Object.values(rsvpByActivity).flat()
+            .map(r => r.member_rec_id)
+            .filter(Boolean)
+        )];
+        const memberMap = {};
+        if (uniqueMemberIds.length) {
+          const fetched = await Promise.all(
+            uniqueMemberIds.map(id => fetchMember(id).catch(() => null))
+          );
+          for (const m of fetched) {
+            if (m?.record_id) memberMap[m.record_id] = m;
+          }
+        }
+
         function enrich(r) {
-          const member = r.member_rec_id ? memberMap[r.member_rec_id] : null;
+          const m = r.member_rec_id ? memberMap[r.member_rec_id] : null;
           return {
             name:          r.name || '',
-            bio:           r.bio  || '',
+            // 成员资料 bio 兜底 rsvp bio（rsvp bio 注册时填的，可能为空）
+            bio:           r.bio  || m?.bio || '',
             member_rec_id: r.member_rec_id || '',
-            avatar_url:    member?.avatar_url   || null,  // KV blob URL（优先）
-            avatar_token:  member?.avatar_token || null,  // 飞书 file_token（fallback）
+            avatar_url:    m?.avatar_url        || null,  // KV blob URL（优先）
+            avatar_token:  m?.avatar?.file_token || null, // 飞书 file_token（fallback）
           };
         }
 

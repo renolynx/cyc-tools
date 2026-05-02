@@ -8,6 +8,7 @@
 import { applyCors, checkFeishuEnv } from './_feishu.js';
 import { fetchActivity, formatCnDate, todayBJ } from './_activity.js';
 import { fetchRsvpsForActivity } from './_rsvp.js';
+import { fetchMember } from './_member.js';
 import { kvGet, kvSet, isKvConfigured } from './_kv.js';
 
 const CACHE_TTL_SEC = 600;     // KV 10 分钟
@@ -760,24 +761,28 @@ export default async function handler(req, res) {
     console.error('[event-page] rsvp fetch failed:', err.message);
   }
 
-  // 4b. 给 rsvps 注入头像数据（avatar_url + avatar_token），从 members:public_list 缓存拿
-  if (rsvps.length && isKvConfigured()) {
+  // 4b. 给 rsvps 注入头像 + 成员 bio（per-member fetch with 30min KV cache，比 public_list 更稳：
+  //     timeline 上传/资料修改后会立即 invalidate('member', id) → 下次拉取拿最新）
+  const uniqueMemberIds = [...new Set(rsvps.map(r => r.member_rec_id).filter(Boolean))];
+  if (uniqueMemberIds.length) {
     try {
-      const memberListRaw = await kvGet('members:public_list').catch(() => null);
-      if (memberListRaw) {
-        const members = JSON.parse(memberListRaw);
-        const memberMap = {};
-        for (const m of members) {
-          if (m.record_id) memberMap[m.record_id] = m;
-        }
-        for (const r of rsvps) {
-          const m = r.member_rec_id ? memberMap[r.member_rec_id] : null;
-          r.avatar_url   = m?.avatar_url   || null;
-          r.avatar_token = m?.avatar_token || null;
-        }
+      const fetched = await Promise.all(
+        uniqueMemberIds.map(id => fetchMember(id).catch(() => null))
+      );
+      const memberMap = {};
+      for (const m of fetched) {
+        if (m?.record_id) memberMap[m.record_id] = m;
+      }
+      for (const r of rsvps) {
+        const m = r.member_rec_id ? memberMap[r.member_rec_id] : null;
+        if (!m) continue;
+        r.avatar_url   = m.avatar_url || null;            // KV blob URL（timeline 上传走这条）
+        r.avatar_token = m.avatar?.file_token || null;    // 飞书「照片」file_token
+        // 成员资料 bio 兜底 rsvp bio（rsvp bio 是注册当下填的，可能为空）
+        if (!r.bio && m.bio) r.bio = m.bio;
       }
     } catch (err) {
-      console.warn('[event-page] avatar enrich failed:', err.message);
+      console.warn('[event-page] member enrich failed:', err.message);
     }
   }
 

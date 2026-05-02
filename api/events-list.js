@@ -10,6 +10,7 @@ import { applyCors, checkFeishuEnv }    from './_feishu.js';
 import { fetchAllActivities, formatCnDate, todayBJ } from './_activity.js';
 import { kvGet, kvSet, isKvConfigured }  from './_kv.js';
 import { fetchAllRsvps }                 from './_rsvp.js';
+import { fetchMember }                   from './_member.js';
 
 const CACHE_TTL_SEC = 300;
 const EDGE_CACHE    = 'public, s-maxage=60, stale-while-revalidate=1800';
@@ -94,10 +95,11 @@ function buildAvatarsByActivity(allRsvps, memberMap) {
       const m = r.member_rec_id ? memberMap[r.member_rec_id] : null;
       return {
         name:          r.name || '',
-        bio:           r.bio  || '',
+        // 成员资料 bio 兜底 rsvp bio（rsvp bio 注册时填的，可能为空）
+        bio:           r.bio  || m?.bio || '',
         member_rec_id: r.member_rec_id || '',
-        avatar_url:    m?.avatar_url   || null,  // KV blob URL（优先）
-        avatar_token:  m?.avatar_token || null,  // 飞书 file_token（fallback）
+        avatar_url:    m?.avatar_url        || null,  // KV blob URL（优先）
+        avatar_token:  m?.avatar?.file_token || null, // 飞书 file_token（fallback）
       };
     }
     result[actId] = {
@@ -385,24 +387,28 @@ export default async function handler(req, res) {
     }
   }
 
-  // RSVP + 成员头像数据（各有自己的 KV 缓存，失败降级为空）
+  // RSVP + 成员资料（per-member fetch，30min KV cache 比 public_list 更稳；
+  // 失败降级为空 → 卡片不显示头像 stack 但页面正常渲染）
   let avatarsByActivity = {};
   try {
-    const [allRsvps, memberListRaw] = await Promise.all([
-      fetchAllRsvps(),
-      isKvConfigured()
-        ? kvGet('members:public_list').catch(() => null)
-        : Promise.resolve(null),
-    ]);
+    const allRsvps = await fetchAllRsvps();
+
+    // 只 enrich 当前在显示范围内的活动涉及的成员（避免拉全表）
+    const validIds = new Set(acts.map(a => a.record_id));
+    const uniqueMemberIds = [...new Set(
+      allRsvps
+        .filter(r => validIds.has(r.activity_rec_id) && r.member_rec_id)
+        .map(r => r.member_rec_id)
+    )];
 
     const memberMap = {};
-    if (memberListRaw) {
-      try {
-        const members = JSON.parse(memberListRaw);
-        for (const m of members) {
-          if (m.record_id) memberMap[m.record_id] = m;
-        }
-      } catch {}
+    if (uniqueMemberIds.length) {
+      const fetched = await Promise.all(
+        uniqueMemberIds.map(id => fetchMember(id).catch(() => null))
+      );
+      for (const m of fetched) {
+        if (m?.record_id) memberMap[m.record_id] = m;
+      }
     }
 
     avatarsByActivity = buildAvatarsByActivity(allRsvps, memberMap);
