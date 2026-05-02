@@ -6,42 +6,64 @@
 
 ---
 
+## ⚠️ v2 更新（2026-05-03）
+
+玖玖反馈，**首页 hero 从双海报压缩到单海报**：
+
+- 顶部只剩一张「了解 CYC」海报 → 点进 `/about`
+- 第二条 path（房型）的入口下移到 `/about` 内（房型海报放在介绍页底部）
+- `/community/memories` 的入口也只在 `/about` 出现 —— 用 photo stack 预览
+- 顶部 nav 重写：原 `活动 | 成员 | 工具` → 新 `照片 | 成员 | 订房`
+  - 「活动」入口仍保留：中下部活动卡片流 + 卡片"📝 详情/报名"link
+  - 「工具」（/tools 页）淘汰中，generator 直接走 `/generator`
+  - 「照片」直接深链 `/community/memories`，「订房」直接 `/rooms`
+
+下方原文里"双海报 hero" / "三选一 path" 部分**已过时**，新结构以本节为准。
+
+---
+
 ## 设计原则
 
 **一屏同时服务三种人：**
 
-- 第一次来的陌生人 → 顶部两张海报图，点开了解 / 订房
+- 第一次来的陌生人 → 顶部**单**海报"了解 CYC"，点开后 `/about` 内分流到照片墙 + 房型
 - 想找活动的人 → 中下部活动卡片流，可以浏览、报名
 - 想发活动通告的玖玖型用户（产品骨干场景）→ 显眼的"创建活动"按钮，秒进工具
 
 **没有人需要"搬家"或"找新入口"。**
 
+**v2 关键认知**：陌生人的好奇心是**线性的**（先了解 → 再决定要不要住），不是平行的（同时看两张海报选）。所以 hero 单点更聚焦，详情页 `/about` 内再分流更自然。
+
 ---
 
-## 首页结构图
+## 首页结构图（v2）
 
 ```mermaid
 flowchart TD
-    Top[顶部 hero · 占屏幕 25-35%<br/>━━━━━━━<br/>左右两张海报图入口]:::top
+    Topbar[顶部 nav · 极简<br/>━━━━━━━<br/>照片 / 成员 / 订房]:::nav
+    Topbar -.直达.-> Memories
+    Topbar -.直达.-> CommunityList[/community<br/>成员列表]:::detail
+    Topbar -.直达.-> Rooms
 
-    Top --> A[海报 1: 介绍社区<br/>━━━━━━━<br/>点击 → /about 或 /community-intro<br/>介绍页内含 照片墙 section<br/>照片墙可二级跳转 → /community/memories]:::pathA
+    Hero[顶部 hero · 单海报<br/>━━━━━━━<br/>「在大理，有这样一群人在认真做事」<br/>点击 → /about]:::top
 
-    Top --> B[海报 2: 房屋模型<br/>━━━━━━━<br/>点击 → /rooms<br/>房型详情 / 价格 / 试住 / 联系]:::pathB
+    Hero --> About[/about 介绍页<br/>━━━━━━━<br/>品牌叙事 hero<br/>+ 📷 社区照片墙 photo stack<br/>+ 🌿「想试一个月吗」hero poster]:::pathA
 
-    A -."看完介绍可能想订房".-> B
-    A -.->|"看完介绍可能想来玩"| Cards
-    B -.->|"还在评估的人想先来玩玩"| Cards
+    About --> Memories[/community/memories<br/>社区回忆时间线]:::pathB
+    About --> Rooms[/rooms<br/>房型详情]:::pathB
 
     Mid[中下部 · 占屏幕 65-75%]:::mid
     Mid --> CTA[创建活动 button · 醒目位置<br/>━━━━━━━<br/>点击 → /generator 活动通告生成器<br/>玖玖型核心工具入口]:::cta
 
     Mid --> Cards[活动卡片流 · 动态渲染<br/>━━━━━━━<br/>每张卡片含: 标题/海报/时间/地点/类型<br/>+ 嘉宾头像组 + 报名头像组]:::cards
 
-    Cards --> Avatar[点击任一头像<br/>━━━━━━━<br/>展开人物卡片<br/>= profile 子集]:::avatar
+    Cards --> Avatar[点击任一头像<br/>━━━━━━━<br/>person modal 弹出<br/>= profile 子集]:::avatar
     Avatar -.->|"想看完整资料"| Profile[/community/:id<br/>完整 profile 页]:::profile
 
-    Cards -.->|"点击卡片本身"| EventDetail[/events/:id<br/>活动详情页]:::detail
+    Cards -.->|"点击卡片本身"| Expand[就地展开<br/>━━━━━━━<br/>描述/流程/费用/CTA]:::expand
+    Expand -.->|"📝 详情/报名 →"| EventDetail[/events/:id<br/>活动详情页]:::detail
 
+    classDef nav fill:#f2ede6,stroke:#6b6b6b,color:#1a1a1a
     classDef top fill:#1c3d2e,stroke:#1c3d2e,color:#fff
     classDef pathA fill:#fce8e6,stroke:#a93226,color:#1a1a1a
     classDef pathB fill:#e3f2e6,stroke:#1c3d2e,color:#1a1a1a
@@ -49,40 +71,56 @@ flowchart TD
     classDef cta fill:#d9652a,stroke:#d9652a,color:#fff
     classDef cards fill:#f5e9d6,stroke:#c8a96e,color:#1a1a1a
     classDef avatar fill:#fff,stroke:#1c3d2e,color:#1a1a1a
+    classDef expand fill:#fff8e7,stroke:#c8a96e,color:#1a1a1a
     classDef profile fill:#1c3d2e,stroke:#1c3d2e,color:#fff
     classDef detail fill:#2a5740,stroke:#2a5740,color:#fff
 ```
 
 ---
 
-## 顶部 hero 区（25-35%）—— 双海报入口
+## 顶部 hero 区 —— 单海报「了解 CYC」（v2）
 
 ### 布局
 
-桌面：左右并排，比例可以 50/50 或 60/40
-移动：上下堆叠，每张占视口 ~25-30%
+桌面 + 移动都是单海报独占整个 hero 宽度，min-height 280px。
 
-### 海报 1 — 介绍社区入口
-
-| | |
-|---|---|
-| 视觉 | 大理实景照（比如老房子内庭、活动现场、苍山下的咖啡桌）+ 文字叠加 |
-| 文字 | "在大理，有这样一群人在认真做事" 之类（待文案） |
-| 链接 | `/about` 或 `/community-intro` |
-| 跳转后体验 | 介绍页：品牌叙事 + 社区文化 + **嵌入照片墙 section** + "想长租？看房型" 跳到海报 2，"想来玩？看活动" 滑到首页活动流 |
-
-照片墙 section 二级跳转：
-- 介绍页的"照片墙"section 可以点击 → `/community/memories`（独立的社区回忆页）
-- 这条路径让 Mia 拍照打卡、回看自己上过的活动
-
-### 海报 2 — 房屋模型入口
+### 唯一海报 — 介绍社区入口
 
 | | |
 |---|---|
-| 视觉 | 房屋外观 / 内部 / 公区的精选大图，给"想象自己住进来"的感觉 |
-| 文字 | "想试一个月吗" / "看看每一间房" 之类（待文案） |
-| 链接 | `/rooms` |
-| 跳转后体验 | 房型详情页：每间房一张卡片 + 价格 + 当前可入住时间 + 试住政策 + 联系方式 |
+| 视觉 | 深绿渐变（暂用）→ 后续替换成大理实景照（老房子内庭 / 活动现场 / 苍山下咖啡桌）+ 文字叠加 |
+| 文字 | "在大理 · 有这样一群人在认真做事 —— 做独立项目、做创作、做社区" |
+| 链接 | `/about` |
+| 跳转后体验 | `/about` 内三段：品牌叙事 hero + 📷 photo stack 预览 → /community/memories + 🌿「想试一个月吗」hero poster → /rooms |
+
+---
+
+## /about 介绍页结构（v2 新加）
+
+```
+[品牌叙事 hero]   "在大理，有这样一群人在认真做事" + 一句简介
+        ↓
+[社区照片墙 card]  3 张精选照片扑克牌式叠放预览 → click → /community/memories
+        ↓
+[「想试一个月吗」hero poster]  沿用主页 v1 的 hero-poster-b 样式 → click → /rooms
+        ↓
+[建设中提示]  Phase 3.2.1 完整介绍页待建
+```
+
+照片预览实现：`/about` 客户端 fetch `/api/photos?public=1`，优先取 `featured: true`，不够数用最近上传补，共 3 张，CSS 用 `transform: rotate + translate` 做扑克牌叠放 + hover 微张开效果。无照片时降级显示 placeholder 📷 卡。
+
+---
+
+## 顶部 nav（v2）
+
+| 链接 | 目标 | 用意 |
+|---|---|---|
+| 照片 | `/community/memories` | 老用户/Mia 一键回看 |
+| 成员 | `/community` | Path C 探索成员 |
+| 订房 | `/rooms` | Path B 想长租的快速路径 |
+
+「活动」入口为什么不在 topbar？—— 中下部活动卡片流就是活动入口，整个首页中下部 65% 篇幅都是。再放 topbar 是冗余。
+「工具」入口为什么没了？—— `/tools` 页在淘汰中，玖玖型用户走 generator 入口（中下部 CTA 按钮）。
 
 ---
 

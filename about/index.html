@@ -33,35 +33,17 @@
     </p>
   </section>
 
-  <!-- 三选一 CTA：来活动 / 看成员 / 看房型 -->
-  <section class="about-pathways">
-    <a class="about-pathway" href="/events">
-      <div class="about-pathway-icon">📅</div>
-      <div class="about-pathway-text">
-        <strong>看看本周活动</strong>
-        <span>直接来一场感受社区</span>
-      </div>
-      <span class="about-pathway-arrow">›</span>
-    </a>
-    <a class="about-pathway" href="/community">
-      <div class="about-pathway-icon">👥</div>
-      <div class="about-pathway-text">
-        <strong>浏览社区成员</strong>
-        <span>看看都是些谁在这里</span>
-      </div>
-      <span class="about-pathway-arrow">›</span>
-    </a>
-  </section>
-
-  <!-- 社区照片墙 section -->
+  <!-- 社区照片墙 section（精选照片堆叠预览，点击进时间线）-->
   <section class="about-memories">
-    <a class="about-memories-card" href="/community/memories" data-track="about_memories_click">
-      <div class="about-memories-emoji">📷</div>
+    <a class="about-photo-stack" href="/community/memories" data-track="about_memories_click">
+      <div class="photo-stack" id="photoStack">
+        <div class="photo-stack-placeholder">📷</div>
+      </div>
       <div class="about-memories-text">
         <h2>社区照片墙</h2>
         <p>过去的活动 / 现场的瞬间 / 谁来过 —— 翻翻这里就知道社区是什么样</p>
+        <span class="about-memories-cta">看完整时间线 →</span>
       </div>
-      <span class="about-memories-arrow">→</span>
     </a>
   </section>
 
@@ -115,36 +97,11 @@
   .about-hero h1 { font-size: 38px; }
 }
 
-/* 三选一 pathway 列表 */
-.about-pathways {
-  display: flex; flex-direction: column; gap: 8px;
-  margin-bottom: 28px;
-}
-.about-pathway {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px;
-  background: var(--cyc-surface-glass);
-  backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border: 1px solid var(--cyc-border-glass);
-  border-radius: var(--cyc-r-card);
-  text-decoration: none; color: var(--cyc-text);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.10s, box-shadow 0.15s;
-}
-.about-pathway:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
-.about-pathway:active { transform: scale(0.99); }
-.about-pathway-icon { font-size: 22px; flex-shrink: 0; }
-.about-pathway-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.about-pathway-text strong { font-size: 15px; font-weight: 700; color: var(--cyc-text-strong); letter-spacing: -0.01em; }
-.about-pathway-text span { font-size: 12.5px; color: var(--cyc-text-muted); }
-.about-pathway-arrow { font-size: 20px; color: var(--cyc-text-faint); flex-shrink: 0; }
-
-/* 照片墙 card */
+/* 照片墙 card —— 左侧 photo stack 预览，右侧文字描述 */
 .about-memories { margin-bottom: 28px; }
-.about-memories-card {
-  display: flex; align-items: center; gap: 16px;
-  padding: 20px 22px;
+.about-photo-stack {
+  display: flex; align-items: center; gap: 18px;
+  padding: 22px 24px;
   background: linear-gradient(135deg, rgba(28, 61, 46, 0.06), rgba(217, 101, 42, 0.04));
   border: 1px solid var(--cyc-border-glass);
   border-radius: var(--cyc-r-card-lg);
@@ -153,27 +110,65 @@
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.10s, box-shadow 0.15s;
 }
-.about-memories-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.10); }
-.about-memories-card:active { transform: scale(0.99); }
-.about-memories-emoji {
-  font-size: 28px; flex-shrink: 0;
-  width: 48px; height: 48px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--cyc-surface-pure);
-  border-radius: 12px;
-  border: 1px solid var(--cyc-stroke);
+.about-photo-stack:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.about-photo-stack:active { transform: scale(0.99); }
+
+/* Photo stack — 3 张照片扑克牌式叠放，hover 微张开 */
+.photo-stack {
+  position: relative; flex-shrink: 0;
+  width: 140px; height: 130px;
 }
-.about-memories-text { flex: 1; }
+.photo-stack-img {
+  position: absolute;
+  width: 100px; height: 100px;
+  object-fit: cover;
+  border: 4px solid #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  top: 50%; left: 50%;
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  background: rgba(28,61,46,0.06);
+}
+/* 默认：扇形堆叠 */
+.photo-stack-img:nth-child(1) { transform: translate(-72%, -55%) rotate(-9deg); z-index: 1; }
+.photo-stack-img:nth-child(2) { transform: translate(-50%, -50%) rotate(2deg);  z-index: 3; }
+.photo-stack-img:nth-child(3) { transform: translate(-28%, -45%) rotate(11deg); z-index: 2; }
+/* hover：微微张开 */
+.about-photo-stack:hover .photo-stack-img:nth-child(1) { transform: translate(-86%, -56%) rotate(-14deg); }
+.about-photo-stack:hover .photo-stack-img:nth-child(3) { transform: translate(-14%, -44%) rotate(16deg); }
+
+.photo-stack-placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; color: rgba(28,61,46,0.30);
+  background: rgba(255,255,255,0.5);
+  border: 4px solid #fff; border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 100px; height: 100px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.about-memories-text { flex: 1; min-width: 0; }
 .about-memories-text h2 {
   font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
   color: var(--cyc-text-strong); margin-bottom: 4px;
 }
 .about-memories-text p {
   font-size: 13px; color: var(--cyc-text-muted); line-height: 1.55;
+  margin-bottom: 8px;
 }
-.about-memories-arrow {
-  font-size: 18px; font-weight: 600; color: var(--cyc-green);
-  flex-shrink: 0;
+.about-memories-cta {
+  display: inline-block;
+  font-size: 13px; font-weight: 600; color: var(--cyc-green);
+}
+
+/* 移动端：栈大小压缩，仍然左右布局 */
+@media (max-width: 480px) {
+  .about-photo-stack { gap: 12px; padding: 16px; }
+  .photo-stack { width: 110px; height: 110px; }
+  .photo-stack-img { width: 78px; height: 78px; border-width: 3px; }
+  .photo-stack-placeholder { width: 78px; height: 78px; border-width: 3px; font-size: 28px; }
 }
 
 /* 想试一个月吗 hero poster section */
@@ -195,6 +190,29 @@
 }
 </style>
 
+<script>
+// ── 拉精选照片填进 photo stack（最多 3 张，缺省 placeholder 不变）──
+(async function loadFeaturedPhotos() {
+  try {
+    const res = await fetch('/api/photos?public=1');
+    if (!res.ok) return;
+    const data = await res.json();
+    const all = (data.photos || []).filter(p => p.blob_url);
+    if (!all.length) return;
+    // 优先精选，不够数用最近上传补
+    const featured = all.filter(p => p.featured);
+    const rest = all.filter(p => !p.featured)
+                    .sort((a, b) => (b.uploaded_at || 0) - (a.uploaded_at || 0));
+    const picks = [...featured, ...rest].slice(0, 3);
+    if (!picks.length) return;
+    const stack = document.getElementById('photoStack');
+    if (!stack) return;
+    stack.innerHTML = picks.map(p =>
+      `<img class="photo-stack-img" src="${p.blob_url}" alt="${(p.title || '').replace(/"/g, '&quot;')}" loading="lazy">`
+    ).join('');
+  } catch {}
+})();
+</script>
 <script src="/cyc-track.js" defer></script>
 </body>
 </html>
