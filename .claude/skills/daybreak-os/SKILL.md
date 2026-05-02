@@ -1,18 +1,18 @@
 ---
 name: daybreak-os
-description: "Three-layer design system for community / personal-OS products. Use when the user wants to design, build, or iterate UI for cyc.center or any product that needs to balance editorial showcase, premium tooling, and intimate companion surfaces. Triggers on 'use daybreak-os', '/daybreak-os', 'cyc.center 风格', 'community OS 风格', or any UI request mentioning Atlas/Aurora/Daybook layers. Also triggers when designing landing pages, settings panels, journals, mood/calendar views, member profiles, recording/listening states, photo timelines, or onboarding flows for community products."
-version: 2.0.0
+description: "Three-layer design system for cyc.center (community OS for 大理 in-place creators). Use when the user wants to design, build, or iterate UI for cyc.center —— editorial showcase surfaces, admin chrome, or intimate companion screens. Triggers on 'use daybreak-os', '/daybreak-os', 'cyc.center 风格', 'community OS 风格', or any UI request mentioning Atlas/Aurora/Daybook layers. Also triggers when designing landing pages, settings panels, journals, mood/calendar views, member profiles, recording/listening states, photo timelines, onboarding flows. v3 quiet philosophy: 三层共享沙底 + 三 blob，差异化通过 typography density / 装饰线 / 按钮颜色，不靠换皮换色。"
+version: 3.0.0
 user-invocable: true
 argument-hint: "[atlas|aurora|daybook|auto] [page-name or route]"
 license: MIT
 allowed-tools: [Read, Write, Edit, Glob, Grep, WebFetch]
 ---
 
-# Daybreak OS — Three-Layer Design System
+# Daybreak OS — Three-Layer Design System (v3 quiet)
 
-A single product with three rooms. Each room has one purpose, one mood, one set of tokens.
+cyc.center 专属设计系统。一个产品，三个房间，**共享同一个沙色底盘**，靠**排版密度 + 微差异化标识 + 按钮颜色**区分用途。
 
-The job of this skill: when given a UI request, **first decide which layer**, then output code using only that layer's tokens. **Never mix layers in one component.** Skin transitions happen at route boundaries, not inside a card.
+> v3 哲学（2026-05-02）：v2 的 "Atlas 大理风景照 / Aurora 深绿暗夜玻璃 / Daybook 近白底"被撤回（commit `c8b8fcf`），原因是触发 PRODUCT.md 三条红线（讲究 > 花哨；有性格但不喊；反对被设计感）。v3 改为 **unified base + role-based differentiation**：三层视觉同源，靠克制的微差识别。
 
 ## Setup gate (non-optional)
 
@@ -26,513 +26,400 @@ PATTERNS: <any of: artifact, activity-bar, scrubber, identity-card, mascot, view
 
 If the request is ambiguous, ASK before designing. Wrong layer = whole output is wrong.
 
-## The three layers
+## The Unified Base（v3 新增 —— 三层共享）
+
+所有三层都使用：
+
+- **Canvas**：沙色 (`#f2ede6` / `--cyc-sand`)
+- **Ambient blobs**：3 个 fixed radial blob（橙 + 绿 + tan），blur(90px)，opacity 0.18-0.22
+- **Surface**：玻璃卡（`rgba(255,255,255,0.75)` + backdrop-blur(24px) + 内描边白亮 + 145° 浅渐变）
+- **Typography / Spacing / Radius**：完全共享（见 Shared bones 节）
+
+**不允许**：
+- 深色 canvas（包括 dark mode override）
+- 任何全屏渐变带（橙红 / 紫粉 / 蓝）
+- 多个 ambient glow 叠加（"glow on glow on dark" 是 SaaS 视觉）
+- 大面积纯白背景（沙色才是 cyc 的"白"）
+
+## The three layers（v3 简化）
 
 ### Atlas — editorial showcase
-- **When**: landing pages, public event detail, marketing, story-driven surfaces, onboarding intro
-- **Mood**: dramatic, branded, photographic
-- **Spec**: full-bleed photography backdrop + dark semi-transparent cards floating on top + multi-card asymmetric grid + type hierarchy via weight + content-driven accent colors + tagline-as-design
-- **Anti-pattern**: don't use Atlas for chrome (settings, menus, command palettes). It's for storytelling.
 
-### Aurora — premium tooling
-- **When**: settings, dropdowns, command palettes (⌘K), admin dashboards, dialogs, dark-mode chrome
-- **Mood**: calm, premium, nocturnal, glassy
-- **Spec**: deep-dark base + ambient radial glows (coral + cool-blue) at canvas margins + glass surfaces with `backdrop-filter: blur` + inset highlight border + outline icons + single accent color (coral)
-- **Anti-pattern**: don't use Aurora for daily intimate moments. It feels distant for journaling.
+**When**: landing pages, public event detail, marketing, story-driven surfaces, onboarding intro
+**Mood**: editorial, breath, content-confident
+**Differentiation from base**:
+- Hero h1 略放大（28→36px）+ 英文 tagline 字号同主标，letter-spacing 放松
+- 内容区段宽（max-width 较大，给文字更多呼吸）
+- Photography（如果有）作为内联内容卡，**不**作为全屏背景
+- 一个主 CTA 用 `--cyc-orange` pill（"对外行动"信号）
+**Anti-pattern**: 不用全屏摄影 hero override 沙底；不在 hero 区做戏剧渐变；不放 ambient glow 加重视觉
+
+### Aurora — admin chrome
+
+**When**: settings, admin dashboards, /community/admin, /admin, command palettes, dialogs, internal tools
+**Mood**: quiet, dense, professional, "you're in admin"
+**Differentiation from base**:
+- **Top 2px decoration line**（fixed, full-width, `--cyc-green` 实色）—— 唯一明显"我在 admin 区"标志
+- Density tighter：gap 4-6 (vs public 8-12)，padding 紧凑
+- 主 CTA 用 `--cyc-green` 实色（vs 公开页 `--cyc-orange`）—— 颜色编码 admin vs public action
+- Tabular numerals（`font-feature-settings: 'tnum'`）让数字对齐
+**Anti-pattern**: 不用深色 canvas; 不用 ambient glow; 不用紫粉色装饰; 不在 chrome 区放 marketing 文案
 
 ### Daybook — intimate companion
-- **When**: personal home `/me`, journal entry, mood calendar, daily check-in, photo timeline, recording sessions, member profiles, daily companion surfaces
-- **Mood**: tender, quiet, near-monochrome, character-forward
-- **Spec**: near-white background + pure-white surfaces with **radial halo shadow** + grayscale type with **single coral temporal accent** + dual mascot system (mood + identity) + sparse circle-grid information patterns + maximum whitespace
-- **Anti-pattern**: don't add a second accent color, don't use color for decoration. Color must mean "now/active/temporal".
 
-## Shared bones (all three layers)
+**When**: 个人主页 `/me`, journal entry, mood calendar, daily check-in, photo timeline, recording sessions, member profiles
+**Mood**: tender, breath, character-forward
+**Differentiation from base**:
+- **Halo cards**：白色 surface 带 `0 0 N px` 外晕阴影（`box-shadow: 0 8px 24px -8px ..., 0 0 48px ...`），漂浮在沙底
+- 更多 whitespace（行高 1.6+，section 间 32-48px）
+- 单一 temporal accent（`--cyc-orange` 但只用于 time/active/key-verb 三类语义）
+- Self-Mood mascot 出现在亲密 surface 顶部
+**Anti-pattern**: 不在 Daybook 加多色装饰; 不破坏 halo 阴影哲学（不要换成 inset 边框）; 不超 1 种 accent
 
-Different skins on identical skeleton.
+## Shared bones（三层都一样）
 
 ### Typography
-- **Family Latin**: `Inter Variable` (or system fallback `-apple-system, sans-serif`)
-- **Family Han**: `Source Han Sans VF` (or `PingFang SC, Microsoft YaHei`)
-- **Scale**: 12 / 14 / 16 / 20 / 28 / 40 px (1.4× ratio)
-- **Weights**: 400 (regular) / 600 (semibold) / 700 (bold)
-- **Letter spacing**: `-0.01em` for headings 20px+, `0` for body, `+0.02em` for ALL CAPS labels
-- **Line height**: 1.5 body, 1.2 display
+- **Family Latin**: `Inter Variable` (system fallback `-apple-system, sans-serif`)
+- **Family Han**: `PingFang SC` (Windows fallback `Microsoft YaHei`)
+- **Scale**: 12 / 14 / 16 / 20 / 28 / 36 / 40 px
+- **Weights**: 400 (regular) / 600 (semibold) / 700 (bold) —— **禁止 500**
+- **Letter spacing**: `-0.01em` for headings 20px+, `0` for body, `+0.04em` for ALL CAPS labels
+- **Line height**: 1.5 body, 1.2 display, 1.6 long-form (Daybook)
+- **中文优化**：中文字号比英文 +1px，加粗优先 700
 
 ### Spacing scale
-`4 / 8 / 12 / 16 / 24 / 32 / 48 / 64` — only these. No `10`, no `18`, no `36`.
+`4 / 8 / 12 / 16 / 24 / 32 / 48 / 64` —— only these.
 
 ### Radius
 | Token | Value | Use |
 |---|---|---|
-| `--r-pill` | `9999px` | buttons, rings, tags |
-| `--r-card` | `24px` | main containers |
-| `--r-inner` | `16px` | nested elements (hover row, sub-card) |
-| `--r-dot` | `50%` | calendar dots, status pips, avatars |
+| `--cyc-r-pill` | `9999px` | buttons, status pills, tags |
+| `--cyc-r-card` | `16px` | main panels |
+| `--cyc-r-card-lg` | `24px` | hero cards, daybook surfaces |
+| `--cyc-r-inner` | `10px` | inputs, sub-cards |
+| `--cyc-r-tight` | `6px` | tag, chip, micro-button |
+| `--cyc-r-dot` | `50%` | circular |
 
-**No square corners anywhere.** Even `<input>` gets at least `--r-inner`.
+**No square corners anywhere.** 最小 6px。
 
 ### Grid base
-8px. All layout snaps to multiples of 8.
+8px。
 
 ### Icon system
-- **Library**: Lucide (line/outline)
+- **Library**: Lucide (line/outline) or system emoji where playful is needed
 - **Stroke**: 1.75px
 - **Sizes**: 16 / 20 / 24
 - **Color**: matches text-secondary in current layer
 
-## Atlas tokens (editorial)
+## Layer-Specific Tokens（v3 重写）
+
+### Atlas tokens (editorial)
 
 ```css
-.atlas-canvas {
-  background: url('<scene>.jpg') center/cover, oklch(0.18 0 0);
+/* Atlas 不需要特殊 canvas —— 跟 base 一样 */
+body.atlas-canvas {
+  /* canvas 跟公开页一致：沙底 + 三 blob 保留 */
 }
 
-.atlas-card {
-  background: oklch(0.18 0.005 270 / 0.72);
-  backdrop-filter: blur(24px) saturate(1.3);
-  border: 1px solid oklch(1 0 0 / 0.08);
-  border-radius: var(--r-card);
-  box-shadow: 0 24px 48px -16px oklch(0 0 0 / 0.5);
-  padding: 24px;
+/* hero 区的差异化：字层级 + 留白 */
+.atlas-hero h1 {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--cyc-text-strong);
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+.atlas-hero .tagline-en {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--cyc-text-muted);
+  letter-spacing: 0;
+  font-style: italic;
 }
 
-.atlas-heading {
-  font-size: 20px;
+/* 主 CTA 用 cyc-orange pill */
+.atlas-cta-primary {
+  background: var(--cyc-orange);
+  color: #fff;
+  border-radius: var(--cyc-r-pill);
+  padding: 12px 24px;
   font-weight: 600;
-  color: oklch(0.96 0 0);
   letter-spacing: -0.01em;
 }
 
-.atlas-body {
-  font-size: 14px;
-  font-weight: 400;
-  color: oklch(0.78 0 0);
-  line-height: 1.6;
-}
-
-.atlas-cta-primary {
-  background: oklch(0.98 0 0);
-  color: oklch(0.18 0 0);
-  border-radius: var(--r-pill);
-  padding: 10px 20px;
-  font-weight: 500;
+/* 内容卡 = 共享 glass surface，无特殊 override */
+.atlas-card {
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card-lg);
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;
 }
 ```
 
-**Atlas rules:**
-1. Always one hero card + supporting cards in asymmetric grid (60/40 or 70/30)
-2. Empty states use **filled icon containers** in content-derived warm colors (echo photo)
-3. One primary CTA per surface, max one secondary text link
-4. Tagline at bottom always present, 14px, 70% opacity
-5. Wordmark/logo at top center
-6. Photography must have visible depth, drama, real-world texture — no abstract gradients
+**Atlas 规则**：
+1. 字层级靠**字号差** + **留白**，不靠戏剧装饰
+2. Photography 作为**内联内容**（小尺寸卡片或文章插图），不作为 hero 全屏背景
+3. 一个主 CTA per surface，最多一个次要文字链
+4. Tagline 永远在底部（"链接每一座孤岛" + 站名）
+5. 不要全屏渐变 hero override
 
-## Aurora tokens (premium tooling)
+### Aurora tokens (admin chrome)
 
 ```css
-.aurora-canvas {
-  background: oklch(0.18 0.005 270);
-  position: relative;
-}
-.aurora-canvas::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(
-    600px circle at 90% 90%,
-    oklch(0.78 0.15 25 / 0.18),
-    transparent 60%
-  );
-}
-.aurora-canvas::after {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(
-    500px circle at 95% 5%,
-    oklch(0.85 0.08 240 / 0.15),
-    transparent 60%
-  );
+body.aurora-canvas {
+  /* canvas 跟公开页一致 */
 }
 
-.aurora-surface {
-  background: oklch(0.22 0.01 270 / 0.6);
-  backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid oklch(1 0 0 / 0.08);
-  border-radius: var(--r-card);
-  box-shadow:
-    inset 0 0 0 0.5px oklch(1 0 0 / 0.04),
-    0 24px 48px -12px oklch(0 0 0 / 0.6);
+/* 顶部 2px 绿装饰线 — 唯一明显"我在 admin 区" */
+body.aurora-canvas::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cyc-green);
+  z-index: 40;
+  pointer-events: none;
 }
 
-.aurora-text-primary { color: oklch(0.96 0.005 270); }
-.aurora-text-secondary { color: oklch(0.7 0.01 270); }
-.aurora-accent { color: oklch(0.78 0.15 25); }
-.aurora-accent-ring {
-  box-shadow:
-    0 0 0 1.5px oklch(0.78 0.15 25),
-    0 0 24px oklch(0.78 0.15 25 / 0.4);
+/* admin items density */
+.aurora-list { gap: 4px; }
+.aurora-item {
+  padding: 10px 12px;
+  letter-spacing: -0.005em;
+}
+.aurora-item:hover {
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 1px rgba(28,61,46,0.15) inset;
+}
+
+/* admin 主 CTA — cyc-green 实色（vs 公开页 cyc-orange） */
+.aurora-cta-primary {
+  background: var(--cyc-green);
+  color: #fff;
+  font-weight: 600;
+  border-radius: var(--cyc-r-pill);
+}
+.aurora-cta-primary:hover {
+  background: var(--cyc-green-2);
+}
+
+/* admin 次级按钮 — green 浅色玻璃 */
+.aurora-cta-secondary {
+  background: rgba(28,61,46,0.10);
+  color: var(--cyc-green);
+  border: none;
+  border-radius: var(--cyc-r-inner);
+}
+.aurora-cta-secondary:hover { background: rgba(28,61,46,0.18); }
+
+/* 数字字段 tabular */
+.aurora-num {
+  letter-spacing: 0;
+  font-feature-settings: 'tnum';
 }
 ```
 
-**Aurora rules:**
-1. Single accent color (coral). Never introduce a second accent.
-2. The inset glass-edge highlight is non-negotiable — it's what makes glass look real
-3. All buttons are pills (`--r-pill`)
-4. Text never pure white (max `oklch(0.96)`)
-5. Hover state = elevate to `oklch(0.28 0.01 270 / 0.5)`, no color change
-6. Aurora glows belong at canvas margins, never centered
+**Aurora 规则**：
+1. **顶部 2px 绿装饰线非选** —— 这是 Aurora 的视觉签名
+2. 主 CTA **必须**用 `--cyc-green` 实色（颜色编码 admin = 绿，public = 橙）
+3. Density 略加紧（gap/padding 略小于公开页），让信息密度对位 admin 工作流
+4. 不允许：深色 canvas、ambient glow、deep glass surface (inset)、紫粉装饰、marketing 文案
+5. Tabular numerals 用于所有数据列
 
-## Daybook tokens (intimate companion)
+### Daybook tokens (intimate companion)
 
 ```css
-:root {
-  /* Daybook canvas + surface */
-  --db-canvas:        oklch(0.985 0 0);   /* near-white, never pure */
-  --db-surface:       oklch(1 0 0);       /* pure white for elevated */
-  --db-text-primary:  oklch(0.15 0 0);    /* near-black */
-  --db-text-secondary:oklch(0.55 0 0);
-  --db-text-tertiary: oklch(0.75 0 0);
-  --db-fill-empty:    oklch(0.94 0 0);    /* circle-grid empty state */
-
-  /* The ONE allowed accent — temporal only */
-  --db-accent:        oklch(0.62 0.22 30);    /* warm coral-orange */
-  --db-accent-soft:   oklch(0.62 0.22 30 / 0.12);
+body.daybook-canvas {
+  /* canvas 跟公开页一致：沙底 + 三 blob */
 }
 
-.daybook-canvas { background: var(--db-canvas); }
-
+/* halo card —— Daybook 的视觉签名 */
 .daybook-surface {
-  background: var(--db-surface);
-  border-radius: var(--r-card);
+  background: var(--cyc-surface-pure);   /* 纯白浮在沙底上 */
+  border-radius: var(--cyc-r-card-lg);
   box-shadow:
-    0 8px 24px -8px oklch(0 0 0 / 0.08),
-    0 0 48px oklch(0 0 0 / 0.04);  /* halo — the signature */
+    0 8px 24px -8px rgba(0, 0, 0, 0.08),
+    0 0 48px rgba(0, 0, 0, 0.04);   /* halo */
   padding: 24px;
 }
 
+/* 文字色阶（AAA pass）*/
+.daybook-text-primary   { color: var(--cyc-text-strong); }
+.daybook-text-secondary { color: var(--cyc-text-muted); }
+.daybook-text-tertiary  { color: var(--cyc-text-subtle); }  /* 仅 ≥14px bold */
+
+/* dot grid（calendar / status pip）*/
 .daybook-dot {
   width: 36px; height: 36px;
-  border-radius: var(--r-dot);
-  background: var(--db-fill-empty);
+  border-radius: var(--cyc-r-dot);
+  background: rgba(28, 61, 46, 0.06);
 }
 .daybook-dot--filled {
-  background: var(--db-text-primary);
-  color: var(--db-canvas);
+  background: var(--cyc-text-strong);
+  color: var(--cyc-sand);
 }
 
-/* Temporal accent — ONLY use for time markers, active states, key verbs */
-.daybook-accent { color: var(--db-accent); }
+/* Temporal accent —— ONLY for time/active/key-verb */
+.daybook-accent       { color: var(--cyc-warning); }    /* AAA orange #b04a18 */
+.daybook-accent-large { color: var(--cyc-orange); }     /* AA OK at ≥18px */
 ```
 
-**Daybook rules (revised in v2):**
-1. **One accent only — `--db-accent` (coral-orange) — and only for these semantics:**
-   - Temporal anchors: "Yesterday", "Today", "Now", "Live"
+**Daybook 规则**：
+1. **Halo 阴影非选** —— 这是 Daybook 的视觉签名
+2. **唯一允许的 accent 是 `--cyc-warning` / `--cyc-orange`**，且只能用于：
+   - Temporal anchors: "Yesterday" / "Today" / "Now" / "Live"
    - Activity state: recording dot, listening pulse, "speaking", "thinking"
-   - Key transport verbs: the icon inside Stop button, the dot inside ● indicator
+   - Key transport verbs: stop button 内的方块色
    - **Never** for: borders, backgrounds, brand color, decorative highlights, hover states
-2. Halo shadow on every elevated surface — this IS the layer's signature
-3. Sparse > dense. Empty space carries meaning.
-4. Title placeholders are 28-40px Bold; body is 16-20px Regular. No middle weights.
-5. Use circles (`--r-dot`) liberally — for dates, mascots, status, member avatars
-6. Mascot belongs at the top of intimate surfaces (journal, profile)
-7. Pure white `#fff` and pure black `#000` forbidden — always at least 1.5% off
+3. 沙底 (`--cyc-sand`) 不替换为白
+4. 笑脸 mascot 5 态用单色（深绿或近黑）
+5. 字号底线 16px，行高 ≥ 1.6（中老年用户友好）
 
-## Daybook patterns (v2 additions)
-
-These are reusable component recipes for the Daybook layer.
+## Daybook patterns（v2 → v3 不变）
 
 ### Pattern 1 — Artifact (content as physical object)
 
-Make digital content feel like a physical thing the user can pick up. Used for photos, memories, captured moments.
-
 ```css
 .artifact-polaroid {
-  background: white;
-  padding: 8px 8px 32px;        /* mimic real polaroid frame */
+  background: #fefcfa;  /* warm off-white */
+  padding: 8px 8px 32px;
   transform: rotate(var(--tilt, 0deg));
   box-shadow:
-    0 2px 4px oklch(0 0 0 / 0.08),
-    0 12px 24px -8px oklch(0 0 0 / 0.12);
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 12px 24px -8px rgba(28, 61, 46, 0.15);
 }
-.artifact-polaroid img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-}
-
-/* Stack mode: photos pile on top of each other */
-.artifact-stack {
-  position: relative;
-  width: fit-content; margin: 0 auto;
-}
-.artifact-stack > .artifact-polaroid {
-  position: absolute;
-  /* tilt range: -8° to +8°, randomly distributed */
-}
-
-/* Lineup mode: horizontal row with slight overlap */
-.artifact-lineup {
-  display: flex;
-  gap: -16px;        /* negative gap = overlap */
-}
-.artifact-lineup > .artifact-polaroid:nth-child(odd)  { --tilt: -3deg; }
-.artifact-lineup > .artifact-polaroid:nth-child(even) { --tilt:  3deg; }
 ```
 
-**Rules:**
-- Tilt range: ±8° random per item
-- Stack ≤ 8 items (more = looks chaotic, not casual)
-- Polaroid frame is 8px sides + 32px bottom (NEVER equal padding — that breaks the metaphor)
-- Always white frame, never tinted
-- Drop shadow has TWO layers: tight contact shadow + ambient lift
+倾斜 ±8°，堆叠 ≤8 张。
 
 ### Pattern 2 — Persistent Activity Bar
 
-A bottom-anchored running-state bar. Different from modals (non-blocking) and toasts (not transient). Use for: recording, AI thinking, uploading, any long-running activity the user shouldn't be locked out of.
-
-```html
-<div class="activity-bar">
-  <div class="activity-bar__header">
-    <span class="activity-bar__dot"></span>
-    <span class="activity-bar__label">Listening</span>
-  </div>
-  <p class="activity-bar__sub">Speak freely, we'll make sense of it after.</p>
-  <div class="activity-bar__row">
-    <div class="activity-bar__meter">
-      <svg><!-- waveform --></svg>
-      <span class="activity-bar__time">1:32</span>
-    </div>
-    <div class="activity-bar__transport">
-      <button class="db-pill">⏸</button>
-      <button class="db-pill">⏹ Stop</button>
-    </div>
-  </div>
-</div>
-
-<style>
+```css
 .activity-bar {
   position: fixed; left: 16px; right: 16px; bottom: 16px;
-  background: oklch(0.97 0 0);
-  border-radius: var(--r-card);
-  padding: 16px 20px;
+  background: var(--cyc-surface-glass-strong);
+  backdrop-filter: blur(40px) saturate(1.6);
+  border-radius: var(--cyc-r-card);
   box-shadow:
-    0 -4px 16px -4px oklch(0 0 0 / 0.06),
-    0 0 32px oklch(0 0 0 / 0.04);
+    0 -4px 16px -4px rgba(0, 0, 0, 0.06),
+    0 0 32px rgba(0, 0, 0, 0.04);
 }
 .activity-bar__dot {
   width: 8px; height: 8px;
-  border-radius: var(--r-dot);
-  background: var(--db-accent);
-  animation: db-pulse 1.6s ease-in-out infinite;
+  border-radius: 50%;
+  background: var(--cyc-orange);
+  animation: cyc-pulse 1.6s ease-in-out infinite;
 }
-@keyframes db-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.4; }
+@keyframes cyc-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+@media (prefers-reduced-motion: reduce) {
+  .activity-bar__dot { animation: none; }
 }
-.activity-bar__label { font-weight: 600; color: var(--db-text-primary); }
-.activity-bar__sub   { color: var(--db-text-secondary); font-size: 14px; }
-</style>
 ```
 
-**Rules:**
-- Always pulsing dot in `--db-accent` for active states
-- Subtitle in plain language explaining what's happening (reduces user anxiety)
-- Transport controls are pills, right-aligned
-- Never blocks page interaction (no overlay, no backdrop)
+底部锚定，不阻塞页面。用于 recording / AI thinking / uploading 等长时活动。
 
 ### Pattern 3 — Timeline Scrubber
 
-Right-edge vertical date ruler. Doubles as metadata + navigation.
+右侧竖向日期标尺，宽 32-40px。
 
-```html
-<div class="scrubber">
-  <span class="scrubber__month">Jun</span>
-  <a class="scrubber__entry" data-active>11 W</a>
-  <a class="scrubber__entry">7 S</a>
-  <a class="scrubber__entry">4 W</a>
-  <span class="scrubber__month">May</span>
-  <a class="scrubber__entry">29 T</a>
-  <!-- ... -->
-</div>
-
-<style>
-.scrubber {
-  position: sticky; top: 0; right: 0;
-  width: 36px;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 16px 4px;
-  font-size: 12px;
-}
-.scrubber__month {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--db-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-top: 8px;
-}
-.scrubber__entry {
-  color: var(--db-text-secondary);
-  text-decoration: none;
-  padding: 2px 4px;
-  border-radius: var(--r-inner);
-}
+```css
 .scrubber__entry[data-active] {
-  background: var(--db-accent);
-  color: white;
+  background: var(--cyc-orange);
+  color: #fff;
   font-weight: 600;
 }
-</style>
+.scrubber__month {
+  font-size: 11px; font-weight: 700;
+  color: var(--cyc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 ```
-
-**Rules:**
-- Width 32-40px, never wider
-- Month markers Bold + UPPERCASE + tracked
-- Date entries in middle gray, active in coral pill
-- Always sticky to viewport so visible during scroll
-- Click jumps to that section; date format `<day> <weekday-letter>`
 
 ### Pattern 4 — Identity Card
 
-Compact person summary. Avatar + name + activity metric.
-
-```html
-<article class="identity-card">
-  <div class="identity-card__avatar-frame">
-    <img class="identity-card__avatar" src="memoji.png">
-  </div>
-  <h3 class="identity-card__name">玖玖</h3>
-  <p class="identity-card__metric">本周 3 场活动 · 累计 47 次出席</p>
-</article>
-
-<style>
-.identity-card {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px;
-}
+```css
 .identity-card__avatar-frame {
-  /* This frame uses the daybook-surface halo */
-  background: var(--db-surface);
-  border-radius: var(--r-card);
+  background: var(--cyc-surface-pure);
+  border-radius: var(--cyc-r-card);
   padding: 12px;
   box-shadow:
-    0 8px 24px -8px oklch(0 0 0 / 0.06),
-    0 0 32px oklch(0 0 0 / 0.04);
+    0 8px 24px -8px rgba(0, 0, 0, 0.06),
+    0 0 32px rgba(0, 0, 0, 0.04);
 }
 .identity-card__avatar {
   width: 72px; height: 72px;
-  border-radius: var(--r-dot);
+  border-radius: var(--cyc-r-dot);
 }
-.identity-card__name {
-  font-size: 20px; font-weight: 700;
-  color: var(--db-text-primary);
-}
-.identity-card__metric {
-  font-size: 13px;
-  color: var(--db-text-secondary);
-}
-</style>
 ```
 
-**Rules:**
-- Avatar is a 3D memoji-style image (color OK — see Mascot system below)
-- Name is Bold/Semibold, 20px
-- Metric is one line, dot-separator format: `<period> <count> · <total>`
-- The metric language must be product-specific noun ("moments", "活动", "篇笔记")
+3D memoji-style 头像（彩色，identity 不限色）+ Bold name + 单行 metric。
 
 ### Pattern 5 — View Mode Toggle (Stack ↔ Lineup)
 
-Same content, two physical metaphors. Toggle, don't navigate.
-
 | Mode | Metaphor | Use |
 |---|---|---|
-| **Stack** | Photos casually piled on a table | Overview / summary / "lots happened" |
-| **Lineup** | Photos arranged on a timeline | Detailed scan / chronological browsing |
+| **Stack** | 物件被随手堆在桌上 | 概览 / "上周发生了好多事" |
+| **Lineup** | 时间轴上排开 | 详查 / 按日期浏览 |
 
-The toggle is usually a 2-button pill segmented control at top-right of the surface. State persists in localStorage per page.
+只用于 artifact 排列，不用于其他内容。
 
-```html
-<div class="view-toggle">
-  <button data-mode="stack" data-active>Stack</button>
-  <button data-mode="lineup">Lineup</button>
-</div>
-```
-
-**Rules:**
-- Switching mode animates: stack-to-lineup uses FLIP technique (each polaroid finds its new position)
-- Active button uses `--db-accent-soft` background, accent text color
-- Don't use this toggle for non-photographic content (it's specifically about artifact arrangement)
-
-## Mascot system (split in v2)
-
-Daybook has TWO mascot types serving different roles. Don't confuse them.
+## Mascot system
 
 ### Self-Mood Mascot (monochrome, 5-state)
 
-Represents the USER's emotional state. Abstract, monochrome, character-as-feeling.
-
 ```
-😄 DELIGHT     mouth: wide upward arc, eyes: tall ovals
-🙂 CONTENT     mouth: gentle upward arc, eyes: dots         ← default
-😐 NEUTRAL     mouth: horizontal line,   eyes: dots
-🙁 DOWN        mouth: gentle downward,   eyes: dots
-😢 SAD         mouth: small frown,       eyes: tall ovals
+😄 DELIGHT  · 🙂 CONTENT (默认) · 😐 NEUTRAL · 🙁 DOWN · 😢 SAD
 ```
 
-**Use:** journal hero, mood calendar fills, today check-in, profile self-view
-**Format:** SVG, pure black on white circle, no color, no gradient
-**Sizing:** 32-64px depending on context
+SVG，深绿或近黑 on 白圆，5 态切换。仅出现在 Daybook 亲密 surface 顶部 + mood calendar 单元格。
 
 ### Identity Avatar (memoji, full-color)
 
-Represents A SPECIFIC PERSON. Concrete, colorful, character-as-individual.
-
-**Use:** community member lists, message threads, identity cards, comparing-people views
-**Format:** PNG/SVG asset, memoji-style 3D, includes skin/hair/clothing color
-**Sizing:** 48-96px in cards; 24-32px inline (in lists/messages)
-**Generation:** users can pick from a curated set or upload one. Should be on transparent or warm-soft background.
+3D 卡通头像，每人不同。出现在 Daybook 列表、Aurora 头像 ring、Atlas 头像 stack。
 
 ### Per-layer behavior
 
-| Layer | Self-Mood appears? | Identity Avatar appears? |
+| Layer | Self-Mood 出现? | Identity Avatar 出现? |
 |---|---|---|
-| Daybook | YES — anywhere intimate | YES — in member views, comparison |
-| Aurora | NO (would feel cold-warm clash) | YES — but only as ring (no body shown) |
-| Atlas | NO | YES — stacked thumbs in hero, never solo |
+| Daybook | YES — 任何亲密 surface | YES — 列表 / 比较视图 |
+| Aurora | NO（基调是工作不是情绪）| YES — 但仅作为 ring（不展开 body） |
+| Atlas | NO | YES — stack / 头像组 |
 
-**Critical rule:** never put a Self-Mood Mascot in a list of multiple users. The mood mascot is YOU. Other people get Identity Avatars.
+**关键规则**：never put a Self-Mood Mascot in a list of multiple users. The mood mascot is YOU.
 
 ## Layer selection logic
 
-When the user says "build me a [page]" without specifying layer, decide by route/intent:
-
 | If the page is... | Layer | Common patterns |
 |---|---|---|
-| Public-facing, marketing, story | **Atlas** | hero card, multi-card grid |
-| Settings, admin, command palette, dropdown menu | **Aurora** | glass surface, accent ring |
-| Personal home, journal, mood, calendar, profile, daily check-in | **Daybook** | mascot, halo, dot grid |
-| Activity detail (public event with cover) | **Atlas** | photographic hero |
-| Activity edit form (admin task) | **Aurora** | glass form |
+| Public-facing, marketing, story | **Atlas** | hero card, tagline-driven |
+| `/admin/*`, settings, command palette, dropdown menu | **Aurora** | 2px green line, density |
+| Personal home, journal, mood, calendar, profile, daily check-in | **Daybook** | halo card, mascot |
+| Activity detail (public event with cover) | **Atlas** | content-driven warmth |
+| Activity edit form (admin task) | **Aurora** | green CTA |
 | Activity RSVP card (member's perspective) | **Daybook** | identity card, halo |
 | Photo timeline / memory recap | **Daybook** | artifact + scrubber |
 | Recording / listening / AI thinking | **Daybook** | activity bar |
 | Member directory / community grid | **Daybook** | identity-card grid |
-| Onboarding screen | **Atlas** for hero, **Daybook** for forms | — |
 
 If still unclear, ask:
-> "This page is about <X>. Atlas (showcase), Aurora (tooling), or Daybook (companion)?"
+> "This page is about <X>. Atlas (showcase), Aurora (chrome), or Daybook (companion)?"
 
-## Hard rules (DON'T)
+## Hard rules（v3 更新）
 
-1. ❌ Don't introduce a second accent color in any layer (Aurora coral, Daybook coral, Atlas content-derived only)
-2. ❌ Don't use Atlas card on a Daybook page (cards have different shadow philosophies)
-3. ❌ Don't put the Self-Mood Mascot in Atlas, or in any list of multiple users
-4. ❌ Don't use square corners (any radius < 12px) for any container
-5. ❌ Don't mix `inset` glass highlight (Aurora) with `0 0 N` halo (Daybook) — they're philosophically opposite
-6. ❌ Don't use pure white `#fff` or pure black `#000` — always at least 1.5% off
-7. ❌ Don't use middle font weights (500). Only 400 / 600 / 700.
-8. ❌ Don't use `--db-accent` for borders, backgrounds, brand, decoration, or hover states. Only temporal/active/verb semantics.
-9. ❌ Don't tilt artifacts more than ±8°. Don't stack more than 8.
-10. ❌ Don't widen Timeline Scrubber beyond 40px.
-11. ❌ Don't use the Stack-Lineup toggle for non-artifact content.
+1. ❌ **不要引入第二种 accent color**（Atlas 用 cyc-orange，Aurora 用 cyc-green，Daybook 用 cyc-orange 仅限 temporal）
+2. ❌ **不要用深色 canvas**（无 dark mode override；admin 也用沙底）
+3. ❌ **不要把 Self-Mood Mascot 放进多人列表**或 Atlas
+4. ❌ **不要用方角**（任何 radius < 6px 的容器）
+5. ❌ **Daybook halo 不要换成 inset 边框**；Aurora 2px 绿线不要换成 ambient glow（layer 视觉签名不动）
+6. ❌ **不要用纯白 `#fff` 大面积铺背景** —— 沙色才是 cyc 的"白"
+7. ❌ **不要用 font-weight 500**。Only 400 / 600 / 700.
+8. ❌ **不要用 `--cyc-orange` 作 borders/backgrounds/brand/decoration/hover states**。Only temporal/active/verb semantics.
+9. ❌ **不要 tilt artifacts 超 ±8°**。Don't stack > 8.
+10. ❌ **不要扩 Timeline Scrubber 宽过 40px**。
+11. ❌ **不要把 Stack-Lineup toggle 用于非 artifact 内容**。
+12. ❌ **不要叠加 ambient glow / 戏剧渐变带 / 全屏摄影 hero**（v3 撤回这些）
 
 ## Output format
 
@@ -553,27 +440,45 @@ NOTES:
 
 ## Project context — cyc.center
 
-This skill was authored for **cyc.center** ("链岛社区工具站"), a vanilla-HTML/CSS/JS community OS with Feishu Bitable backend. Default route map:
+This skill **专属** for **cyc.center** ("链岛社区工具站"), a vanilla-HTML/CSS/JS community OS with Feishu Bitable backend. 跟着项目走，不为别的项目泛化。
 
-| Route | Layer | Likely patterns |
-|---|---|---|
-| `/`, `/about` | Atlas | hero card, multi-card grid |
-| `/events`, `/events/:id` (public view) | Atlas | photographic hero |
-| `/me` | Daybook | mascot, mood calendar |
-| `/me/journal` | Daybook | mascot + activity-bar (when recording) |
-| `/me/calendar` | Daybook | dot grid + scrubber |
-| `/me/timeline` | Daybook | artifact + scrubber + view-mode toggle |
-| `/me/recording` | Daybook | activity-bar (full-page) |
-| `/members` | Daybook | identity-card grid |
-| `/members/:id` | Daybook | identity-card + activity feed |
-| `/me/settings`, `/admin/*` | Aurora | glass surface, accent ring |
+| Route | Layer |
+|---|---|
+| `/`, `/about` | Atlas |
+| `/events`, `/events/:id` (public view) | Atlas |
+| `/me` | Daybook |
+| `/me/journal` | Daybook |
+| `/me/calendar` | Daybook |
+| `/me/timeline` | Daybook |
+| `/me/recording` | Daybook |
+| `/community` (public list) | Daybook |
+| `/community/:id` | Daybook |
+| `/community/admin` | Aurora |
+| `/admin`, `/admin/instrumentation` | Aurora |
+| `/team`, `/food`, `/event-card` | Atlas (in spirit, public utility) |
 
-When in doubt for a cyc.center route, check the table above. For new products using daybreak-os, derive equivalents from the layer purpose definitions.
+任务时**强制读取顺序**：
+1. PRODUCT.md（战略上下文）
+2. DESIGN.md（视觉规范 + 当前 quiet 实现状态）
+3. styles.css 头部 token 定义（`:root` 的 `--cyc-*` 是真权威）
+4. 本 skill 文档（patterns + 层选）
+
+冲突时：styles.css > DESIGN.md > 本 skill。
 
 ---
 
 ## Changelog
 
-**v2.0.0** — Added 5 Daybook patterns (Artifact, Activity Bar, Scrubber, Identity Card, View Mode), split Mascot into Self-Mood + Identity Avatar, relaxed Daybook color rule to allow single temporal accent (coral) under strict semantic rules.
+**v3.0.0** (2026-05-02) — **quiet philosophy 重写**
+- 撤回 v2 的"三层 = 三种视觉语言"（Atlas dramatic photo / Aurora dark glass / Daybook white halo on near-white）
+- 改为 unified base + role-based differentiation：三层共享沙底 + 三 blob，靠 typography density / 装饰线 / 按钮颜色区分
+- Atlas 不再是全屏摄影 hero，改为字层级 + 留白
+- Aurora 不再是深绿暗夜玻璃，改为顶部 2px 绿装饰线 + density + green-filled CTA
+- Daybook halo 阴影规范保留，纯白卡浮在沙底（之前是浮在近白底）
+- 触发原因：v2 在 cyc.center 落地时违反 PRODUCT.md "讲究 > 花哨" / "有性格但不喊" / "反对被设计感"，用户反馈"非常丑、字看不清"（commit `c8b8fcf`）
+- Patterns（Artifact / Activity Bar / Scrubber / Identity Card / View Mode / Mascot）保持不变
+- Hard rules 增加 v3 quiet 哲学约束（共 12 条）
+
+**v2.0.0** — Added 5 Daybook patterns, split Mascot into Self-Mood + Identity Avatar, relaxed Daybook color rule to allow single temporal accent.
 
 **v1.0.0** — Initial three-layer system (Atlas, Aurora, Daybook).
