@@ -18,6 +18,7 @@ cyc.center 是大理"链岛青年社区"的轻量数字基础设施。
 5. **`GOTCHAS.md`** —— 工程踩坑笔记（飞书 API 等）
 6. **`RUNBOOK.md`** —— 紧急情况手册 / 关键文件 / env vars 清单
 7. **`.claude/skills/daybreak-os/SKILL.md`** —— daybreak-os 设计系统 v3.0.0
+8. **`docs/session-prompts/`** —— 启动新会话的 prompt 模板（Phase 任务级）
 
 ## 强制规则
 
