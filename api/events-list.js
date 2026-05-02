@@ -132,7 +132,8 @@ function renderCard(a, isPast, avatarData) {
   // 展开区：描述 + 流程 + 费用 / 报名 + CTA
   const expandHtml = renderExpand(a, isPast);
 
-  return `<a class="el-card${isPast ? ' is-past' : ''}" href="/events/${a.record_id}" onclick="toggleCardExpand(event, this)">
+  // ⚠️ 用 <article> 而非 <a>：避免与展开区里"📝 详情"<a>嵌套
+  return `<article class="el-card${isPast ? ' is-past' : ''}" data-href="/events/${a.record_id}" onclick="toggleCardExpand(event, this)">
   ${thumb ? `<img class="el-card-thumb" src="${thumb}" alt="" loading="lazy">` : '<div class="el-card-thumb el-card-thumb-empty">📅</div>'}
   <div class="el-card-body">
     <div class="el-card-title">${escapeHtml(a.title)}</div>
@@ -146,7 +147,7 @@ function renderCard(a, isPast, avatarData) {
     ${avatarHtml}
     ${expandHtml}
   </div>
-</a>`;
+</article>`;
 }
 
 // 展开区 SSR（与 index.html renderExpand 同语义；用 .el-card-expand-* 类避免冲突）
@@ -366,13 +367,25 @@ ${itemListLd}
     if (e.key === 'Escape') window.closePersonModal();
   });
 
-  // 卡片整体 click → toggle 展开（按钮 / 内嵌 link / Cmd-Ctrl click 不触发）
+  // 卡片整体 click → toggle 展开（按钮/内嵌 link/修饰键不触发）
   window.toggleCardExpand = function (e, card) {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-    if (e.target.closest('button, a:not(.el-card)')) return;
-    e.preventDefault();
+    if (e.target.closest('button, a')) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey) {
+      const href = card.dataset.href;
+      if (href) window.open(href, '_blank');
+      return;
+    }
     card.classList.toggle('is-expanded');
   };
+  // 中键单独处理（mousedown，因为 click 不一定带 button=1）
+  document.addEventListener('mousedown', function (e) {
+    if (e.button !== 1) return;
+    const card = e.target.closest('.el-card');
+    if (!card || e.target.closest('button, a')) return;
+    e.preventDefault();
+    const href = card.dataset.href;
+    if (href) window.open(href, '_blank');
+  });
 })();
 </script>
 

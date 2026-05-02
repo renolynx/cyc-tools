@@ -222,7 +222,9 @@ function renderCard(a) {
     a.card_attendee_total || 0
   );
   const expandHtml = renderExpand(a, isPast);
-  return `<a class="home-act-card${isPast ? ' is-past' : ''}" href="/events/${escapeAttr(a.record_id)}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' onclick="toggleCardExpand(event, this)">
+  // ⚠️ 外层用 <article> 而非 <a>：避免与内层"📝 详情"<a>嵌套（HTML 不允许 <a> 套 <a>，
+  // 浏览器解析器会自动 close 外层 → 卡片被劈成两半）。SEO + 分享靠展开区里的 <a>。
+  return `<article class="home-act-card${isPast ? ' is-past' : ''}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' data-href="/events/${escapeAttr(a.record_id)}" onclick="toggleCardExpand(event, this)">
     ${thumbHtml}
     <div class="home-act-body">
       <div class="home-act-meta">
@@ -239,7 +241,7 @@ function renderCard(a) {
       ${avatarHtml}
       ${expandHtml}
     </div>
-  </a>`;
+  </article>`;
 }
 
 // 卡片展开区：描述 + 流程 + 费用 / 报名 + 类型 chips + 详情 CTA
@@ -262,15 +264,27 @@ function renderExpand(a, isPast) {
   return `<div class="home-act-expand"><div class="home-act-expand-inner">${typesHtml}${descHtml}${flowHtml}${metaHtml}${ctaHtml}</div></div>`;
 }
 
-// 卡片整体 click → toggle 展开（按钮/内嵌 link/Cmd-Ctrl click 不触发）
+// 卡片整体 click → toggle 展开（按钮/内嵌 link/修饰键不触发）
 function toggleCardExpand(e, card) {
-  // Cmd/Ctrl/Shift/中键 click → 让浏览器走 anchor href（保留新 tab 打开）
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
-  // 内部 button / 内部 anchor（非 card 自己）→ 让其各自 onclick 工作
-  if (e.target.closest('button, a:not(.home-act-card)')) return;
-  e.preventDefault();
+  // 内部 button / 内部 anchor → 让其各自 onclick 工作
+  if (e.target.closest('button, a')) return;
+  // Cmd/Ctrl/Shift click → 新 tab 打开详情页（外层不再是 <a>，用 JS 模拟）
+  if (e.metaKey || e.ctrlKey || e.shiftKey) {
+    const href = card.dataset.href;
+    if (href) window.open(href, '_blank');
+    return;
+  }
   card.classList.toggle('is-expanded');
 }
+// 中键单独处理（mousedown，因为 click 事件不一定带 button=1）
+document.addEventListener('mousedown', function (e) {
+  if (e.button !== 1) return;
+  const card = e.target.closest('.home-act-card');
+  if (!card || e.target.closest('button, a')) return;
+  e.preventDefault();
+  const href = card.dataset.href;
+  if (href) window.open(href, '_blank');
+});
 
 function renderAvatarGroups(speakers, attendees, total) {
   if (!speakers.length && !attendees.length) return '';
