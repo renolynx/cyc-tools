@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>了解 CYC · 链岛青年社区</title>
-<meta name="description" content="CYC 链岛青年社区 · 在大理为认真做事的人提供的工具和空间。介绍页正在建设中。">
+<meta name="description" content="CYC 链岛青年社区 · 在大理为认真做事的人提供的工具和空间。">
 <meta property="og:title" content="了解 CYC · 链岛青年社区">
 <meta property="og:description" content="链接每一座孤岛 · 大理在地创意人和数字游民的社区">
 <meta property="og:image" content="https://cyc.center/api/og-default">
@@ -22,43 +22,178 @@
   <a href="/" class="event-site">CYC.center</a>
 </header>
 
-<main style="position:relative; z-index:1; max-width:680px; margin:0 auto; padding:32px 16px 64px;">
+<main class="about-wrap">
 
-  <section style="text-align:center; padding:48px 16px 32px;">
-    <h1 style="font-size:36px; font-weight:700; letter-spacing:-0.02em; color:var(--cyc-text-strong); line-height:1.15; margin-bottom:12px;">
-      在大理，有这样一群人在认真做事
-    </h1>
-    <p style="font-size:16px; color:var(--cyc-text-muted); line-height:1.6; max-width:540px; margin:0 auto;">
+  <!-- 品牌叙事 hero -->
+  <section class="about-hero">
+    <h1>在大理，有这样一群人在认真做事</h1>
+    <p>
       做独立项目的设计师、做内容的创作者、远程工作的程序员、开咖啡店的本地主理人 ——
       链岛青年社区是为他们建的一个非正式的"客厅 + 工具站"。
     </p>
   </section>
 
-  <section style="background:var(--cyc-surface-glass); backdrop-filter:blur(24px) saturate(1.6); -webkit-backdrop-filter:blur(24px) saturate(1.6); border:1px solid var(--cyc-border-glass); border-radius:var(--cyc-r-card-lg); padding:24px 28px; box-shadow:0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset; margin-bottom:24px;">
-    <h2 style="font-size:18px; font-weight:700; letter-spacing:-0.01em; color:var(--cyc-green); margin-bottom:12px;">
-      🚧 这个页面正在建设
-    </h2>
-    <p style="font-size:14px; color:var(--cyc-text-muted); line-height:1.7; margin-bottom:12px;">
-      完整的介绍页（社区文化 / 现有成员故事 / 空间相册 / 加入入口）是 Phase 3.2.1 的工作。
-      当前你能做的：
-    </p>
-    <ul style="font-size:14px; color:var(--cyc-text); line-height:2; padding-left:20px;">
-      <li><a href="/events" style="color:var(--cyc-green); font-weight:600;">看看本周活动</a> —— 直接来一场感受</li>
-      <li><a href="/community" style="color:var(--cyc-green); font-weight:600;">浏览社区成员</a> —— 看看都是些谁</li>
-      <li><a href="/rooms" style="color:var(--cyc-green); font-weight:600;">了解房型</a> —— 想长期住的话</li>
-    </ul>
+  <!-- 三选一 CTA：来活动 / 看成员 / 看房型 -->
+  <section class="about-pathways">
+    <a class="about-pathway" href="/events">
+      <div class="about-pathway-icon">📅</div>
+      <div class="about-pathway-text">
+        <strong>看看本周活动</strong>
+        <span>直接来一场感受社区</span>
+      </div>
+      <span class="about-pathway-arrow">›</span>
+    </a>
+    <a class="about-pathway" href="/community">
+      <div class="about-pathway-icon">👥</div>
+      <div class="about-pathway-text">
+        <strong>浏览社区成员</strong>
+        <span>看看都是些谁在这里</span>
+      </div>
+      <span class="about-pathway-arrow">›</span>
+    </a>
   </section>
 
-  <p style="text-align:center; font-size:12px; color:var(--cyc-text-muted); padding-top:16px;">
-    回 <a href="/" style="color:var(--cyc-green); font-weight:600;">主页 →</a>
-  </p>
+  <!-- 社区照片墙 section -->
+  <section class="about-memories">
+    <a class="about-memories-card" href="/community/memories" data-track="about_memories_click">
+      <div class="about-memories-emoji">📷</div>
+      <div class="about-memories-text">
+        <h2>社区照片墙</h2>
+        <p>过去的活动 / 现场的瞬间 / 谁来过 —— 翻翻这里就知道社区是什么样</p>
+      </div>
+      <span class="about-memories-arrow">→</span>
+    </a>
+  </section>
+
+  <!-- 想长期住？跳到房型 -->
+  <section class="about-rooms-section">
+    <a class="hero-poster hero-poster-b" href="/rooms" data-track="hero_path_b_click" data-track-meta='{"target":"rooms"}' style="display:flex; min-height:200px;">
+      <div class="hero-poster-content">
+        <h2>想试一个月吗</h2>
+        <p class="hero-poster-tagline">看看每一间房 · 价格 · 入住时间 · 试住政策</p>
+        <span class="hero-poster-cta">看房型 →</span>
+      </div>
+    </a>
+  </section>
+
+  <!-- 建设中提示 -->
+  <section class="about-todo">
+    <h3>🚧 这个页面还在长</h3>
+    <p>
+      完整的介绍页（社区文化 / 现有成员故事 / 空间相册 / 加入入口）是 Phase 3.2.1 的工作。
+      上方几个入口先够你逛。
+    </p>
+  </section>
 
 </main>
 
-<footer style="text-align:center; padding:24px 16px; font-size:12px; color:var(--cyc-text-muted); border-top:1px dashed rgba(0,0,0,0.08);">
-  <p style="font-size:13px; font-weight:600; color:var(--cyc-green); margin-bottom:6px;">链接每一座孤岛</p>
+<footer class="home-footer">
+  <p class="home-footer-tagline">链接每一座孤岛</p>
   <p>CYC 链岛青年社区 · cyc.center</p>
 </footer>
+
+<style>
+.about-wrap {
+  position: relative; z-index: 1;
+  max-width: 720px; margin: 0 auto;
+  padding: 32px 16px 48px;
+}
+
+/* 品牌叙事 hero */
+.about-hero {
+  text-align: center; padding: 32px 16px 28px;
+}
+.about-hero h1 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--cyc-text-strong); line-height: 1.2; margin-bottom: 14px;
+}
+.about-hero p {
+  font-size: 15px; color: var(--cyc-text-muted);
+  line-height: 1.7; max-width: 540px; margin: 0 auto;
+}
+@media (min-width: 720px) {
+  .about-hero h1 { font-size: 38px; }
+}
+
+/* 三选一 pathway 列表 */
+.about-pathways {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 28px;
+}
+.about-pathway {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card);
+  text-decoration: none; color: var(--cyc-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.10s, box-shadow 0.15s;
+}
+.about-pathway:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+.about-pathway:active { transform: scale(0.99); }
+.about-pathway-icon { font-size: 22px; flex-shrink: 0; }
+.about-pathway-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.about-pathway-text strong { font-size: 15px; font-weight: 700; color: var(--cyc-text-strong); letter-spacing: -0.01em; }
+.about-pathway-text span { font-size: 12.5px; color: var(--cyc-text-muted); }
+.about-pathway-arrow { font-size: 20px; color: var(--cyc-text-faint); flex-shrink: 0; }
+
+/* 照片墙 card */
+.about-memories { margin-bottom: 28px; }
+.about-memories-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, rgba(28, 61, 46, 0.06), rgba(217, 101, 42, 0.04));
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card-lg);
+  text-decoration: none; color: var(--cyc-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.10s, box-shadow 0.15s;
+}
+.about-memories-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.10); }
+.about-memories-card:active { transform: scale(0.99); }
+.about-memories-emoji {
+  font-size: 28px; flex-shrink: 0;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cyc-surface-pure);
+  border-radius: 12px;
+  border: 1px solid var(--cyc-stroke);
+}
+.about-memories-text { flex: 1; }
+.about-memories-text h2 {
+  font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--cyc-text-strong); margin-bottom: 4px;
+}
+.about-memories-text p {
+  font-size: 13px; color: var(--cyc-text-muted); line-height: 1.55;
+}
+.about-memories-arrow {
+  font-size: 18px; font-weight: 600; color: var(--cyc-green);
+  flex-shrink: 0;
+}
+
+/* 想试一个月吗 hero poster section */
+.about-rooms-section { margin-bottom: 28px; }
+
+/* 建设中提示 */
+.about-todo {
+  padding: 18px 20px;
+  background: var(--cyc-surface-glass);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card);
+}
+.about-todo h3 {
+  font-size: 14px; font-weight: 700; color: var(--cyc-green);
+  margin-bottom: 8px; letter-spacing: -0.01em;
+}
+.about-todo p {
+  font-size: 13px; color: var(--cyc-text-muted); line-height: 1.65;
+}
+</style>
 
 <script src="/cyc-track.js" defer></script>
 </body>

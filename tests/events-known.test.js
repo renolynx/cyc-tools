@@ -44,6 +44,7 @@ describe('KNOWN_EVENTS', () => {
   it('包含 community 相关事件', () => {
     expect(KNOWN_EVENTS.has('community_admin_click')).toBe(true);
     expect(KNOWN_EVENTS.has('profile_view')).toBe(true);
+    expect(KNOWN_EVENTS.has('about_memories_click')).toBe(true);
   });
 
   it('未注册事件名应被拒绝（防脏数据）', () => {

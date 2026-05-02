@@ -36,6 +36,7 @@ export const KNOWN_EVENTS = new Set([
   'community_view',
   'community_admin_click',
   'profile_view',
+  'about_memories_click',         // /about → /community/memories 入口
   // admin
   'admin_dashboard_view',
   'instrumentation_view',

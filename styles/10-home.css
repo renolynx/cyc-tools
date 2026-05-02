@@ -9,16 +9,12 @@
   padding: 16px 16px 64px;
 }
 
-/* ── Hero 双海报 ── */
+/* ── Hero 单海报（点进 /about 后才出现第二条 path 的海报）── */
 .home-hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
   margin-bottom: 24px;
-  min-height: 240px;
 }
-@media (max-width: 600px) {
-  .home-hero { grid-template-columns: 1fr; min-height: auto; }
+.home-hero .hero-poster {
+  min-height: 280px;  /* 单海报独占，给足存在感 */
 }
 
 .hero-poster {
