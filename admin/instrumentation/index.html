@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>埋点数据 · CYC 链岛青年社区</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+/* ── /admin/instrumentation 页面 — Aurora 层 ── */
+:root {
+  --aur-bg:        oklch(0.20 0.04 150);
+  --aur-surface:   oklch(0.25 0.03 150 / 0.6);
+  --aur-text:      oklch(0.96 0.005 150);
+  --aur-text-2:    oklch(0.7 0.02 150);
+  --aur-accent:    oklch(0.78 0.18 35);
+  --aur-border:    oklch(1 0 0 / 0.08);
+  --aur-inset:     oklch(1 0 0 / 0.04);
+}
+
+body.adm {
+  background: var(--aur-bg);
+  color: var(--aur-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+body.adm::before, body.adm::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+body.adm::before {
+  background: radial-gradient(600px circle at 90% 90%, oklch(0.65 0.18 35 / 0.18), transparent 60%);
+}
+body.adm::after {
+  background: radial-gradient(500px circle at 95% 5%, oklch(0.55 0.10 150 / 0.15), transparent 60%);
+}
+
+.adm-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px 16px 64px; }
+
+.adm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+.adm-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.adm-back { font-size: 13px; color: var(--aur-text-2); text-decoration: none; padding: 6px 12px; border-radius: 100px; border: 1px solid var(--aur-border); }
+.adm-back:hover { background: oklch(1 0 0 / 0.06); color: var(--aur-text); }
+
+/* 密码门 */
+.pw-gate { max-width: 400px; margin: 80px auto; }
+.pw-gate-card {
+  background: var(--aur-surface);
+  backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid var(--aur-border);
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: inset 0 0 0 0.5px var(--aur-inset), 0 24px 48px -12px oklch(0 0 0 / 0.6);
+}
+.pw-gate-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.pw-gate-sub   { font-size: 13px; color: var(--aur-text-2); margin-bottom: 20px; }
+.pw-input {
+  width: 100%; padding: 12px 14px; font-size: 14px;
+  background: oklch(0.18 0.005 150 / 0.6); color: var(--aur-text);
+  border: 1px solid var(--aur-border); border-radius: 12px;
+  font-family: inherit;
+}
+.pw-input:focus { outline: 2px solid var(--aur-accent); outline-offset: 1px; }
+.pw-btn {
+  width: 100%; margin-top: 12px; padding: 12px; cursor: pointer;
+  background: linear-gradient(135deg, oklch(0.78 0.18 35), oklch(0.68 0.18 25));
+  color: white; border: none; border-radius: 100px;
+  font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+}
+.pw-btn:active { transform: scale(0.98); }
+.pw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pw-err { color: oklch(0.72 0.18 25); font-size: 12px; margin-top: 10px; min-height: 16px; }
+
+/* 控件条 */
+.adm-controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.adm-pill {
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  background: var(--aur-surface); color: var(--aur-text-2);
+  border: 1px solid var(--aur-border); border-radius: 100px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.adm-pill.is-active { background: var(--aur-accent); color: white; border-color: var(--aur-accent); }
+
+/* Summary cards */
+.sum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.sum-card {
+  background: var(--aur-surface);
+  backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid var(--aur-border); border-radius: 16px;
+  padding: 16px; box-shadow: inset 0 0 0 0.5px var(--aur-inset);
+}
+.sum-label { font-size: 11px; color: var(--aur-text-2); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+.sum-value { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+.sum-value.warm { color: var(--aur-accent); }
+.sum-hint { font-size: 11px; color: var(--aur-text-2); margin-top: 4px; }
+
+/* Section */
+.adm-section { margin-bottom: 24px; }
+.adm-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.adm-section-title .badge { font-size: 10px; padding: 2px 8px; border-radius: 100px; background: oklch(1 0 0 / 0.06); color: var(--aur-text-2); font-weight: 500; }
+
+/* Sparkline 7/30 days */
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 80px; padding: 8px 12px;
+         background: var(--aur-surface); border: 1px solid var(--aur-border); border-radius: 16px; }
+.spark-bar { flex: 1; min-width: 4px; background: var(--aur-accent); border-radius: 2px 2px 0 0; opacity: 0.85; position: relative; }
+.spark-bar:hover { opacity: 1; }
+.spark-bar[data-count="0"] { background: oklch(1 0 0 / 0.08); }
+.spark-tip { font-size: 10px; color: var(--aur-text-2); display: flex; justify-content: space-between; margin-top: 4px; padding: 0 12px; }
+
+/* List */
+.list { background: var(--aur-surface); border: 1px solid var(--aur-border); border-radius: 16px; padding: 4px; }
+.list-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 12px;
+  padding: 10px 14px; border-radius: 10px;
+  font-size: 13px; align-items: center;
+}
+.list-row + .list-row { border-top: 1px solid oklch(1 0 0 / 0.04); }
+.list-row:hover { background: oklch(1 0 0 / 0.04); }
+.list-name { font-weight: 600; color: var(--aur-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-meta { color: var(--aur-text-2); font-size: 11px; }
+.list-count {
+  font-weight: 700; font-variant-numeric: tabular-nums;
+  background: oklch(1 0 0 / 0.06); padding: 2px 10px; border-radius: 100px;
+  font-size: 12px;
+}
+.list-count.warm { background: oklch(0.78 0.18 35 / 0.18); color: oklch(0.85 0.18 35); }
+
+/* Recent log */
+.log {
+  background: oklch(0.16 0.005 150 / 0.6);
+  border: 1px solid var(--aur-border); border-radius: 16px;
+  padding: 12px; max-height: 480px; overflow-y: auto;
+  font-family: 'SF Mono', Menlo, ui-monospace, monospace; font-size: 11.5px;
+  line-height: 1.7; color: var(--aur-text-2);
+}
+.log-line { padding: 2px 0; }
+.log-ts { color: oklch(0.55 0.02 150); margin-right: 8px; }
+.log-ev { color: oklch(0.78 0.18 35); margin-right: 8px; font-weight: 600; }
+.log-pg { color: var(--aur-text); }
+.log-meta { color: oklch(0.55 0.02 150); margin-left: 8px; font-size: 10.5px; }
+
+.empty { text-align: center; color: var(--aur-text-2); padding: 40px 16px; font-size: 13px; }
+
+@media (max-width: 600px) {
+  .sum-value { font-size: 26px; }
+  .list-row  { grid-template-columns: 1fr auto; }
+  .list-meta { display: none; }
+}
+</style>
+</head>
+<body class="adm">
+
+<div class="adm-wrap">
+  <header class="adm-head">
+    <div class="adm-title">📊 埋点数据 / Instrumentation</div>
+    <a class="adm-back" href="/admin">← admin</a>
+  </header>
+
+  <!-- 密码门 -->
+  <div id="pwGate" class="pw-gate">
+    <div class="pw-gate-card">
+      <div class="pw-gate-title">🔒 输入管理密码</div>
+      <div class="pw-gate-sub">这个页面会读取飞书事件流表 · 仅 admin 可见</div>
+      <input id="pwInput" class="pw-input" type="password" autocomplete="current-password" placeholder="管理密码">
+      <button id="pwBtn" class="pw-btn">查看数据</button>
+      <div id="pwErr" class="pw-err"></div>
+    </div>
+  </div>
+
+  <!-- dashboard -->
+  <div id="dash" style="display:none">
+    <div class="adm-controls">
+      <button class="adm-pill" data-days="1">最近 24h</button>
+      <button class="adm-pill is-active" data-days="7">最近 7 天</button>
+      <button class="adm-pill" data-days="30">最近 30 天</button>
+      <button class="adm-pill" data-days="90">最近 90 天</button>
+    </div>
+
+    <div class="sum-grid" id="sumGrid"></div>
+
+    <div class="adm-section">
+      <div class="adm-section-title">每日事件量 <span class="badge" id="dayBadge"></span></div>
+      <div class="spark" id="spark"></div>
+      <div class="spark-tip"><span id="sparkLeft"></span><span id="sparkRight"></span></div>
+    </div>
+
+    <div class="adm-section">
+      <div class="adm-section-title">事件 Top（按次数）</div>
+      <div class="list" id="byEvent"></div>
+    </div>
+
+    <div class="adm-section">
+      <div class="adm-section-title">页面 Top（按事件量）</div>
+      <div class="list" id="byPage"></div>
+    </div>
+
+    <div class="adm-section">
+      <div class="adm-section-title">最近事件 <span class="badge">最新 50 条</span></div>
+      <div class="log" id="recentLog"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const pwInput = document.getElementById('pwInput');
+  const pwBtn   = document.getElementById('pwBtn');
+  const pwErr   = document.getElementById('pwErr');
+  const pwGate  = document.getElementById('pwGate');
+  const dash    = document.getElementById('dash');
+
+  let currentPw = '';
+  let currentDays = 7;
+
+  pwBtn.onclick = () => doFetch(pwInput.value.trim());
+  pwInput.onkeydown = (e) => { if (e.key === 'Enter') doFetch(pwInput.value.trim()); };
+
+  document.querySelectorAll('.adm-pill').forEach((btn) => {
+    btn.onclick = () => {
+      document.querySelectorAll('.adm-pill').forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      currentDays = parseInt(btn.dataset.days, 10);
+      doFetch(currentPw);
+    };
+  });
+
+  async function doFetch(pw) {
+    if (!pw) { pwErr.textContent = '请输入密码'; return; }
+    pwErr.textContent = '';
+    pwBtn.disabled = true;
+    pwBtn.textContent = '加载中...';
+    try {
+      const res = await fetch('/api/admin/instrumentation-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw, days: currentDays }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        pwErr.textContent = data.error === 'unauthorized' ? '密码错误' : ('错误: ' + (data.msg || data.error));
+        return;
+      }
+      currentPw = pw;
+      pwGate.style.display = 'none';
+      dash.style.display = '';
+      render(data);
+
+      // 自己也算个 admin 访问事件
+      cycTrack && cycTrack('instrumentation_view', { days: currentDays });
+    } catch (err) {
+      pwErr.textContent = '网络错误: ' + err.message;
+    } finally {
+      pwBtn.disabled = false;
+      pwBtn.textContent = '查看数据';
+    }
+  }
+
+  function render(data) {
+    // Summary
+    const s = data.summary || {};
+    document.getElementById('sumGrid').innerHTML = `
+      <div class="sum-card">
+        <div class="sum-label">事件总数</div>
+        <div class="sum-value warm">${s.total || 0}</div>
+        <div class="sum-hint">${data.window.days} 天窗口</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">独立 session</div>
+        <div class="sum-value">${s.unique_sessions || 0}</div>
+        <div class="sum-hint">浏览器会话数</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">活跃页面</div>
+        <div class="sum-value">${s.unique_pages || 0}</div>
+        <div class="sum-hint">至少有 1 条事件的页面</div>
+      </div>
+    `;
+
+    // Sparkline
+    const days = data.by_day || [];
+    const max = Math.max(1, ...days.map((d) => d.count));
+    document.getElementById('spark').innerHTML = days
+      .map((d) => `<div class="spark-bar" style="height:${(d.count / max) * 100}%" data-count="${d.count}" title="${d.date}: ${d.count}"></div>`)
+      .join('');
+    document.getElementById('sparkLeft').textContent = days[0]?.date || '';
+    document.getElementById('sparkRight').textContent = days[days.length - 1]?.date || '';
+    document.getElementById('dayBadge').textContent = `${days.length} 天 · 最高 ${max}`;
+
+    // By event
+    const evs = data.by_event || [];
+    document.getElementById('byEvent').innerHTML = evs.length
+      ? evs.map((e) => `
+        <div class="list-row">
+          <div class="list-name">${escapeHtml(e.event)}</div>
+          <div class="list-meta">最近 ${formatRel(e.last_at)}</div>
+          <div class="list-count warm">${e.count}</div>
+        </div>`).join('')
+      : '<div class="empty">这个窗口里还没事件 —— 装上 cyc-track.js 后再看</div>';
+
+    // By page
+    const pgs = data.by_page || [];
+    document.getElementById('byPage').innerHTML = pgs.length
+      ? pgs.map((p) => `
+        <div class="list-row">
+          <div class="list-name">${escapeHtml(p.page || '/')}</div>
+          <div class="list-meta">${p.unique_sessions} 个 session</div>
+          <div class="list-count">${p.count}</div>
+        </div>`).join('')
+      : '<div class="empty">无页面数据</div>';
+
+    // Recent log
+    const rec = data.recent || [];
+    document.getElementById('recentLog').innerHTML = rec.length
+      ? rec.map((r) => `
+        <div class="log-line">
+          <span class="log-ts">${formatTs(r.ts)}</span>
+          <span class="log-ev">${escapeHtml(r.event)}</span>
+          <span class="log-pg">${escapeHtml(r.page || '')}</span>
+          ${r.metadata ? `<span class="log-meta">· ${escapeHtml(truncate(r.metadata, 80))}</span>` : ''}
+        </div>`).join('')
+      : '<div class="empty">日志为空</div>';
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n) + '…' : s; }
+  function formatTs(ts) {
+    const d = new Date(Number(ts));
+    return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+  function formatRel(ts) {
+    const sec = (Date.now() - Number(ts)) / 1000;
+    if (sec < 60)  return Math.floor(sec) + ' 秒前';
+    if (sec < 3600) return Math.floor(sec / 60) + ' 分钟前';
+    if (sec < 86400) return Math.floor(sec / 3600) + ' 小时前';
+    return Math.floor(sec / 86400) + ' 天前';
+  }
+})();
+</script>
+
+<!-- 埋点本身 -->
+<script src="/cyc-track.js" defer></script>
+</body>
+</html>

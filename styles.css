@@ -2690,257 +2690,108 @@ a.event-rsvp-chip {
   border-color: var(--orange);
 }
 
+
 /* ═══════════════════════════════════════════════
- * Aurora 层（chrome / 工具 — admin 后台 / 设置）
- * 加 .aurora-canvas 到 body 时激活
- * 设计：深绿暗夜 + 双 ambient glow（橙右下、浅绿右上）+ 玻璃 surface
+ * Aurora（admin 后台）—— quiet 版
+ * 之前用深绿暗夜 + 双 ambient glow 太"喊"，撤回。
+ *
+ * "工具感"靠：
+ *   - 顶部一条 2px 深绿装饰线（界定 admin 区域，但不抢屏）
+ *   - 列表卡 hover 反馈更明显（layout 加 weight 不靠 color）
+ *   - 主操作按钮用 cyc-green 实色（区别公开页的橙色 CTA）
+ *   - 字距略紧、行距略紧（admin 是密度高的工具）
+ * 不靠：颜色突变、glow、暗底
  * ═══════════════════════════════════════════════ */
 
 body.aurora-canvas {
-  background: oklch(0.20 0.04 150);            /* deep forest dark */
-  color: oklch(0.96 0.005 150);
-  position: relative;
-  min-height: 100vh;
+  /* canvas 跟公开页一致：沙底 + 三 blob 保留 */
 }
+/* 顶部 2px 绿装饰线 — 唯一一处明显"我在 admin 区" */
 body.aurora-canvas::before {
-  /* 橙色 aurora glow 右下 */
-  content: ''; position: fixed; inset: 0;
-  background: radial-gradient(600px circle at 90% 90%,
-    oklch(0.65 0.18 35 / 0.18), transparent 60%);
-  pointer-events: none; z-index: 0;
-}
-body.aurora-canvas::after {
-  /* 浅绿 aurora glow 右上 */
-  content: ''; position: fixed; inset: 0;
-  background: radial-gradient(500px circle at 95% 5%,
-    oklch(0.55 0.10 150 / 0.15), transparent 60%);
-  pointer-events: none; z-index: 0;
+  content: ''; position: fixed; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cyc-green);
+  z-index: 40;
+  pointer-events: none;
 }
 
-/* Aurora 模式下三个老 blob 弱化 — 让出主舞台给 ambient glow */
-body.aurora-canvas .blob { opacity: 0.06; filter: blur(140px); }
-
-/* Aurora topbar */
-body.aurora-canvas .event-topbar {
-  background: oklch(0.22 0.03 150 / 0.78);
-  backdrop-filter: blur(28px) saturate(1.4);
-  border-bottom-color: oklch(1 0 0 / 0.06);
-}
-body.aurora-canvas .event-back,
-body.aurora-canvas .event-site {
-  color: oklch(0.85 0.06 150);
-}
-body.aurora-canvas .event-back:active {
-  background: oklch(1 0 0 / 0.08);
-}
-
-/* 登录卡 */
-body.aurora-canvas .cm-login-card {
-  background: oklch(0.25 0.03 150 / 0.55);
-  backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid oklch(1 0 0 / 0.08);
-  box-shadow:
-    inset 0 0 0 0.5px oklch(1 0 0 / 0.06),
-    0 24px 48px -12px oklch(0 0 0 / 0.6);
-  color: oklch(0.96 0.005 150);
-}
-body.aurora-canvas .cm-login-card h2 { color: oklch(0.96 0.005 150); }
-body.aurora-canvas .cm-login-sub { color: oklch(0.7 0.02 150); }
-body.aurora-canvas .cm-login-card input {
-  background: oklch(0.18 0.02 150 / 0.6);
-  color: oklch(0.96 0.005 150);
-  border-color: oklch(1 0 0 / 0.12);
-}
-body.aurora-canvas .cm-login-card input::placeholder { color: oklch(0.55 0.02 150); }
-body.aurora-canvas .cm-login-card input:focus {
-  border-color: oklch(0.78 0.18 35);   /* coral focus ring */
-  box-shadow: 0 0 0 3px oklch(0.78 0.18 35 / 0.20);
-}
-
-/* 顶部搜索栏 */
-body.aurora-canvas .cm-admin-bar {
-  background: transparent;
-}
-body.aurora-canvas .cm-admin-search {
-  background: oklch(0.25 0.03 150 / 0.55);
-  backdrop-filter: blur(20px);
-  color: oklch(0.96 0.005 150);
-  border-color: oklch(1 0 0 / 0.10);
-}
-body.aurora-canvas .cm-admin-search::placeholder { color: oklch(0.55 0.02 150); }
-body.aurora-canvas .cm-admin-search:focus {
-  border-color: oklch(0.78 0.18 35);
-  box-shadow: 0 0 0 3px oklch(0.78 0.18 35 / 0.18);
-}
-body.aurora-canvas .cm-admin-add {
-  background: oklch(0.78 0.18 35);
-  color: oklch(0.15 0.02 150);
-  font-weight: 700;
-}
-
-/* Tabs */
-body.aurora-canvas .cm-admin-tabs {
-  background: oklch(0.25 0.03 150 / 0.4);
-  border-color: oklch(1 0 0 / 0.06);
-}
-body.aurora-canvas .cm-tab {
-  color: oklch(0.7 0.02 150);
-}
-body.aurora-canvas .cm-tab.active {
-  background: oklch(0.78 0.18 35 / 0.16);
-  color: oklch(0.85 0.12 35);
-}
-
-/* Count 文案 */
-body.aurora-canvas .cm-admin-count {
-  color: oklch(0.65 0.02 150);
-}
-
-/* 列表项 */
+/* admin items 略加 density */
+body.aurora-canvas .cm-admin-list { gap: 4px; }
 body.aurora-canvas .cm-admin-item {
-  background: oklch(0.25 0.03 150 / 0.45);
-  backdrop-filter: blur(20px) saturate(1.3);
-  border: 1px solid oklch(1 0 0 / 0.06);
-  color: oklch(0.96 0.005 150);
+  padding: 10px 12px;
+  letter-spacing: -0.005em;
 }
 body.aurora-canvas .cm-admin-item:hover {
-  background: oklch(0.28 0.03 150 / 0.6);
-  border-color: oklch(1 0 0 / 0.12);
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 1px rgba(28,61,46,0.15) inset;
 }
-body.aurora-canvas .cm-admin-item-name { color: oklch(0.96 0.005 150); }
-body.aurora-canvas .cm-admin-item-meta { color: oklch(0.7 0.02 150); }
+
+/* 主操作按钮 — cyc-green 实色，跟 cyc-orange CTA 形成 admin / 公开 的视觉区分 */
+body.aurora-canvas .cm-admin-add {
+  background: var(--cyc-green);
+  color: #fff;
+  font-weight: 600;
+}
+body.aurora-canvas .cm-admin-add:hover {
+  background: var(--cyc-green-2);
+}
 body.aurora-canvas .cm-admin-edit {
-  background: oklch(0.78 0.18 35 / 0.18);
-  color: oklch(0.85 0.12 35);
-  border: none;
+  background: rgba(28,61,46,0.10);
+  color: var(--cyc-green);
 }
 body.aurora-canvas .cm-admin-edit:hover {
-  background: oklch(0.78 0.18 35 / 0.30);
-}
-body.aurora-canvas .cm-hidden-tag {
-  background: oklch(0.5 0.02 150 / 0.35);
-  color: oklch(0.85 0.02 150);
+  background: rgba(28,61,46,0.18);
 }
 
-/* 空状态 */
-body.aurora-canvas .cm-admin-empty {
-  color: oklch(0.55 0.02 150);
-  background: oklch(0.25 0.03 150 / 0.3);
-  border-color: oklch(1 0 0 / 0.05);
+/* admin count 文字略加紧凑 */
+body.aurora-canvas .cm-admin-count {
+  letter-spacing: 0;
+  font-feature-settings: 'tnum';   /* 表格数字宽度对齐 */
 }
-
-/* Edit modal — 保持白底（modal 内是表单需要可读性高） */
-/* 不改 modal 内部，保持原 daybook 风。Aurora 只管"chrome 容器" */
-
-/* role chip 在 dark surface 上的对比 */
-body.aurora-canvas .cm-role-chip.role-host    { background: oklch(0.78 0.18 35 / 0.22); color: oklch(0.85 0.14 35); }
-body.aurora-canvas .cm-role-chip.role-speaker { background: oklch(0.78 0.18 35 / 0.14); color: oklch(0.82 0.10 35); }
-body.aurora-canvas .cm-role-chip.role-attend  { background: oklch(0.55 0.10 150 / 0.20); color: oklch(0.78 0.10 150); }
-body.aurora-canvas .cm-role-chip.role-other   { background: oklch(0.5 0.02 150 / 0.30); color: oklch(0.75 0.02 150); }
-
-/* type chip 同样调暗 */
-body.aurora-canvas .cm-type-chip {
-  background: linear-gradient(135deg, oklch(0.55 0.10 150 / 0.18), oklch(0.65 0.18 35 / 0.16));
-  border-color: oklch(0.55 0.10 150 / 0.30);
-  color: oklch(0.85 0.06 150);
-}
-body.aurora-canvas .cm-type-chip em { color: oklch(0.65 0.02 150); }
 
 /* ═══════════════════════════════════════════════
- * Atlas 层（editorial / 对外 — /events、/events/:id）
- * 加 .atlas-canvas 到 body 时激活
- * "Atlas-lite" 版：没现成大理风景照素材，用 cyc 配色渐变 + 黄昏氛围带
- *   - 顶部 hero 区放渐变带（沙→落日橙→深绿）模拟大理黄昏
- *   - 下方内容区保持沙底，活动卡可读性优先
- *   - topbar 加深绿玻璃感（Atlas 标志性深色 chrome）
- *   - tagline / hero 文字白色 + 70% opacity 跟 daybreak-os 规范一致
+ * Atlas（/events、/events/:id）—— quiet 版
+ * 之前的渐变带触发"过于浓郁的底色让字看不清"。撤回。
+ *
+ * "对外感"靠：
+ *   - hero 区字层级（h1 略放大 + 英文 tagline 更长）
+ *   - 三个老 blob 保留（CYC 视觉签名）
+ *   - 卡片本身保留浅风
+ * 不靠：渐变背景、深色覆盖、白字阴影
  * ═══════════════════════════════════════════════ */
 
 body.atlas-canvas {
-  background:
-    /* 顶部 360px 高度的"黄昏氛围带" — 沙橙到深绿过渡 + 内容区沙底 */
-    linear-gradient(
-      to bottom,
-      oklch(0.32 0.06 50)  0px,        /* 顶部深暮沙橙 */
-      oklch(0.42 0.10 35)  120px,      /* 落日橙 */
-      oklch(0.55 0.12 60)  240px,      /* 暖光过渡 */
-      var(--cyc-sand)      360px,      /* 沙底（与下方内容区无缝接合）*/
-      var(--cyc-sand)      100%
-    );
-  background-attachment: fixed;
-  position: relative;
-  min-height: 100vh;
-}
-/* Atlas hero 区上方的"星点"texture — 让渐变不显得太干净 */
-body.atlas-canvas::before {
-  content: ''; position: fixed; inset: 0 0 auto 0;
-  height: 360px;
-  background:
-    radial-gradient(2px 2px at 20% 30%, oklch(1 0 0 / 0.08), transparent),
-    radial-gradient(1.5px 1.5px at 75% 60%, oklch(1 0 0 / 0.06), transparent),
-    radial-gradient(2px 2px at 50% 80%, oklch(1 0 0 / 0.05), transparent);
-  background-size: 200px 200px, 250px 250px, 180px 180px;
-  pointer-events: none; z-index: 0;
-  mix-blend-mode: screen;
+  /* canvas 完全跟公开页一致 */
 }
 
-/* topbar 在 Atlas 暮色里 */
-body.atlas-canvas .event-topbar {
-  background: oklch(0.20 0.04 150 / 0.55);
-  backdrop-filter: blur(28px) saturate(1.4);
-  border-bottom-color: oklch(1 0 0 / 0.10);
-}
-body.atlas-canvas .event-back,
-body.atlas-canvas .event-site {
-  color: oklch(1 0 0 / 0.90);
-}
-body.atlas-canvas .event-back:active {
-  background: oklch(1 0 0 / 0.10);
-}
-
-/* 列表页 hero — Atlas 标志性大字 + tagline 70% white */
+/* events 列表 hero — 字层级而非颜色 */
 body.atlas-canvas .el-hero {
-  padding: 28px 0 8px;
+  padding: 32px 0 16px;
 }
 body.atlas-canvas .el-hero h1 {
-  color: oklch(1 0 0 / 0.96);
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 12px oklch(0 0 0 / 0.25);
+  color: var(--cyc-green);
+  line-height: 1.15;
 }
 body.atlas-canvas .el-hero-sub {
-  color: oklch(1 0 0 / 0.70);
-  font-size: 14px;
-  margin-top: 6px;
-}
-
-/* 详情页 hero — meta-row + title 在暮色背景上 */
-body.atlas-canvas .event-meta-row {
+  font-size: 13px;
+  color: var(--cyc-text-muted);
   margin-top: 8px;
-}
-body.atlas-canvas .event-date-pill {
-  background: oklch(1 0 0 / 0.18);
-  color: oklch(1 0 0 / 0.96);
-  backdrop-filter: blur(16px);
-}
-body.atlas-canvas .event-time-pill {
-  background: oklch(1 0 0 / 0.10);
-  color: oklch(1 0 0 / 0.92);
-  border-color: oklch(1 0 0 / 0.18);
-}
-body.atlas-canvas .event-past-pill {
-  background: oklch(0 0 0 / 0.30);
-  color: oklch(1 0 0 / 0.75);
-}
-body.atlas-canvas .event-confirm-pill {
-  background: oklch(0.78 0.18 35 / 0.32);
-  color: oklch(1 0 0 / 0.98);
-}
-body.atlas-canvas .event-title {
-  color: oklch(1 0 0 / 0.98);
-  text-shadow: 0 2px 16px oklch(0 0 0 / 0.30);
+  letter-spacing: 0;
 }
 
-/* 旧 blob 在 Atlas 模式下完全隐去 — 渐变带已经足够 */
-body.atlas-canvas .blob { display: none; }
+/* 详情页 hero — 标题字号略放大，颜色不变 */
+body.atlas-canvas .event-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* 详情页对外开放 pill — 略减少视觉重量 */
+body.atlas-canvas .event-open-pill {
+  background: rgba(28,61,46,0.06);
+  color: var(--cyc-green);
+  border: 1px solid rgba(28,61,46,0.18);
+  font-weight: 600;
+}
