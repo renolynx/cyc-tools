@@ -198,89 +198,138 @@ cyc.center 是**一个产品两条节奏**：
 
 ---
 
-### Phase 3 — 构建缺失层（10-14 天）
+### Phase 3 — 真正建首页（v3 重写，玖玖说了算的版本）
 
-**目标**：按"双轨漏斗"补齐 cyc.center —— 公共面（L4）按 A/B/C 路径优先级搭建，内部（L3/L1）按当前痛点强度推进。每个 feature 都走 design + psychology + onboarding 三件套。
+**重要前置**：以 [homepage-design.md](homepage-design.md) 为最终设计依据。之前 plan 里所有"把工具搬走、首页变 landing"的方案作废。
 
-> **优先级原则（v2 更新）：**
-> - L4 公共面：**Path A 优先（0 → 1）**，其次 Path B，Path C 已强只优化
-> - L3/L1 内部：用 Phase 2.5 的 hypothesis 选第一个建什么
-> - L1 不一次建完，先核心两件（照片墙 + 感谢系统）
+**新方案核心**：首页一屏同时服务三种人 —— 没人需要搬家，没人需要找新入口。
 
----
+> **首页结构**：
+> - 顶部 25-35%：左右两张海报图（介绍社区入口 + 订房入口）
+> - 中下部 65-75%：醒目的"创建活动"按钮 + 活动卡片流（每张含嘉宾+报名头像组）
+> - 头像点击 → 展开人物卡片（profile 系统嵌入式）
 
-#### 3.1 L4 — Path A 闭环：「CYC 是什么？」（最优先）
-
-完全空白 → 0 到 1。投资人也会走这条路径。
-
-- [ ] 设计 Path A 整段
-
-  **Prompt**:
-  > 用 daybreak-os Atlas 层 + impeccable craft 设计 Path A 完整闭环：
-  > 1. **首屏品牌叙事**（hero）— 一句话 + 大理实景照 + 一个唯一 CTA "了解 CYC"
-  > 2. **空间相册**（scroll section）— 照片墙 + 故事标注，参考 Selina 官网
-  > 3. **社区文化**（scroll section）— 现有成员故事卡片（3-6 个），手写感引言
-  > 4. **加入入口**（CTA section）— 三选一：申请居住 / 来活动 / 关注
-  >
-  > 所有 section 复用 daybreak-os Atlas tokens，移动端单列、桌面端 60/40 非对称。
-
-- [ ] 用 ux-psychology 装上心理学钩子
-
-  **Prompt**:
-  > 用 ux-psychology 审 Path A 设计。重点原则：curiosity gap（首屏不要把答案给完）、storytelling（活动页用具体人物名字，不用"会员们"）、identity-fit signal（首屏第二屏让目标用户认出"这是给我做的"）。给具体文案样例。
-
-- [ ] 实现 + SEO + OG
-
-  **Prompt**:
-  > 给我完整 vanilla HTML/CSS/JS，含 OG meta（让微信卡片显示得好），lazy-load 图片，AAA 对比度，遵守 DESIGN.md token。
-
-#### 3.2 L4 — Path B 闭环：「我要不要去住？」（次优先）
-
-- [ ] 房型 / 价格 / 评价 / 预订页
-
-  **Prompt**:
-  > 用 daybreak-os Atlas + ux-psychology 设计 Path B 闭环：
-  > 1. **房型展示** — 卡片 grid，每张：照片 + 价格 + 容纳 + 现可入住日期
-  > 2. **设施 / 公区** — 时间线展示一天能做什么（餐桌/工位/活动空间）
-  > 3. **现有成员评价** — Identity Card grid + 短引言，附他们待了多久
-  > 4. **预订 CTA** — 风险逆转（试住一周）+ 联系入口（飞书 / 微信群）
-  >
-  > 心理学武器：social proof（评价）、risk reversal（试住）、concrete specifics（具体日期/价格不模糊）。
-
-#### 3.3 L4 — Path C 闭环：「有什么好玩的？」（已强 → 只优化）
-
-Path C 你已经做得最多（活动通告、events 列表、约饭工具）。Phase 3 只做**收口优化**：
-
-- [ ] /events SSR 详情页（你 PLAN.md 已规划）
-
-  **Prompt**:
-  > 用 daybreak-os Atlas + impeccable 把 /events/:id 做成 SSR 页面：hero（活动海报 + 标题）+ 多卡片（时间地点 / 描述 / 发起人 + Identity Avatar / 已报名头像 stack / RSVP CTA）+ 底部品牌引流（"链岛社区还有这些"）。带 OG meta，让微信群链接预览成卡片。
-
-- [ ] 活动结束页（peak-end 实现）
-
-  **Prompt**:
-  > 用 ux-psychology 的 peak-end rule 设计活动结束后的页面：照片墙 + 参与者头像 + 一句感谢 + "下次活动预告"。这个页面是 Path C → 留存的关键钩子。
+**这意味着**：profile 系统、活动卡片改造、首页 hero 是**绑在一起的一锹**，不能拆。
 
 ---
 
-#### 3.4 L3 客厅：成员 profile 页（当 Phase 2.5 hypothesis 选了 "profile = 激活关键" 时做）
+#### 3.1 第一锹（同步上线，2 周）—— 首页 + profile + 活动卡片
 
-- [ ] 三种 onboarding 设计
+##### 3.1.1 简化版 profile 系统
+
+最小可用：让每个成员有 **头像 + 名字 + 一句话简介**。仅此三项，先够活动卡片头像有内容显示。
+
+- [ ] 飞书 Bitable 加"成员"表（如果还没有），含字段：avatar / name / bio / record_id
+- [ ] `/community/:id` 简化版页面：halo 卡片头像 + 名字 + 一句话 + "Ta 参加过" 活动列表
+
+**Prompt**:
+> 读 homepage-design.md 和 DESIGN.md。设计 /community/:id 简化版人物页：daybreak-os Daybook 风格 halo 卡片 + 头像 + 名字（28px Bold）+ 一句话简介（16px regular）+ 下方"Ta 参加过的活动"列表（拉 Bitable 成员关联活动）。给完整 vanilla HTML/CSS。
+
+##### 3.1.2 活动卡片改造（首页用 + /events 列表也用）
+
+每张卡片加嘉宾头像组 + 报名头像组。点击头像展开人物卡片（modal）。
+
+- [ ] 卡片 HTML / CSS 改造（首页 + /events 共用）
+- [ ] 人物卡片 modal：avatar / name / bio / "查看完整 profile →"链接
+
+**Prompt**:
+> 读 homepage-design.md。设计活动卡片新版：现有视觉 + 加嘉宾头像组（28-32px，最多 5 个）+ 报名头像组（24-28px，stack 叠加，最多 6-8 个）。点击任一头像不离开当前页，弹出 modal 显示人物卡片（avatar + name + bio + 查看完整 profile 链接到 /community/:id）。给完整改造 vanilla HTML/CSS + JS modal 行为。
+
+##### 3.1.3 首页大改造
+
+旧首页（活动通告生成器）搬到 `/generator`，老路径 30 天 redirect 到新首页。新首页结构按 homepage-design.md 实现。
+
+- [ ] 旧 index.html 内容搬到 /generator
+- [ ] vercel.json 加 redirect / 到 /generator 旧路径
+- [ ] 新 index.html：双海报 hero + "创建活动" CTA + 活动卡片流
+
+**Prompt**:
+> 读 homepage-design.md。实现新首页：
+> 1. 顶部 hero 25-35%：左右两张海报图（移动端上下堆叠），分别 link 到 /about 和 /rooms。先用 placeholder 占位图，文案可以是 "在大理，有这样一群人在认真做事" 和 "想试一个月吗"。
+> 2. 紧接着 "创建活动" CTA 按钮（橙色 pill，醒目但不抢 hero）链到 /generator
+> 3. 下方活动卡片流（动态从 /api/events-list 拉）—— 用 3.1.2 改造后的卡片组件
+> 4. 全局保持 daybreak-os 大理玻璃风 + AAA 对比度。
+> 把活动通告生成器（旧 index.html）搬到 /generator，加 vercel.json redirect。
+
+##### 3.1.4 数据采集（前置必做）
+
+不是黑话，就是埋点。让你能看到首页改完后用户怎么用。
+
+- [ ] 加 Vercel Analytics（一行 import）—— 免费，page-level 数据立刻有
+- [ ] 写一个最简 `/api/track` endpoint：接收 event 名 + 元数据，写到飞书 Bitable 一张"事件流"表
+- [ ] 关键事件：
+  - `hero_path_a_click`（点了介绍社区海报）
+  - `hero_path_b_click`（点了订房海报）
+  - `cta_create_event`（点了创建活动）
+  - `event_card_click`
+  - `event_card_avatar_click`
+  - `profile_view`
+
+##### 3.1.5 已经做完的（一小时改造 ✅）
+
+- ✅ 活动详情页"对外开放"pill
+- ✅ 活动详情页底部 #cyc 分享提示
+- ✅ 旧首页访客引导条（这条上线后可以拆掉，因为新首页本身就是引导）
+
+---
+
+#### 3.2 第二锹（视第一锹效果决定，1-2 周）
+
+##### 3.2.1 介绍页 /about（双海报海报 1 跳转目标）
+
+- [ ] 品牌叙事 + 社区文化 + 嵌入照片墙 section
+- [ ] 照片墙 section 可点击 → /community/memories（独立社区回忆页）
+
+**Prompt**:
+> 读 PRODUCT.md 和 homepage-design.md。设计 /about 介绍页：
+> 1. 顶部品牌叙事 hero（大理实景照 + 一句话定位）
+> 2. 中部"社区文化" section（3-6 个真实成员故事卡片，每张带 link 到 /community/:id）
+> 3. 嵌入照片墙 section（gallery grid，参考 Mia 拍照传播路径）—— 整 section 可点击跳转到独立 /community/memories
+> 4. 底部三选一 CTA：来活动 → /events / 想长租 → /rooms / 关注 → newsletter（可选）
+> daybreak-os Atlas 层风格。
+
+##### 3.2.2 房型页 /rooms（双海报海报 2 跳转目标）
+
+- [ ] 房型卡片 grid + 价格 + 设施 + 试住政策 + 联系入口
+
+**Prompt**:
+> 读 PRODUCT.md（Path B 部分）和 homepage-design.md。设计 /rooms 房型页：
+> 1. 房型卡片 grid（每间房一张：大照片 + 价格 + 容量 + 当前可入住日期）
+> 2. 设施 / 一日生活时间线（可选，先简版）
+> 3. 试住政策（如确定要做）+ 联系入口
+> daybreak-os Atlas 层风格。
+
+##### 3.2.3 活动结束页 / 回顾
+
+- [ ] 活动结束后的 /events/:id 状态变化：照片墙 + 参与者头像 + 下次预告
+
+**Prompt**:
+> 设计活动结束后的 /events/:id 状态：peak-end rule —— 上半部分照片墙（grid）+ 中部参与者头像 grid（链到 profile）+ 底部"下次活动预告"卡片。daybreak-os Daybook 风格 halo 卡片。
+
+---
+
+#### 3.3 第三锹（视前两锹结果决定，2-3 周）
+
+##### 3.3.1 深化 profile —— 加 onboarding + active project
+
+第一锹的 profile 只有头像/名字/一句话。这一锹加：
+
+- [ ] 三种角色 onboarding 流（成员 / 嘉宾 / 管理团队）
 
   **Prompt**:
-  > 用 app-onboarding-questionnaire 设计三套 onboarding 流：(1) 普通社区成员（建账号、填基础信息），(2) 活动讲师（额外要求：擅长领域、过往作品），(3) 管理团队（额外要求：权限确认、值班意愿）。每套 5-8 屏，benefit-framed，参考 Headspace/Mob 模式。
+  > 用 app-onboarding-questionnaire 设计三套 onboarding 流：(1) 普通社区成员（基础信息），(2) 活动讲师（擅长领域、过往作品），(3) 管理团队（权限确认、值班意愿）。每套 5-8 屏，benefit-framed。
 
-- [ ] profile 页设计
-
-  **Prompt**:
-  > 用 daybreak-os Daybook 层设计 /community/:id 个人主页：halo 卡片头像 + 名字 + 一句话自我介绍 + 本月活跃度（来自 lark MCP 实时拉数据）+ 时间线（参与过的活动 + 留下的足迹）。Identity Avatar 用 memoji 风。
-
-- [ ] 心理学审视
+- [ ] profile 页 v2：加 active project 卡片（最多 3 条 + 链接）+ 活动历史时间线 + 月度活跃度
 
   **Prompt**:
-  > 用 ux-psychology 审 profile 页：endowed progress（让用户想继续完善）、IKEA effect（自己填的内容更珍惜）、social proof（被多少人感谢过）、curiosity gap（鼓励别人点开你的 profile 的钩子）。
+  > 用 daybreak-os Daybook 层升级 /community/:id：在 v1 基础上加 active project 卡片（玖玖型用户用来展示自己在做什么）+ Ta 参加过的活动时间线 + 本月活跃度。用 lark MCP 实时拉数据。
 
-#### 3.5 L1 深度看见：感谢系统（你产品最不一样的部分）
+- [ ] 用 ux-psychology 审 profile v2
+
+  **Prompt**:
+  > 用 ux-psychology 审 profile v2：endowed progress（让用户想继续完善）、IKEA effect（自己填的内容更珍惜）、curiosity gap（鼓励别人点开 profile）。
+
+##### 3.3.2 感谢系统（你产品最不一样的部分）
 
 - [ ] 机制设计
 
@@ -297,14 +346,16 @@ Path C 你已经做得最多（活动通告、events 列表、约饭工具）。
   **Prompt**:
   > 设计感谢系统对应的飞书 Bitable schema：感谢记录表、感谢类型枚举、月度排行榜聚合视图。给我 lark MCP 可以直接执行的 schema 创建命令。
 
-#### 3.6 L1 深度看见：照片墙 / 时间线
+##### 3.3.3 独立社区照片墙页 /community/memories
+
+介绍页里的照片墙 section 二级跳转到这个独立页面。
 
 - [ ] 用 daybreak-os Artifact 模式 + Stack ↔ Lineup view-mode toggle
 
   **Prompt**:
-  > 用 daybreak-os 的 Artifact + view-mode toggle 设计 /community 的"社区照片墙"页面。Stack 模式做月度概览（"上个月发生了好多事"），Lineup 模式按日期分组浏览。点开一张照片进入活动回顾页。完整 vanilla HTML/CSS。
+  > 设计独立 /community/memories 社区照片墙：Stack 模式做月度概览（"上个月发生了好多事"），Lineup 模式按日期分组浏览。点开一张照片进入对应活动回顾页。完整 vanilla HTML/CSS。
 
-#### 3.7 每个 feature 收工时
+#### 3.4 收工仪式（每个 feature 上线后做）
 
 - [ ] 写 release notes
 
