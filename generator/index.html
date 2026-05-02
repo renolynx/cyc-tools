@@ -35,11 +35,18 @@
 <div class="menu-backdrop" id="menuBackdrop" onclick="closeMenu()"></div>
 <div class="menu-drawer" id="menuDrawer">
   <div class="menu-head">
-    <div class="menu-title">CYC 工具站</div>
+    <div class="menu-title">CYC.center</div>
     <button class="menu-close" onclick="closeMenu()" aria-label="关闭菜单">✕</button>
   </div>
   <nav class="menu-list">
-    <a class="menu-item current" href="/" onclick="closeMenu();return true">
+    <a class="menu-item" href="/" onclick="closeMenu();return true">
+      <div class="menu-icon">🏠</div>
+      <div class="menu-info">
+        <div class="menu-name">首页</div>
+        <div class="menu-desc">CYC.center 主站 · 双海报入口 + 活动卡片流</div>
+      </div>
+    </a>
+    <a class="menu-item current" href="/generator" onclick="closeMenu();return true">
       <div class="menu-icon">📋</div>
       <div class="menu-info">
         <div class="menu-name">活动通告生成器<span class="menu-current-tag">当前</span></div>
@@ -60,13 +67,6 @@
         <div class="menu-desc">大理 / 上海 在地伙伴 · 可分享</div>
       </div>
     </a>
-    <a class="menu-item" href="/team/">
-      <div class="menu-icon">👥</div>
-      <div class="menu-info">
-        <div class="menu-name">团队架构</div>
-        <div class="menu-desc">管理人员结构 · 需密码</div>
-      </div>
-    </a>
     <a class="menu-item" href="/food/">
       <div class="menu-icon">🍽️</div>
       <div class="menu-info">
@@ -74,15 +74,7 @@
         <div class="menu-desc">随机推荐 · 发起约饭 · AA 算账</div>
       </div>
     </a>
-    <a class="menu-item" href="/event-card/">
-      <div class="menu-icon">✨</div>
-      <div class="menu-info">
-        <div class="menu-name">活动信息提取</div>
-        <div class="menu-desc">AI 文字提取（即将上线）</div>
-      </div>
-    </a>
   </nav>
-  <a class="menu-all-tools" href="/tools">查看全部工具 →</a>
 </div>
 
 <div class="page">

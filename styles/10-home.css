@@ -128,9 +128,12 @@
 
 .home-act-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  align-items: start;  /* 一张卡展开不要拉高同行其他卡 */
+  grid-template-columns: 1fr;  /* 单列：宽扁卡片，thumb 在左 */
+  gap: 10px;
+  align-items: start;
+}
+@media (min-width: 720px) {
+  .home-act-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .home-act-loading,
 .home-act-empty {
@@ -140,12 +143,14 @@
 }
 
 .home-act-card {
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: row; flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
   background: var(--cyc-surface-glass);
   backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
   border: 1px solid var(--cyc-border-glass);
   border-radius: var(--cyc-r-card);
-  overflow: hidden;
   text-decoration: none; color: var(--cyc-text);
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;
@@ -162,6 +167,7 @@
 
 /* ── 卡片就地展开（描述 / 流程 / 费用 / CTA） ── */
 .home-act-expand {
+  flex-basis: 100%;  /* 横向 wrap 到新一行（在 thumb + body 下方）*/
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.40s cubic-bezier(0.32, 0.72, 0, 1);
@@ -241,19 +247,22 @@
 .home-act-expand-cta:active { transform: scale(0.97); }
 
 .home-act-thumb {
-  width: 100%; aspect-ratio: 16/10;
+  width: 88px; height: 88px;
+  flex-shrink: 0;
+  border-radius: 10px;
   background: rgba(28,61,46,0.06);
   object-fit: cover; display: block;
+  border: 1px solid var(--cyc-stroke);
 }
 .home-act-thumb-empty {
   display: flex; align-items: center; justify-content: center;
-  font-size: 32px; color: rgba(28,61,46,0.30);
+  font-size: 28px; color: rgba(28,61,46,0.30);
   background: linear-gradient(135deg, rgba(28,61,46,0.06), rgba(217,101,42,0.04));
 }
 
 .home-act-body {
-  padding: 12px 14px 14px;
-  display: flex; flex-direction: column; gap: 6px;
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 5px;
 }
 .home-act-meta {
   display: flex; flex-wrap: wrap; gap: 4px;
