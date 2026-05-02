@@ -111,6 +111,12 @@
       <div class="adm-tile-desc">填写活动 · 一键生成微信群通告</div>
     </a>
 
+    <a class="adm-tile" href="#" id="snapshotTile" data-track="admin_snapshot_click">
+      <div class="adm-tile-icon">💾</div>
+      <div class="adm-tile-title">数据备份 / 灾难恢复</div>
+      <div class="adm-tile-desc">把所有飞书表导出到 KV · 建议每周一次</div>
+    </a>
+
     <a class="adm-tile is-disabled" href="#">
       <div class="adm-tile-icon">💝</div>
       <div class="adm-tile-title">感谢系统</div>
@@ -124,6 +130,13 @@
     </a>
   </div>
 
+  <!-- snapshot 反馈区（在 grid 下方，触发时显示）-->
+  <div id="snapshotBox" style="display:none; margin-top: 24px;">
+    <div style="background: var(--cyc-surface-glass); backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); border: 1px solid var(--cyc-border-glass); border-radius: var(--cyc-r-card-lg); padding: 18px 22px; box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;">
+      <div id="snapshotMsg" style="font-size: 13px; color: var(--cyc-text); line-height: 1.6;"></div>
+    </div>
+  </div>
+
   <div class="adm-foot">
     <a href="/">← 回主站</a> · 链接每一座孤岛
   </div>
@@ -132,6 +145,39 @@
 <script src="/cyc-track.js" defer></script>
 <script>
 window.addEventListener('load', () => { window.cycTrack && cycTrack('admin_dashboard_view'); });
+
+// snapshot 触发
+document.getElementById('snapshotTile')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const pw = prompt('管理密码（用于触发数据备份）');
+  if (!pw) return;
+
+  const box = document.getElementById('snapshotBox');
+  const msg = document.getElementById('snapshotMsg');
+  box.style.display = 'block';
+  msg.innerHTML = '⏳ 正在备份所有飞书表… 可能要 30-60 秒，别关页面。';
+
+  try {
+    const res = await fetch('/api/admin/snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw, action: 'create' }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      msg.innerHTML = '❌ 失败：' + (data.msg || data.error || '未知错误');
+      return;
+    }
+    msg.innerHTML = `
+      ✅ 备份成功 ·
+      <strong>${data.snapshot_id}</strong><br>
+      Bitable ${data.bitable_count} 个 · 表 ${data.table_count} 张 · 记录 ${data.record_total} 条 · ${data.size_kb} KB · 用时 ${data.duration_ms}ms<br>
+      <span style="color: var(--cyc-text-muted); font-size: 11px;">已写到 KV，TTL 90 天。建议每周一次。如需恢复，调 /api/admin/snapshot 用 action=get + snapshot_id。</span>
+    `;
+  } catch (err) {
+    msg.innerHTML = '❌ 网络错误：' + err.message;
+  }
+});
 </script>
 </body>
 </html>

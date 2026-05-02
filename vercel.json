@@ -2,9 +2,10 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/community-write.js": { "maxDuration": 60 },
-    "api/photo-upload.js":    { "maxDuration": 60 },
-    "api/health.js":          { "maxDuration": 30 }
+    "api/community-write.js":   { "maxDuration": 60 },
+    "api/photo-upload.js":      { "maxDuration": 60 },
+    "api/health.js":            { "maxDuration": 30 },
+    "api/admin/snapshot.js":    { "maxDuration": 60 }
   },
   "crons": [
     { "path": "/api/health", "schedule": "0 * * * *" }
