@@ -130,6 +130,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
+  align-items: start;  /* 一张卡展开不要拉高同行其他卡 */
 }
 .home-act-loading,
 .home-act-empty {
@@ -157,6 +158,86 @@
 .home-act-card.is-past { opacity: 0.62; }
 .home-act-card.is-past:hover { opacity: 0.92; }
 .home-act-card.is-past .home-act-thumb { filter: grayscale(0.35); }
+
+/* ── 卡片就地展开（描述 / 流程 / 费用 / CTA） ── */
+.home-act-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.40s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.home-act-card.is-expanded .home-act-expand {
+  max-height: 1400px;  /* 足够大；超长描述会被剪 */
+}
+.home-act-card.is-expanded {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 0 0 0.5px var(--cyc-inset-shine) inset;
+}
+.home-act-expand-inner {
+  padding: 12px 0 4px;
+  margin-top: 10px;
+  border-top: 0.5px dashed rgba(0,0,0,0.10);
+  display: flex; flex-direction: column; gap: 10px;
+  font-size: 13px; color: var(--cyc-text);
+  line-height: 1.55;
+}
+.home-act-expand-types {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-bottom: -4px;
+}
+.home-act-expand-types .cm-type-chip {
+  font-size: 10.5px; padding: 1px 7px;
+  background: rgba(28,61,46,0.08); color: var(--cyc-green);
+  border-radius: 100px;
+}
+.home-act-expand-desc {
+  font-size: 13px; color: var(--cyc-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.home-act-expand-flow {
+  font-size: 12.5px;
+}
+.home-act-expand-h {
+  font-weight: 700; color: var(--cyc-text-strong);
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.home-act-expand-flow ul {
+  list-style: none; padding-left: 0;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.home-act-expand-flow li {
+  padding-left: 14px;
+  position: relative;
+  color: var(--cyc-text-muted);
+}
+.home-act-expand-flow li::before {
+  content: '·'; position: absolute; left: 4px;
+  color: var(--cyc-green); font-weight: 700;
+}
+.home-act-expand-meta {
+  font-size: 12px; color: var(--cyc-text-muted);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.home-act-expand-meta strong {
+  color: var(--cyc-text); font-weight: 600;
+  margin-right: 4px;
+}
+.home-act-expand-cta {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 8px 14px;
+  background: var(--cyc-green);
+  color: rgba(255,255,255,0.95);
+  border-radius: 100px;
+  font-size: 12.5px; font-weight: 600;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s, transform 0.10s;
+}
+.home-act-expand-cta:hover { opacity: 0.88; }
+.home-act-expand-cta:active { transform: scale(0.97); }
 
 .home-act-thumb {
   width: 100%; aspect-ratio: 16/10;

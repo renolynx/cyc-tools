@@ -221,7 +221,8 @@ function renderCard(a) {
     a.card_attendees || [],
     a.card_attendee_total || 0
   );
-  return `<a class="home-act-card${isPast ? ' is-past' : ''}" href="/events/${escapeAttr(a.record_id)}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}'>
+  const expandHtml = renderExpand(a, isPast);
+  return `<a class="home-act-card${isPast ? ' is-past' : ''}" href="/events/${escapeAttr(a.record_id)}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' onclick="toggleCardExpand(event, this)">
     ${thumbHtml}
     <div class="home-act-body">
       <div class="home-act-meta">
@@ -236,8 +237,39 @@ function renderCard(a) {
       <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
       ${a.loc ? `<div class="home-act-loc">📍 ${escapeHtml(a.loc)}</div>` : ''}
       ${avatarHtml}
+      ${expandHtml}
     </div>
   </a>`;
+}
+
+// 卡片展开区：描述 + 流程 + 费用 / 报名 + 类型 chips + 详情 CTA
+function renderExpand(a, isPast) {
+  const typesHtml = a.types?.length
+    ? `<div class="home-act-expand-types">${a.types.slice(0, 6).map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>`
+    : '';
+  const descHtml = a.desc
+    ? `<p class="home-act-expand-desc">${escapeHtml(a.desc)}</p>`
+    : '';
+  const flowHtml = (a.flow && a.flow.length)
+    ? `<div class="home-act-expand-flow"><div class="home-act-expand-h">🗓️ 流程</div><ul>${a.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`
+    : '';
+  const metaParts = [];
+  if (a.fee)    metaParts.push(`<div><strong>💰 费用</strong> ${escapeHtml(a.fee)}</div>`);
+  if (a.signup) metaParts.push(`<div><strong>🙋 报名</strong> ${escapeHtml(a.signup)}</div>`);
+  const metaHtml = metaParts.length ? `<div class="home-act-expand-meta">${metaParts.join('')}</div>` : '';
+  const ctaLabel = isPast ? '查看完整页 →' : '📝 详情 / 报名 →';
+  const ctaHtml = `<a class="home-act-expand-cta" href="/events/${escapeAttr(a.record_id)}" onclick="event.stopPropagation()">${ctaLabel}</a>`;
+  return `<div class="home-act-expand"><div class="home-act-expand-inner">${typesHtml}${descHtml}${flowHtml}${metaHtml}${ctaHtml}</div></div>`;
+}
+
+// 卡片整体 click → toggle 展开（按钮/内嵌 link/Cmd-Ctrl click 不触发）
+function toggleCardExpand(e, card) {
+  // Cmd/Ctrl/Shift/中键 click → 让浏览器走 anchor href（保留新 tab 打开）
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+  // 内部 button / 内部 anchor（非 card 自己）→ 让其各自 onclick 工作
+  if (e.target.closest('button, a:not(.home-act-card)')) return;
+  e.preventDefault();
+  card.classList.toggle('is-expanded');
 }
 
 function renderAvatarGroups(speakers, attendees, total) {

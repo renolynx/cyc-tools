@@ -43,37 +43,52 @@
 
 ## 二、信息矩阵（哪个 surface 显示什么）
 
-✅ 默认显示 · ⚙️ 可选 · ❌ 不显示
+✅ 默认显示 · ⚙️ 可选 · ❌ 不显示 · ➕ 仅展开后显示
 
-| 字段 | home | list | mini | detail |
-|---|:-:|:-:|:-:|:-:|
-| 海报缩略图 | ✅ 16:10 | ✅ 16:10 | ❌ | ✅ 大图 hero |
-| 标题 | ✅ | ✅ | ✅ | ✅ |
-| 日期 | ✅ pill | ✅ day-head | ✅ inline | ✅ hero |
-| 时间 | ✅ pill | ✅ inline | ❌ | ✅ inline |
-| 地点 | ✅ inline | ✅ inline | ❌ | ✅ inline |
-| 活动状态 pill（确认举办 / 筹备中 / 已结束）| ✅ | ✅ | ❌ | ✅ |
-| **开放性 pill**（对外开放 / 仅成员）| ✅ | ✅ | ❌ | ✅ |
-| 类型 chips | ⚙️（默认关）| ✅ | ❌ | ✅ |
-| **嘉宾头像 stack**（≤5）| ✅ | ✅ | ❌ | ❌（详情页有完整 speakers section）|
-| **报名头像 stack**（≤8 + N+）| ✅ | ✅ | ❌ | ❌（详情页有完整 RSVP list）|
-| 描述摘要 | ❌ | ❌ | ❌ | ✅ |
-| 流程 | ❌ | ❌ | ❌ | ✅ |
-| 费用 / 报名方式 | ❌ | ❌ | ❌ | ✅ |
-| RSVP 按钮 | ❌ | ❌ | ❌ | ✅ |
-| 编辑入口（admin）| ❌ | ❌ | ❌ | ✅ |
+| 字段 | home<br>(收) | home<br>(展) | list<br>(收) | list<br>(展) | mini | detail |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| 海报缩略图 | ✅ 16:10 | ✅ 16:10 | ✅ 16:10 | ✅ 16:10 | ❌ | ✅ 大图 hero |
+| 标题 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 日期 | ✅ pill | ✅ pill | ✅ day-head | ✅ day-head | ✅ inline | ✅ hero |
+| 时间 | ✅ pill | ✅ pill | ✅ inline | ✅ inline | ❌ | ✅ inline |
+| 地点 | ✅ inline | ✅ inline | ✅ inline | ✅ inline | ❌ | ✅ inline |
+| 活动状态 pill | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| 开放性 pill | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| 类型 chips | ⚙️ | ➕ | ✅ | ✅ | ❌ | ✅ |
+| **嘉宾头像 stack** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **报名头像 stack** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **描述全文** | ❌ | ➕ | ❌ | ➕ | ❌ | ✅ |
+| **流程** | ❌ | ➕ | ❌ | ➕ | ❌ | ✅ |
+| **费用** | ❌ | ➕ | ❌ | ➕ | ❌ | ✅ |
+| **报名方式** | ❌ | ➕ | ❌ | ➕ | ❌ | ✅ |
+| **「📝 详情/报名 →」CTA** | ❌ | ➕ | ❌ | ➕ | ❌ | (RSVP 按钮) |
+| 完整 speakers section | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 完整 RSVP attendees | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 编辑入口（admin）| ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
-## 三、五个交互原语（一致性核心）
+## 三、六个交互原语（一致性核心）
 
-每张卡片都遵循相同的 5 条交互规则，无论 surface。
+每张卡片都遵循相同的交互规则，无论 surface。
 
-### 1️⃣ 整卡 click → 跳详情页
+### 1️⃣ 整卡 click → **就地展开**（toggle `is-expanded` class）
 
-- 行为：`/events/:record_id`
-- 例外：点击卡内的 button / a / avatar 时 **`event.stopPropagation()`** 阻断，不触发跳转
+> **设计变更（2026-05-02 玖玖反馈）**：原方案是"整卡 click → 跳详情页"，被否决。新方案是 click 切换展开/收起，扩展信息（描述 / 流程 / 费用 / 报名 CTA）原地呈现，少跳页 → casual browsing 更顺。
+
+- 行为：toggle 当前卡片的 `.is-expanded` class，扩展区平滑展开
+- **例外** —— 这些点击不触发展开：
+  - 内部 button（avatar / RSVP / × 删除）：自身 onclick 已 `event.stopPropagation()`
+  - 内部 anchor（如"查看完整页 →"）：onclick `event.stopPropagation()`
+  - Cmd/Ctrl/中键 click 卡片本身 → 浏览器默认（新 tab 打开 `/events/:id`，保留 SEO + 分享）
+- **取舍**：桌面端 grid 上一张展开会把同行其他卡片往下挤（密度损失）—— 接受，因为 casual browsing 价值高于 scan 密度
 - 埋点：`event_card_click`
+
+### ➡️ 「查看完整页 →」link（展开区底部）→ 跳 `/events/:record_id`
+
+- 用途：share URL / 浏览器收藏 / SEO escape
+- 行为：anchor 默认 navigate
+- 注意：必须 `event.stopPropagation()`，避免触发卡片折叠
 
 ### 2️⃣ 头像 click → person modal（不离页）
 
@@ -108,9 +123,9 @@
 
 ### 不能做的（红线）
 
-- ❌ 卡片**就地展开**（in-place expand）—— 测过密度上不来，不如直接跳详情
 - ❌ 长按 / 右键菜单 —— 移动端体验不一致，能放进 ⋯ 菜单的不要藏
-- ❌ 卡内多入口（"看详情 / 报名 / 分享" 三个按钮）—— 整卡一个目的：跳详情。详情页里再分支
+- ❌ 卡内多个**主**入口 —— 一张卡只一个主交互（展开），其他都是辅助按钮（avatar/海报/RSVP）
+- ❌ 同时展开多张时给"折叠所有"按钮 —— 让用户自己控制，不要 nanny 行为
 
 ---
 
@@ -118,24 +133,29 @@
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Default
-    Default --> Hover : mouseenter
-    Hover --> Default : mouseleave
-    Default --> PersonModal : click avatar
-    Default --> PosterLightbox : click poster
-    Default --> Detail : click card body
-    PersonModal --> Default : close
-    PosterLightbox --> Default : close
+    [*] --> Collapsed
+    Collapsed --> Hover : mouseenter
+    Hover --> Collapsed : mouseleave
+    Collapsed --> Expanded : click card body
+    Expanded --> Collapsed : click card body again
+    Collapsed --> PersonModal : click avatar
+    Expanded --> PersonModal : click avatar
+    Collapsed --> PosterLightbox : click poster
+    Expanded --> PosterLightbox : click poster
+    Expanded --> Detail : click "查看完整页 →"
+    PersonModal --> Collapsed : close
+    PosterLightbox --> Collapsed : close
     Detail --> [*]
 
-    Default : 默认\n(已结束=desaturate)
+    Collapsed : 默认收起\n(已结束=desaturate)
     Hover : 微抬升\n+ shadow
+    Expanded : 就地展开\n(描述 + 流程 + 费用 + RSVP CTA)
     PersonModal : 头像弹层\n(z=300)
     PosterLightbox : 海报全屏\n(z=350)
-    Detail : 跳 /events/:id
+    Detail : 跳 /events/:id\n(只有用户主动点链接才跳)
 ```
 
-**只有 4 个状态**，比之前散落实现的 N 个简单多了。
+**5 个状态**，每个 surface 都遵守同一套。
 
 ---
 
@@ -236,8 +256,9 @@ renderActivityCard(activity, options) → HTMLString
 ## 九、设计原则速记
 
 - **One card, many surfaces** —— 一份组件，4 种密度
-- **Click = navigate, except buttons** —— 整卡跳页；按钮就地操作
-- **Modals over expansion** —— peek 用 modal，deep 跳页，不就地展开
+- **Click = expand, except buttons** —— 整卡 click 就地展开；button / 内嵌 link 各司其职
+- **Person uses modal, activity uses expand** —— peek 一个**人** 用 modal（轻、不破坏布局）；peek 一个**活动**用就地展开（信息量大、连续浏览友好）
+- **Detail page = canonical URL** —— 展开是 UI 便利，详情页是 source of truth（SEO + share + bookmark）
 - **Single modal at a time** —— 不堆叠，焦点不丢
 - **Mobile sheet, desktop center** —— 所有 overlay 一致
 - **No hidden gestures** —— 长按/右键的事，进 ⋯ 菜单
@@ -256,3 +277,4 @@ renderActivityCard(activity, options) → HTMLString
 ## 十一、变更日志
 
 - **2026-05-02** 玖玖反馈"信息呈现不统一 + 交互不统一"—— 创建本文档
+- **2026-05-02 (v2)** 玖玖反馈"卡片应该就地展开" —— 翻转原则：原 v1 红线"❌ 卡片就地展开"删除，整卡 click 改为 toggle is-expanded；保留详情页作为 SEO/share canonical URL；展开区底部加「📝 详情/报名 →」link 作 escape hatch

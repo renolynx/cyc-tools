@@ -33,7 +33,7 @@
 }
 
 .el-card {
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: flex-start; gap: 14px;
   padding: 12px;
   background: var(--card);
   backdrop-filter: blur(20px) saturate(1.8);
@@ -93,6 +93,68 @@
 .el-card-arrow {
   flex-shrink: 0; color: #ccc; font-size: 18px;
 }
+
+/* ── 卡片就地展开（描述 / 流程 / 费用 / CTA） ── */
+.el-card-expand {
+  flex-basis: 100%;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.40s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.el-card.is-expanded .el-card-expand {
+  max-height: 1400px;
+}
+.el-card.is-expanded {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.el-card-expand-inner {
+  padding: 12px 0 4px;
+  margin-top: 10px;
+  border-top: 0.5px dashed rgba(0,0,0,0.10);
+  display: flex; flex-direction: column; gap: 10px;
+  font-size: 13.5px; color: var(--text);
+  line-height: 1.55;
+}
+.el-card-expand-desc {
+  white-space: pre-wrap; word-break: break-word;
+}
+.el-card-expand-flow { font-size: 13px; }
+.el-card-expand-h {
+  font-weight: 700; color: var(--text);
+  margin-bottom: 4px; font-size: 12.5px;
+}
+.el-card-expand-flow ul {
+  list-style: none; padding-left: 0;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.el-card-expand-flow li {
+  padding-left: 14px; position: relative;
+  color: var(--muted);
+}
+.el-card-expand-flow li::before {
+  content: '·'; position: absolute; left: 4px;
+  color: var(--green); font-weight: 700;
+}
+.el-card-expand-meta {
+  font-size: 12.5px; color: var(--muted);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.el-card-expand-meta strong {
+  color: var(--text); font-weight: 600; margin-right: 4px;
+}
+.el-card-expand-cta {
+  display: inline-block; align-self: flex-start;
+  margin-top: 4px;
+  padding: 8px 14px;
+  background: var(--green); color: rgba(255,255,255,0.95);
+  border-radius: 100px;
+  font-size: 13px; font-weight: 600;
+  text-decoration: none; letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s, transform 0.10s;
+}
+.el-card-expand-cta:hover { opacity: 0.88; }
+.el-card-expand-cta:active { transform: scale(0.97); }
 
 .el-empty {
   text-align: center; padding: 60px 16px;

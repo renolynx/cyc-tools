@@ -129,7 +129,10 @@ function renderCard(a, isPast, avatarData) {
       : '<span class="el-card-status open">🌿 对外开放</span>';
   }
 
-  return `<a class="el-card${isPast ? ' is-past' : ''}" href="/events/${a.record_id}">
+  // 展开区：描述 + 流程 + 费用 / 报名 + CTA
+  const expandHtml = renderExpand(a, isPast);
+
+  return `<a class="el-card${isPast ? ' is-past' : ''}" href="/events/${a.record_id}" onclick="toggleCardExpand(event, this)">
   ${thumb ? `<img class="el-card-thumb" src="${thumb}" alt="" loading="lazy">` : '<div class="el-card-thumb el-card-thumb-empty">📅</div>'}
   <div class="el-card-body">
     <div class="el-card-title">${escapeHtml(a.title)}</div>
@@ -141,9 +144,26 @@ function renderCard(a, isPast, avatarData) {
     ${status}
     ${openness}
     ${avatarHtml}
+    ${expandHtml}
   </div>
-  <span class="el-card-arrow">›</span>
 </a>`;
+}
+
+// 展开区 SSR（与 index.html renderExpand 同语义；用 .el-card-expand-* 类避免冲突）
+function renderExpand(a, isPast) {
+  const descHtml = a.desc
+    ? `<p class="el-card-expand-desc">${escapeHtml(a.desc)}</p>`
+    : '';
+  const flowHtml = (a.flow && a.flow.length)
+    ? `<div class="el-card-expand-flow"><div class="el-card-expand-h">🗓️ 流程</div><ul>${a.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`
+    : '';
+  const metaParts = [];
+  if (a.fee)    metaParts.push(`<div><strong>💰 费用</strong> ${escapeHtml(a.fee)}</div>`);
+  if (a.signup) metaParts.push(`<div><strong>🙋 报名</strong> ${escapeHtml(a.signup)}</div>`);
+  const metaHtml = metaParts.length ? `<div class="el-card-expand-meta">${metaParts.join('')}</div>` : '';
+  const ctaLabel = isPast ? '查看完整页 →' : '📝 详情 / 报名 →';
+  const ctaHtml = `<a class="el-card-expand-cta" href="/events/${a.record_id}" onclick="event.stopPropagation()">${ctaLabel}</a>`;
+  return `<div class="el-card-expand"><div class="el-card-expand-inner">${descHtml}${flowHtml}${metaHtml}${ctaHtml}</div></div>`;
 }
 
 function renderGroups(acts, isPast, avatarsByActivity) {
@@ -345,6 +365,14 @@ ${itemListLd}
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') window.closePersonModal();
   });
+
+  // 卡片整体 click → toggle 展开（按钮 / 内嵌 link / Cmd-Ctrl click 不触发）
+  window.toggleCardExpand = function (e, card) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+    if (e.target.closest('button, a:not(.el-card)')) return;
+    e.preventDefault();
+    card.classList.toggle('is-expanded');
+  };
 })();
 </script>
 
