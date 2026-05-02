@@ -215,12 +215,18 @@ cyc.center 是**一个产品两条节奏**：
 
 #### 3.1 第一锹（同步上线，2 周）—— 首页 + profile + 活动卡片
 
-##### 3.1.1 简化版 profile 系统
+##### 3.1.1 简化版 profile 系统 ✅ 已完成（提前于 5/1）
 
 最小可用：让每个成员有 **头像 + 名字 + 一句话简介**。仅此三项，先够活动卡片头像有内容显示。
 
-- [ ] 飞书 Bitable 加"成员"表（如果还没有），含字段：avatar / name / bio / record_id
-- [ ] `/community/:id` 简化版页面：halo 卡片头像 + 名字 + 一句话 + "Ta 参加过" 活动列表
+- [x] 飞书 Bitable "成员"表已建（`PBn3bPOCYa2dBNsRZnXcv2R6nLF` / `tblrkweaGBQHmPVx`）
+- [x] `/community/:id` 已实现（`api/_community-detail.js`）：halo 卡片头像 + 名字 + bio + 城市 + 身份 tags + Ta 参加过的活动 + top types
+- [x] 公开列表 `/community` 已有（按城市切换）
+- [x] admin SPA `/community/admin` 已有（密码门改资料）
+
+**比 PLAN 当时设想多了的**：身份 tags / MBTI / job&company / 城市切换 / 反向查 RSVP / top-3 活动类型聚合。
+
+**还可以加但不阻塞 3.1.2 / 3.1.3**：active project 卡片（v2 升级，参考 [[2.3 机会树 ICE 排序 (Phase 2.3)]] 中的 Read.cv 风格）。
 
 **Prompt**:
 > 读 homepage-design.md 和 DESIGN.md。设计 /community/:id 简化版人物页：daybreak-os Daybook 风格 halo 卡片 + 头像 + 名字（28px Bold）+ 一句话简介（16px regular）+ 下方"Ta 参加过的活动"列表（拉 Bitable 成员关联活动）。给完整 vanilla HTML/CSS。
@@ -235,13 +241,25 @@ cyc.center 是**一个产品两条节奏**：
 **Prompt**:
 > 读 homepage-design.md。设计活动卡片新版：现有视觉 + 加嘉宾头像组（28-32px，最多 5 个）+ 报名头像组（24-28px，stack 叠加，最多 6-8 个）。点击任一头像不离开当前页，弹出 modal 显示人物卡片（avatar + name + bio + 查看完整 profile 链接到 /community/:id）。给完整改造 vanilla HTML/CSS + JS modal 行为。
 
-##### 3.1.3 首页大改造
+##### 3.1.3 首页大改造 ✅ 已完成（commit `decbf11`，5/2）
 
 旧首页（活动通告生成器）搬到 `/generator`，老路径 30 天 redirect 到新首页。新首页结构按 homepage-design.md 实现。
 
-- [ ] 旧 index.html 内容搬到 /generator
-- [ ] vercel.json 加 redirect / 到 /generator 旧路径
-- [ ] 新 index.html：双海报 hero + "创建活动" CTA + 活动卡片流
+- [x] 旧 index.html → `/generator/index.html`（玖玖型工具入口不丢）
+- [x] vercel.json 加 `/generator` `/about` `/rooms` rewrites
+- [x] 新 index.html：双海报 hero + "创建活动"橙 CTA + 活动卡片流（fetch /api/get-activities，未来 4 周）
+- [x] 简版 topbar：CYC.center brand + 活动/成员/工具 nav
+- [x] 新增 `/about` 和 `/rooms` stub 页面（建设中提示，让 hero 链接不 404）
+- [x] 埋点：hero_path_a_click / hero_path_b_click / cta_create_event / event_card_click 全接入
+- [x] CSS：`styles/10-home.css`（260 行），manifest @import
+
+**未做（Phase 3.1.2 主菜）**：
+- 活动卡片**头像组**（嘉宾 + 报名 stack）—— 需要先有 RSVP JSON 数据接口
+- 头像点击 modal 展开人物卡片 —— 客户端弹窗 + 跳到 /community/:id
+
+**未做（Phase 3.2.1 / 3.2.2 主菜）**：
+- 完整介绍页 /about（品牌叙事 + 成员故事 + 嵌入照片墙 section）
+- 完整房型页 /rooms（房型卡片 grid + 价格 + 试住政策）
 
 **Prompt**:
 > 读 homepage-design.md。实现新首页：
