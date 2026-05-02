@@ -90,9 +90,9 @@
 <div class="visitor-strip">
   <span class="visitor-strip-emoji">👋</span>
   <span>新来 CYC?</span>
-  <a href="/events">看看本周活动 →</a>
+  <a href="/events" data-track="visitor_strip_click" data-track-meta='{"target":"events"}'>看看本周活动 →</a>
   <span class="visitor-strip-sep">·</span>
-  <a href="/community">社区成员 →</a>
+  <a href="/community" data-track="visitor_strip_click" data-track-meta='{"target":"community"}'>社区成员 →</a>
 </div>
 
 <div class="week-nav">
@@ -1240,5 +1240,6 @@ function renderPosterGallery() {
 
 renderWeek();
 </script>
+<script src="/cyc-track.js" defer></script>
 </body>
 </html>

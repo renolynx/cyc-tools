@@ -41,6 +41,8 @@
     { "source": "/community/admin", "destination": "/api/community-page?mode=admin" },
     { "source": "/community/memories", "destination": "/community/memories/index.html" },
     { "source": "/community/:id", "destination": "/api/community-page?id=:id" },
-    { "source": "/community", "destination": "/api/community-page" }
+    { "source": "/community", "destination": "/api/community-page" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/instrumentation", "destination": "/admin/instrumentation/index.html" }
   ]
 }

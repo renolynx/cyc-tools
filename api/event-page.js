@@ -223,7 +223,7 @@ ${jsonLd}
         ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
       </div>
     ` : `<p class="event-rsvp-empty">还没有伙伴报名 · 你来当第一个 →</p>`}
-    <button class="event-rsvp-btn" onclick="openRsvpModal()">📝 我要参加</button>
+    <button class="event-rsvp-btn" onclick="openRsvpModal()" data-track="rsvp_click">📝 我要参加</button>
   </section>` : (rsvpAttendees.length ? `<section class="event-section">
     <h2>当时参加的伙伴</h2>
     <div class="event-rsvp-list">
@@ -542,7 +542,13 @@ document.addEventListener('keydown', e => {
     closeTypesModal();
   }
 });
+
+// 埋点
+window.addEventListener('load', () => {
+  if (window.cycTrack) cycTrack('event_detail_view', { record_id: ${JSON.stringify(act.record_id)}, is_past: ${isPast} });
+});
 </script>
+<script src="/cyc-track.js" defer></script>
 
 </body>
 </html>`;

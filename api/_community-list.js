@@ -75,6 +75,7 @@ export function renderList(city, members) {
 <header class="event-topbar">
   <a href="${SITE_URL}" class="event-back">‹ 主页</a>
   <a href="${SITE_URL}" class="event-site">CYC.center</a>
+  <a href="/admin" class="event-admin-link" data-track="community_admin_click" data-track-meta='{"from":"community_list"}'>⚙️ admin</a>
 </header>
 
 <main class="cm-main">
@@ -94,6 +95,7 @@ export function renderList(city, members) {
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
 
+<script src="/cyc-track.js" defer></script>
 </body>
 </html>`;
 }

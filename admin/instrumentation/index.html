@@ -7,149 +7,172 @@
 <title>埋点数据 · CYC 链岛青年社区</title>
 <link rel="stylesheet" href="/styles.css">
 <style>
-/* ── /admin/instrumentation 页面 — Aurora 层 ── */
-:root {
-  --aur-bg:        oklch(0.20 0.04 150);
-  --aur-surface:   oklch(0.25 0.03 150 / 0.6);
-  --aur-text:      oklch(0.96 0.005 150);
-  --aur-text-2:    oklch(0.7 0.02 150);
-  --aur-accent:    oklch(0.78 0.18 35);
-  --aur-border:    oklch(1 0 0 / 0.08);
-  --aur-inset:     oklch(1 0 0 / 0.04);
-}
+/* /admin/instrumentation — quiet 版（沙底 + 三 blob，aurora-canvas 提供 2px 绿装饰线） */
+.adm-wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
 
-body.adm {
-  background: var(--aur-bg);
-  color: var(--aur-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
+.adm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+.adm-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--cyc-text-strong); }
+.adm-back {
+  font-size: 13px; color: var(--cyc-text-muted); text-decoration: none;
+  padding: 6px 12px; border-radius: 100px;
+  border: 1px solid rgba(28,61,46,0.18); background: rgba(255,255,255,0.6);
 }
-body.adm::before, body.adm::after {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-}
-body.adm::before {
-  background: radial-gradient(600px circle at 90% 90%, oklch(0.65 0.18 35 / 0.18), transparent 60%);
-}
-body.adm::after {
-  background: radial-gradient(500px circle at 95% 5%, oklch(0.55 0.10 150 / 0.15), transparent 60%);
-}
-
-.adm-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px 16px 64px; }
-
-.adm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
-.adm-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-.adm-back { font-size: 13px; color: var(--aur-text-2); text-decoration: none; padding: 6px 12px; border-radius: 100px; border: 1px solid var(--aur-border); }
-.adm-back:hover { background: oklch(1 0 0 / 0.06); color: var(--aur-text); }
+.adm-back:hover { background: rgba(28,61,46,0.06); color: var(--cyc-green); }
 
 /* 密码门 */
-.pw-gate { max-width: 400px; margin: 80px auto; }
+.pw-gate { max-width: 400px; margin: 60px auto; }
 .pw-gate-card {
-  background: var(--aur-surface);
-  backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid var(--aur-border);
-  border-radius: 24px;
-  padding: 32px 28px;
-  box-shadow: inset 0 0 0 0.5px var(--aur-inset), 0 24px 48px -12px oklch(0 0 0 / 0.6);
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card-lg);
+  padding: 28px 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;
 }
-.pw-gate-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-.pw-gate-sub   { font-size: 13px; color: var(--aur-text-2); margin-bottom: 20px; }
+.pw-gate-title { font-size: 18px; font-weight: 700; color: var(--cyc-text-strong); margin-bottom: 6px; }
+.pw-gate-sub   { font-size: 13px; color: var(--cyc-text-muted); margin-bottom: 16px; }
 .pw-input {
-  width: 100%; padding: 12px 14px; font-size: 14px;
-  background: oklch(0.18 0.005 150 / 0.6); color: var(--aur-text);
-  border: 1px solid var(--aur-border); border-radius: 12px;
+  width: 100%; padding: 10px 12px; font-size: 14px;
+  background: rgba(255,255,255,0.9); color: var(--cyc-text);
+  border: 1px solid rgba(0,0,0,0.10); border-radius: var(--cyc-r-inner);
   font-family: inherit;
 }
-.pw-input:focus { outline: 2px solid var(--aur-accent); outline-offset: 1px; }
+.pw-input:focus { outline: 2px solid var(--cyc-green); outline-offset: 1px; border-color: var(--cyc-green); }
 .pw-btn {
-  width: 100%; margin-top: 12px; padding: 12px; cursor: pointer;
-  background: linear-gradient(135deg, oklch(0.78 0.18 35), oklch(0.68 0.18 25));
-  color: white; border: none; border-radius: 100px;
+  width: 100%; margin-top: 12px; padding: 11px; cursor: pointer;
+  background: var(--cyc-green); color: #fff;
+  border: none; border-radius: var(--cyc-r-inner);
   font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+  font-family: inherit;
 }
+.pw-btn:hover { background: var(--cyc-green-2); }
 .pw-btn:active { transform: scale(0.98); }
 .pw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.pw-err { color: oklch(0.72 0.18 25); font-size: 12px; margin-top: 10px; min-height: 16px; }
+.pw-err { color: var(--cyc-danger); font-size: 12px; margin-top: 10px; min-height: 16px; }
 
 /* 控件条 */
-.adm-controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.adm-controls { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
 .adm-pill {
   padding: 6px 14px; font-size: 12px; font-weight: 600;
-  background: var(--aur-surface); color: var(--aur-text-2);
-  border: 1px solid var(--aur-border); border-radius: 100px;
+  background: rgba(255,255,255,0.7); color: var(--cyc-text-muted);
+  border: 1px solid rgba(0,0,0,0.10); border-radius: 100px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
 }
-.adm-pill.is-active { background: var(--aur-accent); color: white; border-color: var(--aur-accent); }
+.adm-pill:hover { background: rgba(255,255,255,0.9); }
+.adm-pill.is-active { background: var(--cyc-green); color: #fff; border-color: var(--cyc-green); }
 
 /* Summary cards */
-.sum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.sum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 24px; }
 .sum-card {
-  background: var(--aur-surface);
-  backdrop-filter: blur(40px) saturate(1.4); -webkit-backdrop-filter: blur(40px) saturate(1.4);
-  border: 1px solid var(--aur-border); border-radius: 16px;
-  padding: 16px; box-shadow: inset 0 0 0 0.5px var(--aur-inset);
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card);
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;
 }
-.sum-label { font-size: 11px; color: var(--aur-text-2); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
-.sum-value { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
-.sum-value.warm { color: var(--aur-accent); }
-.sum-hint { font-size: 11px; color: var(--aur-text-2); margin-top: 4px; }
+.sum-label {
+  font-size: 11px; color: var(--cyc-text-muted);
+  letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px;
+  font-weight: 600;
+}
+.sum-value {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--cyc-text-strong);
+  font-feature-settings: 'tnum';
+}
+.sum-value.warm { color: var(--cyc-green); }
+.sum-hint { font-size: 11px; color: var(--cyc-text-muted); margin-top: 2px; }
 
 /* Section */
-.adm-section { margin-bottom: 24px; }
-.adm-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-.adm-section-title .badge { font-size: 10px; padding: 2px 8px; border-radius: 100px; background: oklch(1 0 0 / 0.06); color: var(--aur-text-2); font-weight: 500; }
+.adm-section { margin-bottom: 22px; }
+.adm-section-title {
+  font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--cyc-text-strong);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+}
+.adm-section-title .badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 100px;
+  background: rgba(28,61,46,0.06); color: var(--cyc-text-muted);
+  font-weight: 500; letter-spacing: 0.02em;
+}
 
-/* Sparkline 7/30 days */
-.spark { display: flex; align-items: flex-end; gap: 3px; height: 80px; padding: 8px 12px;
-         background: var(--aur-surface); border: 1px solid var(--aur-border); border-radius: 16px; }
-.spark-bar { flex: 1; min-width: 4px; background: var(--aur-accent); border-radius: 2px 2px 0 0; opacity: 0.85; position: relative; }
+/* Sparkline */
+.spark {
+  display: flex; align-items: flex-end; gap: 3px; height: 70px; padding: 8px 12px;
+  background: var(--cyc-surface-glass);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card);
+  box-shadow: 0 0 0 0.5px var(--cyc-inset-shine) inset;
+}
+.spark-bar { flex: 1; min-width: 4px; background: var(--cyc-green); border-radius: 2px 2px 0 0; opacity: 0.85; }
 .spark-bar:hover { opacity: 1; }
-.spark-bar[data-count="0"] { background: oklch(1 0 0 / 0.08); }
-.spark-tip { font-size: 10px; color: var(--aur-text-2); display: flex; justify-content: space-between; margin-top: 4px; padding: 0 12px; }
+.spark-bar[data-count="0"] { background: rgba(28,61,46,0.10); }
+.spark-tip {
+  font-size: 10px; color: var(--cyc-text-muted);
+  display: flex; justify-content: space-between; margin-top: 4px; padding: 0 12px;
+  font-feature-settings: 'tnum';
+}
 
 /* List */
-.list { background: var(--aur-surface); border: 1px solid var(--aur-border); border-radius: 16px; padding: 4px; }
+.list {
+  background: var(--cyc-surface-glass);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card);
+  padding: 4px;
+  box-shadow: 0 0 0 0.5px var(--cyc-inset-shine) inset;
+}
 .list-row {
   display: grid; grid-template-columns: 1fr auto auto; gap: 12px;
-  padding: 10px 14px; border-radius: 10px;
+  padding: 10px 14px; border-radius: var(--cyc-r-inner);
   font-size: 13px; align-items: center;
 }
-.list-row + .list-row { border-top: 1px solid oklch(1 0 0 / 0.04); }
-.list-row:hover { background: oklch(1 0 0 / 0.04); }
-.list-name { font-weight: 600; color: var(--aur-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.list-meta { color: var(--aur-text-2); font-size: 11px; }
+.list-row + .list-row { border-top: 1px solid rgba(0,0,0,0.05); }
+.list-row:hover { background: rgba(255,255,255,0.6); }
+.list-name { font-weight: 600; color: var(--cyc-text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-meta { color: var(--cyc-text-muted); font-size: 11px; }
 .list-count {
-  font-weight: 700; font-variant-numeric: tabular-nums;
-  background: oklch(1 0 0 / 0.06); padding: 2px 10px; border-radius: 100px;
-  font-size: 12px;
+  font-weight: 700; font-feature-settings: 'tnum';
+  background: rgba(28,61,46,0.06); padding: 2px 10px; border-radius: 100px;
+  font-size: 12px; color: var(--cyc-text-strong);
 }
-.list-count.warm { background: oklch(0.78 0.18 35 / 0.18); color: oklch(0.85 0.18 35); }
+.list-count.warm {
+  background: rgba(28,61,46,0.10);
+  color: var(--cyc-green);
+}
 
 /* Recent log */
 .log {
-  background: oklch(0.16 0.005 150 / 0.6);
-  border: 1px solid var(--aur-border); border-radius: 16px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card);
   padding: 12px; max-height: 480px; overflow-y: auto;
   font-family: 'SF Mono', Menlo, ui-monospace, monospace; font-size: 11.5px;
-  line-height: 1.7; color: var(--aur-text-2);
+  line-height: 1.7; color: var(--cyc-text-muted);
 }
-.log-line { padding: 2px 0; }
-.log-ts { color: oklch(0.55 0.02 150); margin-right: 8px; }
-.log-ev { color: oklch(0.78 0.18 35); margin-right: 8px; font-weight: 600; }
-.log-pg { color: var(--aur-text); }
-.log-meta { color: oklch(0.55 0.02 150); margin-left: 8px; font-size: 10.5px; }
+.log-line { padding: 2px 0; word-break: break-all; }
+.log-ts { color: var(--cyc-text-faint); margin-right: 8px; font-feature-settings: 'tnum'; }
+.log-ev { color: var(--cyc-green); margin-right: 8px; font-weight: 600; }
+.log-pg { color: var(--cyc-text-strong); }
+.log-meta { color: var(--cyc-text-faint); margin-left: 8px; font-size: 10.5px; }
 
-.empty { text-align: center; color: var(--aur-text-2); padding: 40px 16px; font-size: 13px; }
+.empty {
+  text-align: center; color: var(--cyc-text-muted); padding: 32px 16px; font-size: 13px;
+}
 
 @media (max-width: 600px) {
-  .sum-value { font-size: 26px; }
+  .sum-value { font-size: 24px; }
   .list-row  { grid-template-columns: 1fr auto; }
   .list-meta { display: none; }
 }
 </style>
 </head>
-<body class="adm">
+<body class="aurora-canvas">
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
 
 <div class="adm-wrap">
   <header class="adm-head">
@@ -161,7 +184,7 @@ body.adm::after {
   <div id="pwGate" class="pw-gate">
     <div class="pw-gate-card">
       <div class="pw-gate-title">🔒 输入管理密码</div>
-      <div class="pw-gate-sub">这个页面会读取飞书事件流表 · 仅 admin 可见</div>
+      <div class="pw-gate-sub">读取飞书事件流表 · 仅 admin 可见</div>
       <input id="pwInput" class="pw-input" type="password" autocomplete="current-password" placeholder="管理密码">
       <button id="pwBtn" class="pw-btn">查看数据</button>
       <div id="pwErr" class="pw-err"></div>
@@ -245,9 +268,7 @@ body.adm::after {
       pwGate.style.display = 'none';
       dash.style.display = '';
       render(data);
-
-      // 自己也算个 admin 访问事件
-      cycTrack && cycTrack('instrumentation_view', { days: currentDays });
+      window.cycTrack && cycTrack('instrumentation_view', { days: currentDays });
     } catch (err) {
       pwErr.textContent = '网络错误: ' + err.message;
     } finally {
@@ -257,7 +278,6 @@ body.adm::after {
   }
 
   function render(data) {
-    // Summary
     const s = data.summary || {};
     document.getElementById('sumGrid').innerHTML = `
       <div class="sum-card">
@@ -277,7 +297,6 @@ body.adm::after {
       </div>
     `;
 
-    // Sparkline
     const days = data.by_day || [];
     const max = Math.max(1, ...days.map((d) => d.count));
     document.getElementById('spark').innerHTML = days
@@ -287,7 +306,6 @@ body.adm::after {
     document.getElementById('sparkRight').textContent = days[days.length - 1]?.date || '';
     document.getElementById('dayBadge').textContent = `${days.length} 天 · 最高 ${max}`;
 
-    // By event
     const evs = data.by_event || [];
     document.getElementById('byEvent').innerHTML = evs.length
       ? evs.map((e) => `
@@ -296,9 +314,8 @@ body.adm::after {
           <div class="list-meta">最近 ${formatRel(e.last_at)}</div>
           <div class="list-count warm">${e.count}</div>
         </div>`).join('')
-      : '<div class="empty">这个窗口里还没事件 —— 装上 cyc-track.js 后再看</div>';
+      : '<div class="empty">这个窗口里还没事件 —— 等用户访问 / 你自己点几下</div>';
 
-    // By page
     const pgs = data.by_page || [];
     document.getElementById('byPage').innerHTML = pgs.length
       ? pgs.map((p) => `
@@ -309,7 +326,6 @@ body.adm::after {
         </div>`).join('')
       : '<div class="empty">无页面数据</div>';
 
-    // Recent log
     const rec = data.recent || [];
     document.getElementById('recentLog').innerHTML = rec.length
       ? rec.map((r) => `
@@ -341,7 +357,6 @@ body.adm::after {
 })();
 </script>
 
-<!-- 埋点本身 -->
 <script src="/cyc-track.js" defer></script>
 </body>
 </html>

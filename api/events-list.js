@@ -172,6 +172,7 @@ ${itemListLd}
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
 
+<script src="/cyc-track.js" defer></script>
 </body>
 </html>`;
 }

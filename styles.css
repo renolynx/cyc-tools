@@ -1031,6 +1031,18 @@ body.event-page {
 .event-back:active, .event-site:active { background: rgba(28,61,46,0.08); }
 .event-site { font-weight: 700; letter-spacing: -0.01em; }
 
+/* admin 入口（topbar 右侧，仅在 /community 列表页等可见） */
+.event-admin-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  text-decoration: none; padding: 4px 10px;
+  border: 1px solid rgba(0,0,0,0.10); border-radius: 100px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.event-admin-link:active { transform: scale(0.95); background: rgba(28,61,46,0.08); }
+.event-admin-link:hover { color: var(--green); border-color: rgba(28,61,46,0.25); background: rgba(28,61,46,0.04); }
+
 .event-detail {
   position: relative; z-index: 1;
   max-width: 720px; margin: 0 auto;

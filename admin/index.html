@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin · CYC 链岛青年社区</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+/* /admin 主页 — quiet 版（沙底 + 三 blob，aurora-canvas 提供 2px 绿装饰线） */
+.adm-wrap   { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; padding: 28px 16px 64px; }
+
+.adm-head   { margin-bottom: 24px; }
+.adm-title  {
+  font-size: 24px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--cyc-text-strong); margin-bottom: 4px;
+}
+.adm-sub    { font-size: 13px; color: var(--cyc-text-muted); }
+
+.adm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+
+.adm-tile {
+  display: block; text-decoration: none; color: var(--cyc-text);
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: var(--cyc-r-card-lg);
+  padding: 18px 18px 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;
+  transition: transform 0.12s, background 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative; overflow: hidden;
+}
+.adm-tile::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 55%);
+  pointer-events: none;
+}
+.adm-tile:hover  { background: rgba(255,255,255,0.92); border-color: rgba(28,61,46,0.18); }
+.adm-tile:active { transform: scale(0.98); }
+
+.adm-tile-icon {
+  font-size: 22px; margin-bottom: 10px;
+  display: inline-flex; width: 40px; height: 40px;
+  align-items: center; justify-content: center;
+  background: rgba(28,61,46,0.06); border-radius: 10px;
+}
+.adm-tile-title {
+  font-size: 15px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--cyc-text-strong); margin-bottom: 2px;
+}
+.adm-tile-desc  {
+  font-size: 12.5px; color: var(--cyc-text-muted); line-height: 1.55;
+}
+
+/* 主操作 tile — 用 cyc-green 实色（admin 视觉标志，跟公开页 cyc-orange CTA 区分）*/
+.adm-tile.is-primary {
+  background: var(--cyc-green); color: #fff;
+  border-color: var(--cyc-green);
+}
+.adm-tile.is-primary::before { background: linear-gradient(145deg, rgba(255,255,255,0.10) 0%, transparent 55%); }
+.adm-tile.is-primary:hover { background: var(--cyc-green-2); border-color: var(--cyc-green-2); }
+.adm-tile.is-primary .adm-tile-icon { background: rgba(255,255,255,0.12); }
+.adm-tile.is-primary .adm-tile-title { color: #fff; }
+.adm-tile.is-primary .adm-tile-desc { color: rgba(255,255,255,0.78); }
+
+.adm-tile.is-disabled { opacity: 0.55; pointer-events: none; }
+.adm-tile.is-disabled .adm-tile-desc::after {
+  content: ' · 待建';
+  color: var(--cyc-text-faint);
+}
+
+.adm-foot { margin-top: 28px; font-size: 11px; color: var(--cyc-text-muted); text-align: center; }
+.adm-foot a { color: var(--cyc-text-muted); text-decoration: underline; }
+</style>
+</head>
+<body class="aurora-canvas">
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="adm-wrap">
+  <header class="adm-head">
+    <div class="adm-title">⚙️ CYC Admin</div>
+    <div class="adm-sub">cyc.center 管理面板 · 不要把这个链接对外发</div>
+  </header>
+
+  <div class="adm-grid">
+    <a class="adm-tile is-primary" href="/admin/instrumentation">
+      <div class="adm-tile-icon">📊</div>
+      <div class="adm-tile-title">埋点数据 · Instrumentation</div>
+      <div class="adm-tile-desc">用户行为统计 · 事件流 · 页面热度 · 实验观测</div>
+    </a>
+
+    <a class="adm-tile" href="/community/admin">
+      <div class="adm-tile-icon">👥</div>
+      <div class="adm-tile-title">成员名单管理</div>
+      <div class="adm-tile-desc">查 / 改 / 添加 cyc.center 社区成员资料</div>
+    </a>
+
+    <a class="adm-tile" href="/team">
+      <div class="adm-tile-icon">🧑‍💼</div>
+      <div class="adm-tile-title">团队架构</div>
+      <div class="adm-tile-desc">主理人 / 轮值 / 角色编排</div>
+    </a>
+
+    <a class="adm-tile" href="/">
+      <div class="adm-tile-icon">📋</div>
+      <div class="adm-tile-title">活动通告生成器</div>
+      <div class="adm-tile-desc">填写活动 · 一键生成微信群通告</div>
+    </a>
+
+    <a class="adm-tile is-disabled" href="#">
+      <div class="adm-tile-icon">💝</div>
+      <div class="adm-tile-title">感谢系统</div>
+      <div class="adm-tile-desc">peer-to-peer 认可 · 月度排行</div>
+    </a>
+
+    <a class="adm-tile is-disabled" href="#">
+      <div class="adm-tile-icon">📷</div>
+      <div class="adm-tile-title">社区照片墙管理</div>
+      <div class="adm-tile-desc">活动照片归档 · 月度回忆</div>
+    </a>
+  </div>
+
+  <div class="adm-foot">
+    <a href="/">← 回主站</a> · 链接每一座孤岛
+  </div>
+</div>
+
+<script src="/cyc-track.js" defer></script>
+<script>
+window.addEventListener('load', () => { window.cycTrack && cycTrack('admin_dashboard_view'); });
+</script>
+</body>
+</html>
