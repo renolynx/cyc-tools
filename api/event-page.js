@@ -154,6 +154,7 @@ ${jsonLd}
     ${act.time ? `<span class="event-time-pill">⏰ ${escapeHtml(act.time)}</span>` : ''}
     ${isPast ? '<span class="event-past-pill">已结束</span>' : ''}
     ${act.status === '确认举办' && !isPast ? '<span class="event-confirm-pill">✓ 确认举办</span>' : ''}
+    ${!isPast ? '<span class="event-open-pill">🌿 对外开放 · 欢迎来玩</span>' : ''}
   </div>
 
   <h1 class="event-title">${title}</h1>
@@ -235,6 +236,7 @@ ${jsonLd}
 </main>
 
 <footer class="event-footer">
+  <p class="event-footer-share">🏷️ 拍了照片? 标 <strong>#cyc</strong> 发朋友圈 · 可能出现在社区墙</p>
   <p class="event-footer-tagline">链接每一座孤岛</p>
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>

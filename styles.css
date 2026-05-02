@@ -1049,7 +1049,7 @@ body.event-page {
   display: flex; flex-wrap: wrap; gap: 6px;
   margin-bottom: 12px;
 }
-.event-date-pill, .event-time-pill, .event-past-pill, .event-confirm-pill {
+.event-date-pill, .event-time-pill, .event-past-pill, .event-confirm-pill, .event-open-pill {
   font-size: 12px; font-weight: 600;
   padding: 4px 10px; border-radius: 100px;
   letter-spacing: -0.01em;
@@ -1058,6 +1058,46 @@ body.event-page {
 .event-time-pill { background: rgba(255,255,255,0.7); color: var(--text); border: 1px solid var(--stroke); }
 .event-past-pill { background: rgba(0,0,0,0.05); color: var(--muted); }
 .event-confirm-pill { background: rgba(217,101,42,0.12); color: var(--orange); }
+.event-open-pill { background: rgba(200,169,110,0.18); color: #6b5022; border: 1px solid rgba(200,169,110,0.35); }
+
+/* 首页访客欢迎条（Mia / Alex 引导） */
+.visitor-strip {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 14px; margin: 0 0 14px;
+  background: rgba(200,169,110,0.12);
+  border: 1px solid rgba(200,169,110,0.30);
+  border-radius: 100px;
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.visitor-strip-emoji { font-size: 14px; }
+.visitor-strip a {
+  color: var(--green);
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.visitor-strip a:active { opacity: 0.7; }
+.visitor-strip-sep { color: var(--muted); opacity: 0.5; }
+
+/* 活动详情页底部分享提示（Mia 传播钩子） */
+.event-footer-share {
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(200,169,110,0.10);
+  border: 1px dashed rgba(200,169,110,0.35);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin: 0 auto 10px;
+  max-width: 480px;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.event-footer-share strong {
+  color: var(--orange);
+  font-weight: 700;
+}
 
 .event-title {
   font-size: 28px; font-weight: 800;
