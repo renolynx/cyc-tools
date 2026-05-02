@@ -251,19 +251,26 @@ cyc.center 是**一个产品两条节奏**：
 > 4. 全局保持 daybreak-os 大理玻璃风 + AAA 对比度。
 > 把活动通告生成器（旧 index.html）搬到 /generator，加 vercel.json redirect。
 
-##### 3.1.4 数据采集（前置必做）
+##### 3.1.4 数据采集 ✅ 完成（2026-05-02 commit dc94c4a）
 
 不是黑话，就是埋点。让你能看到首页改完后用户怎么用。
 
-- [ ] 加 Vercel Analytics（一行 import）—— 免费，page-level 数据立刻有
-- [ ] 写一个最简 `/api/track` endpoint：接收 event 名 + 元数据，写到飞书 Bitable 一张"事件流"表
-- [ ] 关键事件：
-  - `hero_path_a_click`（点了介绍社区海报）
-  - `hero_path_b_click`（点了订房海报）
-  - `cta_create_event`（点了创建活动）
-  - `event_card_click`
-  - `event_card_avatar_click`
-  - `profile_view`
+- [x] **飞书 Bitable「事件流」表**（table_id `tbl8SKvRXMMJmChI`）—— 8 字段：时间戳/事件/页面/session_id/元数据/referrer/utm_source/utm_campaign
+- [x] **`/api/track`** 公开端点（KV rate limit + 事件白名单 + sendBeacon 友好）
+- [x] **`/api/admin/instrumentation-data`** dashboard 数据接口（密码门）
+- [x] **`/cyc-track.js`** 前端 SDK（自动 page_view + `[data-track]` 元素 hook + sendBeacon）
+- [x] **`/admin/instrumentation`** dashboard HTML 页面（密码门 + summary + sparkline + Top 事件 + Top 页面 + 最近 50 条日志）
+- [x] **`/admin`** home 页（6 tile 入口：埋点 / 成员管理 / 团队 / 工具 / 感谢系统占位 / 照片墙占位）
+- [x] **导航补全**：/community 列表页 topbar 加 admin 链接
+
+已接入 tracking 的页面：
+- `/`（首页）—— visitor strip 两个链接
+- `/events`（列表）—— page_view
+- `/events/:id`（详情）—— event_detail_view + RSVP 按钮 + open_pill_seen + share_prompt_seen
+- `/community`（成员列表）—— page_view + admin 链接
+- `/admin`、`/admin/instrumentation`—— admin_dashboard_view、instrumentation_view
+
+> **下一步**：等首页大改造（3.1.3）上线后再补 `hero_path_a_click` / `hero_path_b_click` / `cta_create_event` / `event_card_click` / `event_card_avatar_click` / `profile_view` 这 6 个事件 hook。届时只需在新首页加 `data-track="..."` 属性即可，sdk 会自动捕获。
 
 ##### 3.1.5 已经做完的（一小时改造 ✅）
 

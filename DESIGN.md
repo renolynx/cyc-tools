@@ -1,5 +1,18 @@
 # Design
 
+> ⚠️ **2026-05-02 v2 更新**：本文档 Aurora（深绿暗夜玻璃）和 Atlas（橙红渐变带）规范已**部分撤回**。
+>
+> **撤回原因**（commit `c8b8fcf`）：用户反馈"深绿 admin 非常丑、橙红渐变饱和度过高、字看不清"。原版触发 PRODUCT.md 三条红线 —— "讲究 > 花哨"、"有性格但不喊"、"反对被设计感"。
+>
+> **新策略（quiet 版）**：Aurora / Atlas / Daybook 三层都共享**沙底 + 三 blob** canvas，差异化通过：
+> 1. 顶部 2px 装饰线（Aurora 用 `--cyc-green` 标识 admin 区）
+> 2. 排版密度（admin 略加紧凑：gap 4 vs 6, padding 紧）
+> 3. 个别按钮颜色（admin CTA 用 `--cyc-green` 实色 vs 公开页 `--cyc-orange`）
+>
+> **不靠**：换皮换色、ambient glow、深色 canvas、戏剧渐变。
+>
+> 下面 Aurora / Atlas section 的"深色玻璃"、"大理风景照 hero"等具体 token 描述**保留为长期 aspirational target**，但当前 styles.css 实现按 quiet 版执行。请以 styles.css 为实际权威。
+
 ## Visual Theme
 
 **大理玻璃** —— iOS 体感的玻璃拟态，建立在大理配色（深绿 / 落日橙 / 沙）之上。氛围由三个 radial blob（橙、绿、tan）+ 24-40px backdrop-blur 共同构成，所有 surface 漂浮在沙色底之上，像高原的云层叠在阳光里。
