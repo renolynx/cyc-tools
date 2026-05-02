@@ -1,0 +1,46 @@
+/* ═══════════════════════════════════════════════
+ * Atlas（/events、/events/:id）—— quiet 版
+ * 之前的渐变带触发"过于浓郁的底色让字看不清"。撤回。
+ *
+ * "对外感"靠：
+ *   - hero 区字层级（h1 略放大 + 英文 tagline 更长）
+ *   - 三个老 blob 保留（CYC 视觉签名）
+ *   - 卡片本身保留浅风
+ * 不靠：渐变背景、深色覆盖、白字阴影
+ * ═══════════════════════════════════════════════ */
+
+body.atlas-canvas {
+  /* canvas 完全跟公开页一致 */
+}
+
+/* events 列表 hero — 字层级而非颜色 */
+body.atlas-canvas .el-hero {
+  padding: 32px 0 16px;
+}
+body.atlas-canvas .el-hero h1 {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--cyc-green);
+  line-height: 1.15;
+}
+body.atlas-canvas .el-hero-sub {
+  font-size: 13px;
+  color: var(--cyc-text-muted);
+  margin-top: 8px;
+  letter-spacing: 0;
+}
+
+/* 详情页 hero — 标题字号略放大，颜色不变 */
+body.atlas-canvas .event-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* 详情页对外开放 pill — 略减少视觉重量 */
+body.atlas-canvas .event-open-pill {
+  background: rgba(28,61,46,0.06);
+  color: var(--cyc-green);
+  border: 1px solid rgba(28,61,46,0.18);
+  font-weight: 600;
+}

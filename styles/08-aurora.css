@@ -1,0 +1,58 @@
+/* ═══════════════════════════════════════════════
+ * Aurora（admin 后台）—— quiet 版
+ * 之前用深绿暗夜 + 双 ambient glow 太"喊"，撤回。
+ *
+ * "工具感"靠：
+ *   - 顶部一条 2px 深绿装饰线（界定 admin 区域，但不抢屏）
+ *   - 列表卡 hover 反馈更明显（layout 加 weight 不靠 color）
+ *   - 主操作按钮用 cyc-green 实色（区别公开页的橙色 CTA）
+ *   - 字距略紧、行距略紧（admin 是密度高的工具）
+ * 不靠：颜色突变、glow、暗底
+ * ═══════════════════════════════════════════════ */
+
+body.aurora-canvas {
+  /* canvas 跟公开页一致：沙底 + 三 blob 保留 */
+}
+/* 顶部 2px 绿装饰线 — 唯一一处明显"我在 admin 区" */
+body.aurora-canvas::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cyc-green);
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* admin items 略加 density */
+body.aurora-canvas .cm-admin-list { gap: 4px; }
+body.aurora-canvas .cm-admin-item {
+  padding: 10px 12px;
+  letter-spacing: -0.005em;
+}
+body.aurora-canvas .cm-admin-item:hover {
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 0 1px rgba(28,61,46,0.15) inset;
+}
+
+/* 主操作按钮 — cyc-green 实色，跟 cyc-orange CTA 形成 admin / 公开 的视觉区分 */
+body.aurora-canvas .cm-admin-add {
+  background: var(--cyc-green);
+  color: #fff;
+  font-weight: 600;
+}
+body.aurora-canvas .cm-admin-add:hover {
+  background: var(--cyc-green-2);
+}
+body.aurora-canvas .cm-admin-edit {
+  background: rgba(28,61,46,0.10);
+  color: var(--cyc-green);
+}
+body.aurora-canvas .cm-admin-edit:hover {
+  background: rgba(28,61,46,0.18);
+}
+
+/* admin count 文字略加紧凑 */
+body.aurora-canvas .cm-admin-count {
+  letter-spacing: 0;
+  font-feature-settings: 'tnum';   /* 表格数字宽度对齐 */
+}
+
