@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>CYC 链岛青年社区 · Connected Youth Community Dali</title>
+<meta name="description" content="CYC 链岛青年社区 · Connected Youth Community in Dali, Yunnan, China — coliving, weekly events, digital nomad community. 链接每一座孤岛.">
+<meta name="keywords" content="CYC, 链岛青年社区, Connected Youth Community, Dali, 大理, digital nomad, coliving, 数字游民, Yunnan, 云南, community">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CYC 链岛青年社区 · Dali">
+<meta property="og:description" content="Connected Youth Community in Dali, Yunnan — coliving, weekly events, digital nomad gatherings.">
+<meta property="og:url" content="https://cyc.center/">
+<meta property="og:image" content="https://cyc.center/api/og-default">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
+<link rel="canonical" href="https://cyc.center/">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="topbar">
+  <button class="topbar-menu" onclick="openMenu()" aria-label="打开菜单">☰</button>
+  <div class="topbar-title">活动通告生成器</div>
+  <button class="topbar-cal" onclick="openCalendar()">📅 日历</button>
+</div>
+
+<!-- 汉堡菜单抽屉 -->
+<div class="menu-backdrop" id="menuBackdrop" onclick="closeMenu()"></div>
+<div class="menu-drawer" id="menuDrawer">
+  <div class="menu-head">
+    <div class="menu-title">CYC 工具站</div>
+    <button class="menu-close" onclick="closeMenu()" aria-label="关闭菜单">✕</button>
+  </div>
+  <nav class="menu-list">
+    <a class="menu-item current" href="/" onclick="closeMenu();return true">
+      <div class="menu-icon">📋</div>
+      <div class="menu-info">
+        <div class="menu-name">活动通告生成器<span class="menu-current-tag">当前</span></div>
+        <div class="menu-desc">填写活动 · 一键生成微信群通告</div>
+      </div>
+    </a>
+    <a class="menu-item" href="/events">
+      <div class="menu-icon">📅</div>
+      <div class="menu-info">
+        <div class="menu-name">近期活动</div>
+        <div class="menu-desc">公开活动日历 · 可分享 · 含历史</div>
+      </div>
+    </a>
+    <a class="menu-item" href="/community">
+      <div class="menu-icon">👥</div>
+      <div class="menu-info">
+        <div class="menu-name">社区成员</div>
+        <div class="menu-desc">大理 / 上海 在地伙伴 · 可分享</div>
+      </div>
+    </a>
+    <a class="menu-item" href="/team/">
+      <div class="menu-icon">👥</div>
+      <div class="menu-info">
+        <div class="menu-name">团队架构</div>
+        <div class="menu-desc">管理人员结构 · 需密码</div>
+      </div>
+    </a>
+    <a class="menu-item" href="/food/">
+      <div class="menu-icon">🍽️</div>
+      <div class="menu-info">
+        <div class="menu-name">今天吃什么</div>
+        <div class="menu-desc">随机推荐 · 发起约饭 · AA 算账</div>
+      </div>
+    </a>
+    <a class="menu-item" href="/event-card/">
+      <div class="menu-icon">✨</div>
+      <div class="menu-info">
+        <div class="menu-name">活动信息提取</div>
+        <div class="menu-desc">AI 文字提取（即将上线）</div>
+      </div>
+    </a>
+  </nav>
+  <a class="menu-all-tools" href="/tools">查看全部工具 →</a>
+</div>
+
+<div class="page">
+
+<div class="visitor-strip">
+  <span class="visitor-strip-emoji">👋</span>
+  <span>新来 CYC?</span>
+  <a href="/events" data-track="visitor_strip_click" data-track-meta='{"target":"events"}'>看看本周活动 →</a>
+  <span class="visitor-strip-sep">·</span>
+  <a href="/community" data-track="visitor_strip_click" data-track-meta='{"target":"community"}'>社区成员 →</a>
+</div>
+
+<div class="week-nav">
+  <button class="nav-btn" onclick="changeWeek(-1)">‹ 上周</button>
+  <span class="week-range" id="wkRange"></span>
+  <button class="nav-btn" onclick="changeWeek(1)">下周 ›</button>
+</div>
+<div class="fetch-bar">
+  <button class="fetch-btn" id="fetchBtn" onclick="fetchFromFeishu()">
+    <span id="fetchIcon">☁️</span><span id="fetchLabel">从飞书读取本周活动</span>
+  </button>
+  <span class="fetch-status" id="fetchStatus"></span>
+</div>
+<div class="week-strip" id="wkStrip"></div>
+
+<div class="layout">
+  <div>
+    <div class="panel">
+      <div class="panel-head" id="dayHead">选择上方日期开始添加活动</div>
+      <div class="acts-list" id="actsList"></div>
+      <button class="add-act-btn" id="addActBtn" style="display:none" onclick="addAct()">＋ 添加活动</button>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="panel-head">通告预览 <span>— 点击活动快速跳转编辑</span></div>
+      <div class="preview-box" id="preview"><div class="preview-empty">在左侧选择日期并添加活动，这里会实时显示通告。</div></div>
+      <div class="copy-mode" role="tablist">
+        <button class="copy-mode-btn active" data-mode="brief" onclick="setCopyMode('brief')">📝 简版</button>
+        <button class="copy-mode-btn" data-mode="full" onclick="setCopyMode('full')">📋 完整版</button>
+      </div>
+      <p class="copy-mode-hint" id="copyModeHint">仅含简介，避免微信折叠（推荐发群用）</p>
+      <button class="copy-btn" id="copyBtn" onclick="doCopy()">复制通告文本</button>
+      <div class="poster-gallery" id="posterGallery"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Lightbox（海报全屏查看 + 下载 / 分享）— 必须放在 .page 之外，否则会被日历/菜单抽屉的 z-index 盖住 -->
+<div class="lightbox-overlay" id="lightbox" onclick="lightboxBackdropClick(event)">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="关闭">✕</button>
+  <div class="lightbox-img-wrap">
+    <img class="lightbox-img" id="lightboxImg" alt="">
+  </div>
+  <div class="lightbox-caption" id="lightboxCap"></div>
+  <div class="lightbox-tip">在 iOS / Android 长按图片可直接保存到相册</div>
+  <div class="lightbox-actions">
+    <button class="lightbox-btn" id="lightboxDlBtn" onclick="downloadLightbox()">↓ 下载到相册</button>
+    <button class="lightbox-btn primary" id="lightboxShareBtn" onclick="shareLightbox()">📤 分享到微信</button>
+  </div>
+</div>
+
+<!-- 日历抽屉 -->
+<div class="cal-drawer" id="calDrawer">
+  <div class="cal-drawer-bar">
+    <button class="cal-close" onclick="closeCalendar()">‹ 关闭</button>
+    <div class="cal-drawer-title">📅 近期活动</div>
+    <button class="cal-refresh" id="calRefreshBtn" onclick="loadCalendarData()">↻ 刷新</button>
+  </div>
+  <div class="cal-content" id="calContent">
+    <div class="cal-empty"><span class="cal-empty-icon">📅</span><span class="cal-empty-text">点击刷新加载活动</span></div>
+  </div>
+</div>
+
+<!-- 密码弹窗 -->
+<div class="pwd-overlay" id="pwdOverlay">
+  <div class="pwd-modal">
+    <div class="pwd-modal-title" id="pwdTitle">🔐 需要验证身份</div>
+    <div class="pwd-modal-sub" id="pwdSub">输入协作密码才能录入或更新飞书记录</div>
+    <input class="pwd-input" id="pwdInput" type="text"
+      placeholder="输入密码" autocomplete="off"
+      autocapitalize="off" autocorrect="off" spellcheck="false"
+      onkeydown="if(event.key==='Enter')confirmSync()">
+    <div class="pwd-err" id="pwdErr"></div>
+    <label class="pwd-remember">
+      <input type="checkbox" id="pwdRemember"> 本次会话记住密码
+    </label>
+    <div class="pwd-actions">
+      <button class="pwd-cancel" onclick="closePwdModal()">取消</button>
+      <button class="pwd-confirm" id="pwdConfirm" onclick="confirmSync()">确认录入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除二次确认弹窗 -->
+<div class="pwd-overlay" id="delConfirmOverlay">
+  <div class="pwd-modal">
+    <div class="pwd-modal-title" style="color:#c0392b">⚠️ 确认从飞书删除？</div>
+    <div class="pwd-modal-sub">将永久删除以下飞书记录：</div>
+    <div class="del-target" id="delTarget"></div>
+    <div class="pwd-modal-sub">此操作不可撤销，本地草稿也会一并清除。</div>
+    <div class="pwd-actions">
+      <button class="pwd-cancel" onclick="closeDelConfirm()">取消</button>
+      <button class="pwd-confirm danger" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CN_DAYS=['周日','周一','周二','周三','周四','周五','周六'];
+const today=new Date();today.setHours(0,0,0,0);
+let wkOffset=0,selDate=null,data={},uid=0,activePreviewId=null;
+
+function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function getMonStart(off){const d=new Date(today),day=d.getDay(),diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff+off*7);return d}
+function dayLabel(d){
+  const f=new Date(d);f.setHours(0,0,0,0);
+  const tom=new Date(today);tom.setDate(today.getDate()+1);
+  if(f.getTime()===today.getTime())return'今天';
+  if(f.getTime()===tom.getTime())return'明天';
+  return CN_DAYS[f.getDay()];
+}
+function renderWeek(){
+  const s=getMonStart(wkOffset),e=new Date(s);e.setDate(s.getDate()+6);
+  document.getElementById('wkRange').textContent=(s.getMonth()+1)+'月'+s.getDate()+'日 — '+(e.getMonth()+1)+'月'+e.getDate()+'日';
+  const strip=document.getElementById('wkStrip');strip.innerHTML='';
+  for(let i=0;i<7;i++){
+    const d=new Date(s);d.setDate(s.getDate()+i);
+    const key=fmt(d),lbl=dayLabel(d),isToday=d.getTime()===today.getTime(),isSel=selDate===key,hasDot=data[key]&&data[key].length>0;
+    const b=document.createElement('button');
+    b.className='day-btn'+(isToday?' is-today':'')+(isSel?' selected':'')+(hasDot?' has-dot':'');
+    b.innerHTML='<span class="day-name">'+CN_DAYS[d.getDay()]+'</span><span class="day-num">'+d.getDate()+'</span>'
+      +(lbl==='今天'||lbl==='明天'?'<span class="day-tag">'+lbl+'</span>':'<span class="day-tag" style="visibility:hidden">-</span>')
+      +(hasDot?'<span class="dot"></span>':'<span style="height:7px"></span>');
+    b.onclick=()=>selDay(key);
+    strip.appendChild(b);
+  }
+}
+function changeWeek(d){wkOffset+=d;renderWeek()}
+function selDay(key){selDate=key;if(!data[key])data[key]=[];renderWeek();renderActs()}
+function jumpToAct(key,aid){
+  const target=new Date(key+'T00:00:00');
+  const s=getMonStart(wkOffset),e=new Date(s);e.setDate(s.getDate()+6);
+  if(target<s||target>e){const ms=getMonStart(0);const diffDays=Math.round((target-ms)/86400000);wkOffset=Math.floor(diffDays/7);}
+  selDate=key;activePreviewId=aid;
+  renderWeek();renderActs();
+  setTimeout(()=>{
+    const card=document.getElementById('card-'+aid);
+    if(card){
+      const body=document.getElementById('body-'+aid);
+      if(body)body.style.display='';
+      card.classList.add('highlight');
+      card.scrollIntoView({behavior:'smooth',block:'nearest'});
+      setTimeout(()=>card.classList.remove('highlight'),1500);
+    }
+  },50);
+}
+function renderActs(){
+  if(!selDate)return;
+  const d=new Date(selDate+'T00:00:00');
+  document.getElementById('dayHead').textContent='【'+dayLabel(d)+'】'+(d.getMonth()+1)+'月'+d.getDate()+'日';
+  document.getElementById('addActBtn').style.display='block';
+  const list=document.getElementById('actsList');list.innerHTML='';
+  sortByTime(data[selDate]||[]).forEach((a,i)=>list.appendChild(makeCard(a,i)));
+  genPreview();
+}
+function find(id){for(const k in data){const f=data[k].find(a=>a.id===id);if(f)return f;}return null}
+// 从 a.time（"14:30-17:00" / "14:30" / 空）提取开始分钟数；无时间排到最后
+function actStartMin(a){
+  if(!a||!a.time) return 99999;
+  const m=a.time.match(/(\d{1,2})\s*[:：]\s*(\d{2})/);
+  if(!m) return 99999;
+  return parseInt(m[1],10)*60+parseInt(m[2],10);
+}
+function sortByTime(acts){return [...acts].sort((a,b)=>actStartMin(a)-actStartMin(b));}
+function upd(id,f,v){
+  const a=find(id);if(a){a[f]=v;genPreview();
+    if(f==='title'){const el=document.querySelector('#hdr-'+id+' .act-preview');if(el)el.textContent=v||'（未填标题）';}
+    if(f==='desc'){updateCharCounter(id);}}
+}
+function updateCharCounter(id){
+  const a=find(id);if(!a)return;
+  const el=document.getElementById('counter-'+id);if(!el)return;
+  const len=(a.desc||'').length;
+  el.textContent=len+'/50';
+  el.classList.toggle('over',len>50);
+}
+function makeCard(a,idx){
+  const card=document.createElement('div');card.className='act-card';card.id='card-'+a.id;
+  card.innerHTML='<div class="act-hdr" id="hdr-'+a.id+'" onclick="toggle(\''+a.id+'\')">'
+    +'<div class="act-num">'+(idx+1)+'</div>'
+    +'<div class="act-preview">'+(a.title||'（未填标题）')+'</div>'
+    +'<button class="del-btn" onclick="event.stopPropagation();delAct(\''+a.id+'\')">×</button>'
+    +'</div>'
+    +'<div class="act-body" id="body-'+a.id+'" style="display:none">'
+    +'<div class="field"><label>活动标题</label><input placeholder="如：手机摄影美学工作坊" value="'+esc(a.title)+'" oninput="upd(\''+a.id+'\',\'title\',this.value)"></div>'
+    +'<div class="field-row">'
+      +'<div class="field"><label>时间段</label><input placeholder="如：14:30-17:00" value="'+esc(a.time)+'" oninput="upd(\''+a.id+'\',\'time\',this.value)"></div>'
+      +'<div class="field"><label>地点</label><input placeholder="如：CYC链岛青年社区" value="'+esc(a.loc)+'" oninput="upd(\''+a.id+'\',\'loc\',this.value)"></div>'
+    +'</div>'
+    +'<div class="field-row">'
+      +'<div class="field"><label>费用<span class="opt">选填</span></label><input placeholder="如：随喜 / 60元" value="'+esc(a.fee)+'" oninput="upd(\''+a.id+'\',\'fee\',this.value)"></div>'
+      +'<div class="field"><label>报名方式<span class="opt">选填</span></label><input placeholder="如：群内接龙" value="'+esc(a.signup)+'" oninput="upd(\''+a.id+'\',\'signup\',this.value)"></div>'
+    +'</div>'
+    +'<div class="field">'
+      +'<div class="label-row"><label>活动简介<span class="opt">建议 ≤ 50 字</span></label>'
+        +'<span class="char-counter" id="counter-'+a.id+'">0/50</span></div>'
+      +'<textarea placeholder="一句话点睛（用于微信群通告，过长会被折叠）" oninput="upd(\''+a.id+'\',\'desc\',this.value)">'+esc(a.desc)+'</textarea>'
+    +'</div>'
+    +'<div class="field"><label>详情·流程<span class="opt">选填，每行一条 — 详细介绍 / 时间节点 / 注意事项</span></label>'
+      +'<div class="flow-list" id="flow-'+a.id+'"></div>'
+      +'<button class="add-sub" onclick="addFlow(\''+a.id+'\')">＋ 添加一条</button>'
+    +'</div>'
+    +'<div class="field"><label>带领人 / 分享嘉宾<span class="opt">选填 · 多人请用 ＋ 添加 或在一栏内用逗号 / 顿号 / 斜杠隔开</span></label>'
+      +'<div class="spk-list" id="spk-'+a.id+'"></div>'
+      +'<button class="add-sub" onclick="addSpk(\''+a.id+'\')">＋ 添加嘉宾</button>'
+    +'</div>'
+    +'<div class="field"><label>目前状态<span class="opt">选填</span></label>'
+      +'<div class="status-pills" id="pills-'+a.id+'">'
+        +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'筹备酝酿中\',this)">🌱 筹备酝酿中</button>'
+        +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'确认举办\',this)">✅ 确认举办</button>'
+        +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'办完了！\',this)">🎉 办完了！</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="field"><label>活动类型<span class="opt">选填 · 多选 · 助力成员匹配兴趣</span></label>'
+      +'<div class="types-multi" id="types-'+a.id+'">'
+        +'<div class="types-chips" id="types-chips-'+a.id+'"></div>'
+        +'<input class="types-input" id="types-input-'+a.id+'" type="text" maxlength="20" placeholder="加新类型…" onkeydown="typesKeydown(event,\''+a.id+'\')">'
+      +'</div>'
+    +'</div>'
+    +'<div class="field"><label>活动海报<span class="opt">选填，最大 3MB</span></label>'
+      // 上传区（无海报时显示）
+      +'<div class="poster-upload" id="poster-upload-'+a.id+'" onclick="triggerPoster(\''+a.id+'\')">'
+        +'<span class="poster-upload-icon">🖼️</span>'
+        +'<span>点击上传活动海报</span>'
+        +'<span class="poster-upload-tip">JPG / PNG · 最大 3MB</span>'
+      +'</div>'
+      // 预览区（已有海报时显示）
+      +'<div class="poster-preview" id="poster-preview-'+a.id+'" style="display:none">'
+        +'<img class="poster-preview-img" id="poster-img-'+a.id+'" alt="活动海报" style="cursor:pointer" onclick="openPosterLightboxById(\''+a.id+'\')">'
+        +'<div class="poster-preview-actions">'
+          +'<button type="button" class="poster-preview-btn" onclick="triggerPoster(\''+a.id+'\')">↻ 替换图片</button>'
+          +'<button type="button" class="poster-preview-btn danger" onclick="clearPoster(\''+a.id+'\')">× 移除</button>'
+        +'</div>'
+      +'</div>'
+      +'<input type="file" id="poster-input-'+a.id+'" accept="image/*" style="display:none" onchange="handlePoster(\''+a.id+'\',this)">'
+    +'</div>'
+    +'<hr class="sync-divider">'
+    +'<div class="sync-row">'
+      +'<button class="sync-btn" id="sync-'+a.id+'" onclick="syncToFeishu(\''+a.id+'\')">'
+        +'<span id="sync-icon-'+a.id+'">📥</span>'
+        +'<span id="sync-label-'+a.id+'">录入飞书多维表格</span>'
+      +'</button>'
+      +'<button class="del-feishu-btn" id="del-feishu-'+a.id+'" title="从飞书删除" onclick="askDeleteFeishu(\''+a.id+'\')">🗑️</button>'
+    +'</div>'
+    +'</div>';
+  setTimeout(()=>{
+    renderFlows(a); renderSpks(a); initStatusPills(a); renderTypes(a);
+    updateSyncBtn(a.id);
+    updateCharCounter(a.id);
+    if (a.poster?.base64)           showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
+    else if (a.poster?.file_token)  showPosterPreview(a.id, '/api/poster?token='+encodeURIComponent(a.poster.file_token));
+    else if (a.poster?.url)         showPosterPreview(a.id, a.poster.url);
+  },0);
+  return card;
+}
+function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function toggle(id){const b=document.getElementById('body-'+id);b.style.display=b.style.display==='none'?'':'none'}
+function addAct(){
+  if(!selDate)return;
+  if(!data[selDate])data[selDate]=[];
+  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[],status:'',poster:null,types:[]};
+  data[selDate].push(a);renderActs();renderWeek();
+  setTimeout(()=>{const b=document.getElementById('body-'+a.id);if(b)b.style.display='';},50);
+}
+function delAct(id){for(const k in data)data[k]=data[k].filter(a=>a.id!==id);renderActs();renderWeek()}
+function addFlow(id){const a=find(id);if(!a)return;a.flow.push('');renderFlows(a);genPreview()}
+function rmFlow(id,i){const a=find(id);if(!a)return;a.flow.splice(i,1);renderFlows(a);genPreview()}
+function updFlow(id,i,v){const a=find(id);if(a){a.flow[i]=v;genPreview()}}
+function renderFlows(a){
+  const c=document.getElementById('flow-'+a.id);if(!c)return;
+  c.innerHTML=a.flow.map((f,i)=>'<div class="flow-row"><input type="text" placeholder="如：本次活动我们将... / 15:00 开场" value="'+esc(f)+'" oninput="updFlow(\''+a.id+'\','+i+',this.value)"><button class="rm" onclick="rmFlow(\''+a.id+'\','+i+')">×</button></div>').join('');
+}
+function addSpk(id){const a=find(id);if(!a)return;a.spk.push({name:'',bio:''});renderSpks(a)}
+function rmSpk(id,i){const a=find(id);if(!a)return;a.spk.splice(i,1);renderSpks(a);genPreview()}
+function updSpk(id,i,f,v){const a=find(id);if(a){a.spk[i][f]=v;genPreview()}}
+function renderSpks(a){
+  const c=document.getElementById('spk-'+a.id);if(!c)return;
+  c.innerHTML=a.spk.map((s,i)=>'<div class="spk-row"><input type="text" placeholder="姓名" value="'+esc(s.name)+'" oninput="updSpk(\''+a.id+'\','+i+',\'name\',this.value)"><input type="text" placeholder="背景简介" value="'+esc(s.bio)+'" oninput="updSpk(\''+a.id+'\','+i+',\'bio\',this.value)"><button class="rm" onclick="rmSpk(\''+a.id+'\','+i+')">×</button></div>').join('');
+}
+
+// ── 活动类型 multi-select ──
+// 候选选项 = 全场已有活动用过的 types union（_calActs 在切活动抽屉时填充；
+// 没数据时回退到下面的预设默认值）。新输入的回车加入，自动出现在候选里
+const TYPES_DEFAULTS = ['户外','身体','疗愈','艺术','学习','创作','美食','社区','自然','对话'];
+function knownTypeOptions(a){
+  const set = new Set();
+  // _calActs 是抽屉里拉到的活动列表（同步飞书数据后）；这里 union 它们已选的 types
+  if (typeof _calActs !== 'undefined') {
+    for (const x of (_calActs || [])) for (const t of (x.types || [])) if (t) set.add(t);
+  }
+  for (const t of TYPES_DEFAULTS) set.add(t);
+  for (const t of (a.types || []))   set.add(t);
+  return [...set];
+}
+function renderTypes(a){
+  if (!a.types) a.types = [];
+  const c = document.getElementById('types-chips-'+a.id); if (!c) return;
+  const options = knownTypeOptions(a);
+  const sel = new Set(a.types);
+  c.innerHTML = options.map(t => {
+    const on = sel.has(t);
+    return '<button type="button" class="type-chip'+(on?' is-on':'')+'" onclick="toggleType(\''+a.id+'\',\''+esc(t).replace(/'/g,"\\'")+'\')">'+esc(t)+'</button>';
+  }).join('');
+}
+function toggleType(id, t){
+  const a = find(id); if (!a) return;
+  if (!a.types) a.types = [];
+  const i = a.types.indexOf(t);
+  if (i >= 0) a.types.splice(i,1); else a.types.push(t);
+  renderTypes(a); genPreview();
+}
+function typesKeydown(e, id){
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const v = e.target.value.trim();
+  if (!v) return;
+  const a = find(id); if (!a) return;
+  if (!a.types) a.types = [];
+  if (!a.types.includes(v)) a.types.push(v);
+  e.target.value = '';
+  renderTypes(a); genPreview();
+}
+// full=true 完整版：含详情·流程 + 嘉宾；false 简版：仅 meta + 简介
+function actBodyText(a, full){
+  let t='';
+  if(a.time)t+='⏰ '+a.time+'\n';
+  if(a.loc)t+='📍 '+a.loc+'\n';
+  if(a.fee)t+='💰 '+a.fee+'\n';
+  if(a.signup)t+='🙋 报名：'+a.signup+'\n';
+  if(a.desc)t+='\n'+a.desc+'\n';
+  if(full){
+    const fl=a.flow.filter(f=>f);
+    if(fl.length)t+='\n🗓️ 详情·流程：\n'+fl.join('\n')+'\n';
+    const sp=a.spk.filter(s=>s.name||s.bio);
+    if(sp.length)t+='\n分享嘉宾：\n'+sp.map(s=>s.name+(s.bio?'，'+s.bio:'')).join('\n')+'\n';
+  }
+  return t.trim();
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+let copyMode='brief';   // 'brief' | 'full'
+function setCopyMode(mode){
+  copyMode=mode;
+  document.querySelectorAll('.copy-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  const hint=document.getElementById('copyModeHint');
+  if(hint) hint.textContent = mode==='brief'
+    ? '仅含简介，避免微信折叠（推荐发群用）'
+    : '含完整详情·流程 + 嘉宾，文本较长';
+  genPreview();
+}
+const CYC_FOOTER = '\n\n———————————\n📍 完整活动详情 · 在线日历\nhttps://cyc.center';
+
+function genPreview(){
+  const todayStr=fmt(today);
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].length&&k>=todayStr).sort();
+  const box=document.getElementById('preview');
+  if(!days.length){box.innerHTML='<div class="preview-empty">还没有未来的活动。在左侧选择日期添加活动，或点上方「☁️ 从飞书读取本周活动」拉取已有记录。</div>';return}
+  const full = copyMode === 'full';
+  let html='<div class="preview-global-head">CYC本周活动更新</div>';
+  days.forEach(key=>{
+    const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
+    html+='<div class="preview-day">';
+    sortByTime(data[key]).forEach(a=>{
+      const isActive=activePreviewId===a.id;
+      const body=actBodyText(a, full);
+      html+='<div class="preview-act'+(isActive?' active-preview':'')+'" onclick="jumpToAct(\''+key+'\',\''+a.id+'\')">'
+        +'<div class="preview-act-hdr"><span>【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题')+'</span><span class="edit-hint">点击编辑 →</span></div>'
+        +(body?'<div class="preview-act-body">'+escHtml(body)+'</div>':'')
+        +'</div>';
+    });
+    html+='</div>';
+  });
+  // cyc.center 引导卡片
+  html+='<div class="preview-cyc-footer">📍 完整活动详情 · 在线日历<br><a href="https://cyc.center" target="_blank" rel="noopener">https://cyc.center</a></div>';
+  box.innerHTML=html;
+  renderPosterGallery();
+}
+function plainText(){
+  const todayStr=fmt(today);
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].length&&k>=todayStr).sort();
+  if(!days.length)return'';
+  const full = copyMode === 'full';
+  let txt='CYC本周活动更新';
+  days.forEach(key=>{
+    const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
+    sortByTime(data[key]).forEach(a=>{
+      txt+='\n\n【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题');
+      const b=actBodyText(a, full);if(b)txt+='\n'+b;
+    });
+  });
+  txt += CYC_FOOTER;
+  return txt.trim();
+}
+function doCopy(){
+  const t=plainText();if(!t)return;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById('copyBtn');b.textContent='✓ 已复制！';b.classList.add('ok');
+    setTimeout(()=>{b.textContent='复制通告文本';b.classList.remove('ok')},2000);
+  });
+}
+
+// ── 根据 record_id 动态更新同步按钮文案 + 显隐删除按钮 ──
+function updateSyncBtn(id) {
+  const a     = find(id); if (!a) return;
+  const icon  = document.getElementById('sync-icon-'  + id);
+  const label = document.getElementById('sync-label-' + id);
+  const delBtn = document.getElementById('del-feishu-' + id);
+  if (!icon || !label) return;
+  if (a.record_id) {
+    icon.textContent  = '✏️';
+    label.textContent = '更新飞书记录';
+    if (delBtn) delBtn.classList.add('show');
+  } else {
+    icon.textContent  = '📥';
+    label.textContent = '录入飞书多维表格';
+    if (delBtn) delBtn.classList.remove('show');
+  }
+}
+
+// ── 从飞书读取本周活动 ──
+async function fetchFromFeishu() {
+  const btn    = document.getElementById('fetchBtn');
+  const icon   = document.getElementById('fetchIcon');
+  const lbl    = document.getElementById('fetchLabel');
+  const status = document.getElementById('fetchStatus');
+
+  btn.disabled     = true;
+  icon.textContent = '⏳';
+  lbl.textContent  = '读取中…';
+  status.textContent = '';
+
+  const s = getMonStart(wkOffset);
+  const e = new Date(s); e.setDate(s.getDate() + 6);
+  const weekStart = fmt(s), weekEnd = fmt(e);
+
+  try {
+    const res  = await fetch('/api/get-activities', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ weekStart, weekEnd }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error || '请求失败');
+
+    if (json.count === 0) {
+      status.textContent = '本周暂无记录';
+    } else {
+      // 按日期分组写入 data
+      json.activities.forEach(act => {
+        if (!act.date) return;
+        if (!data[act.date]) data[act.date] = [];
+        // 已有相同 record_id 的跳过（避免重复）
+        const exists = data[act.date].find(x => x.record_id === act.record_id);
+        if (!exists) {
+          act.id = 'a' + (uid++); // 分配本地 id
+          data[act.date].push(act);
+        }
+      });
+      status.textContent = `已载入 ${json.count} 个活动`;
+      renderWeek();
+      if (selDate) renderActs();
+      genPreview();
+    }
+  } catch (err) {
+    status.textContent = '读取失败：' + err.message;
+  } finally {
+    btn.disabled     = false;
+    icon.textContent = '☁️';
+    lbl.textContent  = '从飞书读取本周活动';
+    setTimeout(() => { status.textContent = ''; }, 4000);
+  }
+}
+
+// ── 进页面后自动拉一次本周飞书活动 ──
+// 之前用户必须手动点「☁️ 从飞书读取本周活动」，反直觉；改成首次加载就抓
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => fetchFromFeishu(), 200);
+});
+
+// ── Status pills ──
+const STATUS_CLASS = {'筹备酝酿中':'sp-active','确认举办':'sp-orange','办完了！':'sp-done'};
+function updStatus(id, val, btn) {
+  const a = find(id); if (!a) return;
+  if (a.status === val) {
+    a.status = '';
+    btn.classList.remove('sp-active','sp-orange','sp-done');
+  } else {
+    a.status = val;
+    document.querySelectorAll('#pills-'+id+' .status-pill')
+      .forEach(p => p.classList.remove('sp-active','sp-orange','sp-done'));
+    btn.classList.add(STATUS_CLASS[val] || 'sp-active');
+  }
+}
+function initStatusPills(a) {
+  if (!a.status) return;
+  const pills = document.querySelectorAll('#pills-'+a.id+' .status-pill');
+  pills.forEach(p => {
+    if (p.textContent.includes(a.status.replace(/[🌱✅🎉]\s*/,'')))
+      p.classList.add(STATUS_CLASS[a.status] || 'sp-active');
+  });
+}
+
+// ── Poster upload ──
+function triggerPoster(id) { document.getElementById('poster-input-'+id).click(); }
+function handlePoster(id, input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { alert('图片不能超过 3MB'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const a = find(id); if (!a) return;
+    a.poster = { name: file.name, type: file.type, size: file.size, base64: e.target.result.split(',')[1] };
+    showPosterPreview(id, e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+function showPosterPreview(id, src) {
+  const img    = document.getElementById('poster-img-'+id);
+  const upload = document.getElementById('poster-upload-'+id);
+  const prev   = document.getElementById('poster-preview-'+id);
+  if (!img || !upload || !prev) return;
+
+  // 先显示加载占位
+  img.classList.add('loading');
+  img.onload  = () => img.classList.remove('loading');
+  img.onerror = () => {
+    // 加载失败：回退到上传态，并提示
+    img.classList.remove('loading');
+    upload.style.display = 'flex';
+    prev.style.display   = 'none';
+    upload.querySelector('span:nth-child(2)').textContent = '海报加载失败，点击重新上传';
+  };
+  img.src = src;
+  upload.style.display = 'none';
+  prev.style.display   = 'flex';
+}
+
+function clearPoster(id) {
+  const a = find(id); if (!a) return;
+  a.poster = null;
+  const img    = document.getElementById('poster-img-'+id);
+  const upload = document.getElementById('poster-upload-'+id);
+  const prev   = document.getElementById('poster-preview-'+id);
+  const inp    = document.getElementById('poster-input-'+id);
+  if (img) { img.src = ''; img.classList.remove('loading'); }
+  if (upload) {
+    upload.style.display = 'flex';
+    const t = upload.querySelector('span:nth-child(2)');
+    if (t) t.textContent = '点击上传活动海报';
+  }
+  if (prev) prev.style.display = 'none';
+  if (inp)  inp.value = '';
+}
+
+// ── 汉堡菜单抽屉 ──
+function openMenu() {
+  document.getElementById('menuDrawer').classList.add('open');
+  document.getElementById('menuBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMenu() {
+  document.getElementById('menuDrawer').classList.remove('open');
+  document.getElementById('menuBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+// ESC 键关闭抽屉
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('lightbox').classList.contains('open')) closeLightbox();
+    else if (document.getElementById('menuDrawer').classList.contains('open')) closeMenu();
+    else if (document.getElementById('calDrawer').classList.contains('open')) closeCalendar();
+  }
+});
+
+// ── 日历抽屉 ──
+function openCalendar() {
+  document.getElementById('calDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadCalendarData();
+}
+function closeCalendar() {
+  document.getElementById('calDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function loadCalendarData() {
+  const content = document.getElementById('calContent');
+  const btn     = document.getElementById('calRefreshBtn');
+  content.innerHTML = '<div class="cal-loading">⏳ 加载中…</div>';
+  if (btn) btn.classList.add('spinning');
+
+  // 拉取前 7 天 + 后 35 天（约 6 周）
+  const base  = new Date(); base.setHours(0,0,0,0);
+  const start = new Date(base); start.setDate(base.getDate() - 7);
+  const end   = new Date(base); end.setDate(base.getDate() + 35);
+
+  try {
+    const res  = await fetch('/api/get-activities', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ weekStart: fmt(start), weekEnd: fmt(end) }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || '请求失败');
+    renderCalendarContent(json.activities, fmt(start), fmt(end));
+  } catch (err) {
+    content.innerHTML = '<div class="cal-err">😕 ' + err.message + '<br><br><button class="fetch-btn" style="display:inline-flex;margin:auto" onclick="loadCalendarData()">重试</button></div>';
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
+}
+
+const CAL_BADGE = {'筹备酝酿中':'badge-plan','确认举办':'badge-confirm','办完了！':'badge-done'};
+let _calActs = [];   // 抽屉内当前活动列表（用 record_id 索引）
+
+function renderCalendarContent(activities, rangeStart, rangeEnd) {
+  _calActs = activities;
+  const content = document.getElementById('calContent');
+  if (!activities.length) {
+    content.innerHTML = '<div class="cal-empty"><span class="cal-empty-icon">🌿</span><span class="cal-empty-text">近期暂无活动安排</span></div>';
+    return;
+  }
+
+  // 按日期分组
+  const groups = {};
+  activities.forEach(a => {
+    if (!groups[a.date]) groups[a.date] = [];
+    groups[a.date].push(a);
+  });
+
+  const todayStr = fmt(new Date());
+  // 未来（含今天）升序在前，过去降序在后
+  const allDates  = Object.keys(groups);
+  const upcoming  = allDates.filter(d => d >= todayStr).sort();
+  const past      = allDates.filter(d => d <  todayStr).sort().reverse();
+  const sortedDates = [...upcoming, ...past];
+
+  let html = '<div class="cal-range-label">' + rangeStart.slice(5).replace('-','/') + ' — ' + rangeEnd.slice(5).replace('-','/') + '</div>';
+
+  sortedDates.forEach(date => {
+    const d   = new Date(date + 'T00:00:00');
+    const m   = d.getMonth() + 1, day = d.getDate();
+    const dow = CN_DAYS[d.getDay()];
+    const isPast  = date < todayStr;
+    const isToday = date === todayStr;
+
+    html += '<div class="cal-group">';
+    html += '<div class="cal-group-head" style="' + (isPast?'opacity:0.5':'') + '">';
+    html += (isToday ? '📍 今天  ' : '') + m + '月' + day + '日  ' + dow;
+    html += '</div>';
+
+    sortByTime(groups[date]).forEach(a => {
+      const badgeCls = CAL_BADGE[a.status] || '';
+      const rid      = a.record_id || '';
+      const thumbSrc = a.poster?.file_token
+        ? '/api/poster?token=' + encodeURIComponent(a.poster.file_token)
+        : (a.poster?.url || '');
+      html += '<div class="cal-act-item" data-rid="' + rid + '" style="' + (isPast?'opacity:0.7':'') + '" onclick="toggleCalAct(\'' + rid + '\')">';
+      html += '<div class="cal-act-head">';
+      if (thumbSrc) html += '<img class="cal-act-thumb" src="' + thumbSrc + '" alt="海报" onclick="event.stopPropagation();openPosterLightboxByRid(\'' + rid + '\')" onerror="this.style.display=\'none\'">';
+      html += '<div class="cal-act-head-main">';
+      html += '<div class="cal-act-title">' + escHtml(a.title || '（无标题）') + '</div>';
+      html += '<div class="cal-act-meta">';
+      if (a.time) html += '<span>⏰ ' + escHtml(a.time) + '</span>';
+      if (a.loc)  html += '<span>📍 ' + escHtml(a.loc)  + '</span>';
+      if (a.fee)  html += '<span>💰 ' + escHtml(a.fee)  + '</span>';
+      html += '</div>';
+      if (a.status && badgeCls)
+        html += '<span class="cal-act-badge ' + badgeCls + '">' + escHtml(a.status) + '</span>';
+      // 活动类型 chip（multi-select；多个时多行换行）
+      if (a.types && a.types.length) {
+        html += '<div class="cal-act-types">'
+          + a.types.map(t => '<span class="cal-act-type">' + escHtml(t) + '</span>').join('')
+          + '</div>';
+      }
+      html += '</div><span class="cal-act-chevron">›</span></div>';
+
+      // 展开详情
+      html += '<div class="cal-act-detail">';
+      if (a.signup) html += renderDetailRow('报名方式', escHtml(a.signup));
+      if (a.desc)   html += renderDetailRow('活动简介', '<span class="cal-detail-text">' + escHtml(a.desc) + '</span>');
+      if (a.flow && a.flow.length)
+        html += renderDetailRow('详情·流程', '<ul class="cal-detail-flow">' + a.flow.map(f => '<li>' + escHtml(f) + '</li>').join('') + '</ul>');
+      if (a.spk && a.spk.length) {
+        const spkHtml = '<div class="cal-detail-spk">' + a.spk.map(s =>
+          '<div class="cal-detail-spk-row"><span class="cal-detail-spk-name">' + escHtml(s.name) + '</span>' +
+          (s.bio ? '<span class="cal-detail-spk-bio">　' + escHtml(s.bio) + '</span>' : '') + '</div>'
+        ).join('') + '</div>';
+        html += renderDetailRow('带领人 / 嘉宾', spkHtml);
+      }
+      if (a.poster && (a.poster.file_token || a.poster.url)) {
+        const src = a.poster.file_token
+          ? '/api/poster?token=' + encodeURIComponent(a.poster.file_token)
+          : a.poster.url;
+        html += renderDetailRow('活动海报', '<img class="cal-detail-poster" src="' + src + '" style="cursor:pointer" onclick="event.stopPropagation();openPosterLightboxByRid(\'' + (a.record_id||'') + '\')" alt="poster">');
+      }
+
+      // 主 CTA：跳到 /events/:id（SSR 公开页，有完整报名 UI 和分享卡）
+      // 仅当活动有 record_id 才能跳（来自飞书的活动都有；本地未同步的草稿没有）
+      if (rid) {
+        html += '<a class="cal-act-rsvp-btn" href="/events/' + encodeURIComponent(rid) + '" '
+              + 'target="_blank" rel="noopener" onclick="event.stopPropagation()">'
+              + '💬 查看详情 · 我要报名 <span class="cal-rsvp-arrow">→</span>'
+              + '</a>';
+      }
+      // 次 CTA：编辑（仍是全宽绿，但放在报名下方层级更低）
+      html += '<button class="cal-act-edit-btn" onclick="event.stopPropagation();editFromCalendar(\'' + rid + '\')">✏️ 跳转编辑此活动</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  content.innerHTML = html;
+}
+
+function renderDetailRow(label, contentHtml) {
+  return '<div class="cal-detail-row"><span class="cal-detail-label">' + label + '</span>' + contentHtml + '</div>';
+}
+
+// 点击展开 / 收起活动卡（同时只展开一张）
+function toggleCalAct(rid) {
+  if (!rid) return;
+  const item = document.querySelector('.cal-act-item[data-rid="' + rid + '"]');
+  if (!item) return;
+  const wasOpen = item.classList.contains('expanded');
+  document.querySelectorAll('.cal-act-item.expanded').forEach(el => el.classList.remove('expanded'));
+  if (!wasOpen) item.classList.add('expanded');
+}
+
+// 从日历跳转到主面板编辑此活动
+function editFromCalendar(rid) {
+  if (!rid) return;
+  const actData = _calActs.find(x => x.record_id === rid);
+  if (!actData || !actData.date) return;
+
+  // 已存在则复用，不存在则注入到本地 data
+  let existing = null;
+  if (data[actData.date]) {
+    existing = data[actData.date].find(x => x.record_id === rid);
+  }
+  let id;
+  if (existing) {
+    id = existing.id;
+    // 顺便用最新的飞书数据覆盖一下
+    Object.assign(existing, actData, { id });
+  } else {
+    if (!data[actData.date]) data[actData.date] = [];
+    const localAct = Object.assign({}, actData, { id: 'a' + (uid++) });
+    data[actData.date].push(localAct);
+    id = localAct.id;
+  }
+
+  // 关闭抽屉，跳转编辑
+  closeCalendar();
+  setTimeout(() => jumpToAct(actData.date, id), 350);
+}
+
+// ── 嘉宾联动结果展示（add-activity 成功后调用） ──
+function showSpeakerSyncDetail(id, sync, typesDropped) {
+  const row = document.getElementById('sync-' + id)?.parentElement;
+  if (!row) return;
+  // 先移除旧的
+  const old = row.parentElement.querySelector('#sync-detail-' + id);
+  if (old) old.remove();
+  // 如果什么提示都没（无嘉宾联动 + types 也写入 OK）→ 不显示
+  if (!sync && !typesDropped) return;
+
+  const lines = [];
+  if (typesDropped) {
+    lines.push('<span class="sync-detail-line sync-detail-warn">⚠ 飞书活动表还未添加「活动类型」字段，本次类型未保存。请去飞书表头加 multi-select 字段「活动类型」后重新同步</span>');
+  }
+  if (!sync) { /* 只 typesDropped，跳到下面渲染 */ }
+  else if (sync.error) {
+    lines.push('<span class="sync-detail-line sync-detail-warn">嘉宾联动失败：' + esc(sync.error) + '</span>');
+  } else if ((sync.written || 0) === 0 && (sync.removed || 0) === 0) {
+    if (!typesDropped) return;   // 没动作 + 没 types 警告 → 啥都不显示
+  } else {
+    const matched = (sync.names_matched      || []).length;
+    const created = (sync.names_auto_created || []);
+    const total   = sync.written || 0;
+
+    let parts = ['已写入 <strong>' + total + '</strong> 条嘉宾 RSVP'];
+    if (matched) parts.push('匹配 <strong>' + matched + '</strong> 位老成员');
+    if (created.length) parts.push('新建 <strong>' + created.length + '</strong> 位');
+    lines.push('<span class="sync-detail-line">' + parts.join(' · ') + '</span>');
+
+    if (created.length) {
+      lines.push('<span class="sync-detail-line sync-detail-mute">新建成员：'
+        + created.map(esc).join('、') + '（仅称呼，admin 后台可补全资料）</span>');
+    }
+    if (sync.removed) {
+      lines.push('<span class="sync-detail-line sync-detail-mute">替换了 ' + sync.removed + ' 条旧记录</span>');
+    }
+    const failed = sync.names_create_failed || [];
+    if (failed.length) {
+      lines.push('<span class="sync-detail-line sync-detail-warn">自动建成员失败：'
+        + failed.map(esc).join('、') + '（请到飞书手动加）</span>');
+    }
+  }
+
+  const el = document.createElement('div');
+  el.id = 'sync-detail-' + id;
+  el.className = 'sync-detail';
+  el.innerHTML = lines.join('');
+  row.parentElement.insertBefore(el, row.nextSibling);
+  requestAnimationFrame(() => el.classList.add('show'));
+
+  // 8 秒后淡出
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 400);
+  }, 8000);
+}
+
+// ── 密码弹窗（通用：sync / delete） ──
+let _pendingAction = null;   // { type: 'sync' | 'delete', id: string }
+
+function syncToFeishu(id) {
+  const a = find(id);
+  if (!a) return;
+  if (!a.title) { alert('请先填写活动标题再录入'); return; }
+  const cached = sessionStorage.getItem('cyc_sync_pwd');
+  if (cached) {
+    doSync(id, cached);
+  } else {
+    showPasswordModal({ type: 'sync', id });
+  }
+}
+
+function showPasswordModal(action) {
+  _pendingAction = action;
+  const overlay  = document.getElementById('pwdOverlay');
+  const input    = document.getElementById('pwdInput');
+  const title    = document.getElementById('pwdTitle');
+  const sub      = document.getElementById('pwdSub');
+  const confirmBtn = document.getElementById('pwdConfirm');
+
+  if (action.type === 'delete') {
+    title.textContent     = '🔐 验证身份后删除';
+    sub.textContent       = '输入协作密码才能从飞书删除记录';
+    confirmBtn.textContent = '验证并删除';
+    confirmBtn.classList.add('danger');
+  } else {
+    title.textContent     = '🔐 需要验证身份';
+    sub.textContent       = '输入协作密码才能录入或更新飞书记录';
+    confirmBtn.textContent = '确认录入';
+    confirmBtn.classList.remove('danger');
+  }
+
+  document.getElementById('pwdErr').textContent = '';
+  input.value = '';
+  overlay.classList.add('open');
+  setTimeout(() => input.focus(), 120);
+}
+
+function closePwdModal() {
+  document.getElementById('pwdOverlay').classList.remove('open');
+  _pendingAction = null;
+}
+
+async function confirmSync() {
+  const input = document.getElementById('pwdInput');
+  const pwd   = input.value.trim();
+  if (!pwd) { document.getElementById('pwdErr').textContent = '请输入密码'; return; }
+
+  const remember = document.getElementById('pwdRemember').checked;
+  document.getElementById('pwdOverlay').classList.remove('open');
+
+  const action = _pendingAction;
+  _pendingAction = null;
+
+  if (remember) sessionStorage.setItem('cyc_sync_pwd', pwd);
+
+  if (!action) return;
+  if (action.type === 'sync')   await doSync(action.id, pwd);
+  if (action.type === 'delete') await doDelete(action.id, pwd);
+}
+
+// ── 删除二次确认弹窗 ──
+let _pendingDeleteId = null;
+
+function askDeleteFeishu(id) {
+  const a = find(id);
+  if (!a || !a.record_id) return;
+  document.getElementById('delTarget').textContent = a.title || '（无标题活动）';
+  _pendingDeleteId = id;
+  document.getElementById('delConfirmOverlay').classList.add('open');
+}
+
+function closeDelConfirm() {
+  document.getElementById('delConfirmOverlay').classList.remove('open');
+  _pendingDeleteId = null;
+}
+
+function confirmDelete() {
+  const id = _pendingDeleteId;
+  _pendingDeleteId = null;
+  document.getElementById('delConfirmOverlay').classList.remove('open');
+  if (!id) return;
+
+  const cached = sessionStorage.getItem('cyc_sync_pwd');
+  if (cached) {
+    doDelete(id, cached);
+  } else {
+    showPasswordModal({ type: 'delete', id });
+  }
+}
+
+async function doDelete(id, password) {
+  const a = find(id);
+  if (!a || !a.record_id) return;
+
+  const btn = document.getElementById('del-feishu-' + id);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+  try {
+    const res = await fetch('/api/delete-activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_id: a.record_id, password }),
+    });
+    const json = await res.json();
+
+    // 密码错误 → 清缓存，重新弹密码窗
+    if (res.status === 401) {
+      sessionStorage.removeItem('cyc_sync_pwd');
+      if (btn) { btn.disabled = false; btn.textContent = '🗑️'; }
+      showPasswordModal({ type: 'delete', id });
+      setTimeout(() => { document.getElementById('pwdErr').textContent = '密码错误，请重试'; }, 80);
+      return;
+    }
+
+    if (!res.ok || !json.success) throw new Error(json.error || '未知错误');
+
+    // 成功 → 从本地数据移除
+    for (const k in data) {
+      data[k] = data[k].filter(x => x.id !== id);
+    }
+    renderActs();
+    renderWeek();
+
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = '🗑️'; }
+    alert('删除失败：' + err.message);
+  }
+}
+
+async function doSync(id, password) {
+  const a = find(id);
+  if (!a) return;
+
+  // 找到这个活动对应的日期
+  let date = null;
+  for (const k in data) {
+    if (data[k].find(x => x.id === id)) { date = k; break; }
+  }
+  if (!date) return;
+
+  const btn   = document.getElementById('sync-' + id);
+  const icon  = document.getElementById('sync-icon-' + id);
+  const label = document.getElementById('sync-label-' + id);
+
+  btn.disabled = true;
+  btn.classList.add('syncing');
+  icon.textContent  = '⏳';
+  label.textContent = '录入中…';
+
+  try {
+    const res = await fetch('/api/add-activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity: a, date, password }),
+    });
+    const json = await res.json();
+
+    // 密码错误 → 清缓存，重新弹窗
+    if (res.status === 401) {
+      sessionStorage.removeItem('cyc_sync_pwd');
+      btn.classList.remove('syncing');
+      btn.disabled = false;
+      updateSyncBtn(id);
+      showPasswordModal({ type: 'sync', id });
+      setTimeout(() => { document.getElementById('pwdErr').textContent = '密码错误，请重试'; }, 80);
+      return;
+    }
+
+    if (!res.ok || !json.success) throw new Error(json.error || '未知错误');
+
+    // 保存 record_id，后续同步变为「更新」
+    if (json.record_id) {
+      const a2 = find(id);
+      if (a2) a2.record_id = json.record_id;
+    }
+    btn.classList.remove('syncing');
+    btn.classList.add('ok');
+    icon.textContent  = '✓';
+    label.textContent = json.is_update ? '已更新飞书记录' : '已录入飞书';
+
+    showSpeakerSyncDetail(id, json.speaker_sync, json.types_dropped);
+
+    setTimeout(() => {
+      btn.classList.remove('ok');
+      btn.disabled = false;
+      updateSyncBtn(id);
+    }, 3000);
+
+  } catch (err) {
+    btn.classList.remove('syncing');
+    btn.classList.add('err');
+    icon.textContent  = '✕';
+    label.textContent = err.message;
+    setTimeout(() => {
+      btn.classList.remove('err');
+      btn.disabled = false;
+      updateSyncBtn(id);
+    }, 4000);
+  }
+}
+
+// ═══════════════════════════════════════════
+// Lightbox + 海报下载 / 分享
+// ═══════════════════════════════════════════
+let _lightbox = { src: null, name: 'poster.jpg', blob: null };
+
+// 从 activity 提取海报展示用 src
+function posterSrcOf(a) {
+  if (!a || !a.poster) return null;
+  if (a.poster.base64)      return 'data:' + (a.poster.type||'image/jpeg') + ';base64,' + a.poster.base64;
+  if (a.poster.file_token)  return '/api/poster?token=' + encodeURIComponent(a.poster.file_token);
+  if (a.poster.url)         return a.poster.url;
+  return null;
+}
+function safeFileName(title) {
+  const t = (title || 'poster').replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 32);
+  return t + '.jpg';
+}
+
+function openPosterLightbox(activity) {
+  const src = posterSrcOf(activity);
+  if (!src) return;
+  _lightbox = { src, name: safeFileName(activity.title), blob: null };
+
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxCap').textContent = activity.title || '活动海报';
+
+  // 没有 navigator.share 时隐藏分享按钮
+  const shareBtn = document.getElementById('lightboxShareBtn');
+  shareBtn.style.display = (typeof navigator.share === 'function') ? '' : 'none';
+
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function openPosterLightboxById(id)   { openPosterLightbox(find(id)); }
+function openPosterLightboxByRid(rid) { openPosterLightbox(_calActs.find(x => x.record_id === rid)); }
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('lightboxImg').src = '';
+  _lightbox = { src: null, name: 'poster.jpg', blob: null };
+}
+function lightboxBackdropClick(e) {
+  if (e.target.closest('.lightbox-img,.lightbox-actions,.lightbox-btn,.lightbox-close,.lightbox-caption')) return;
+  closeLightbox();
+}
+
+async function getLightboxBlob() {
+  if (_lightbox.blob) return _lightbox.blob;
+  const res  = await fetch(_lightbox.src);
+  const blob = await res.blob();
+  _lightbox.blob = blob;
+  return blob;
+}
+async function downloadLightbox() {
+  if (!_lightbox.src) return;
+  const btn = document.getElementById('lightboxDlBtn');
+  const orig = btn.textContent; btn.textContent = '准备中…'; btn.disabled = true;
+  try {
+    const blob = await getLightboxBlob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = _lightbox.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    btn.textContent = '✓ 已下载';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+  } catch (err) {
+    btn.textContent = '失败';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+    alert('下载失败：' + err.message + '\n\n你也可以长按图片选择「存储到相册」。');
+  }
+}
+async function shareLightbox() {
+  if (!_lightbox.src || !navigator.share) return;
+  const btn = document.getElementById('lightboxShareBtn');
+  const orig = btn.textContent; btn.textContent = '准备中…'; btn.disabled = true;
+  try {
+    const blob = await getLightboxBlob();
+    const file = new File([blob], _lightbox.name, { type: blob.type || 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: _lightbox.name });
+    } else {
+      await navigator.share({ title: '活动海报', text: '来自 CYC 工具站', url: location.origin });
+    }
+    btn.textContent = orig; btn.disabled = false;
+  } catch (err) {
+    btn.textContent = orig; btn.disabled = false;
+    if (err.name !== 'AbortError') alert('分享失败：' + err.message);
+  }
+}
+
+// 海报清单（仅本周未来活动）
+function renderPosterGallery() {
+  const todayStr = fmt(today);
+  const days = Object.keys(data).filter(k => data[k] && data[k].length && k >= todayStr).sort();
+
+  const items = [];
+  days.forEach(key => {
+    sortByTime(data[key]).forEach(a => {
+      if (posterSrcOf(a)) items.push({ key, a });
+    });
+  });
+
+  const gallery = document.getElementById('posterGallery');
+  if (!gallery) return;
+  if (!items.length) { gallery.innerHTML = ''; return; }
+
+  let html = '<div class="gallery-head">🖼️ 本周海报清单（' + items.length + ' 张）'
+    + '<span class="gallery-hint">点击全屏查看 · 下载或分享</span></div>';
+  html += '<div class="gallery-grid">';
+  items.forEach(({ key, a }) => {
+    const src = posterSrcOf(a);
+    const d = new Date(key + 'T00:00:00');
+    const lbl = (d.getMonth()+1) + '/' + d.getDate();
+    html += '<div class="gallery-item" onclick="openPosterLightboxById(\'' + a.id + '\')">'
+      + '<img src="' + src + '" alt="poster" onerror="this.parentElement.style.display=\'none\'">'
+      + '<div class="gallery-cap">' + lbl + '  ' + escHtml(a.title || '活动') + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  gallery.innerHTML = html;
+}
+
+renderWeek();
+</script>
+<script src="/cyc-track.js" defer></script>
+</body>
+</html>

@@ -21,6 +21,8 @@ export const KNOWN_EVENTS = new Set([
   'page_view',
   'visitor_strip_click',
   'cta_create_event',
+  'hero_path_a_click',          // 首页双海报 A（介绍 → /about）
+  'hero_path_b_click',          // 首页双海报 B（订房 → /rooms）
   // 活动卡片
   'event_card_click',
   'event_card_avatar_click',

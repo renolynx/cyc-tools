@@ -20,9 +20,11 @@ describe('KNOWN_EVENTS', () => {
     expect(KNOWN_EVENTS.has('community_view')).toBe(true);
   });
 
-  it('包含访客引导事件（visitor strip / hero CTA）', () => {
+  it('包含访客引导事件（visitor strip / hero / CTA）', () => {
     expect(KNOWN_EVENTS.has('visitor_strip_click')).toBe(true);
     expect(KNOWN_EVENTS.has('cta_create_event')).toBe(true);
+    expect(KNOWN_EVENTS.has('hero_path_a_click')).toBe(true);
+    expect(KNOWN_EVENTS.has('hero_path_b_click')).toBe(true);
   });
 
   it('包含活动卡 / 活动详情交互事件', () => {
