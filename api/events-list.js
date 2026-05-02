@@ -9,6 +9,7 @@
 import { applyCors, checkFeishuEnv }    from './_feishu.js';
 import { fetchAllActivities, formatCnDate, todayBJ } from './_activity.js';
 import { kvGet, kvSet, isKvConfigured }  from './_kv.js';
+import { fetchAllRsvps }                 from './_rsvp.js';
 
 const CACHE_TTL_SEC = 300;
 const EDGE_CACHE    = 'public, s-maxage=60, stale-while-revalidate=1800';
@@ -29,12 +30,102 @@ function thumbUrl(act) {
   return null;
 }
 
-function renderCard(a, isPast) {
+// ── 头像组 HTML（嘉宾 + 报名 stack）──
+function renderAvatarGroups(speakers, attendees, total) {
+  if (!speakers.length && !attendees.length) return '';
+
+  function avatarBtn(p) {
+    const initials = escapeHtml((p.name || '?')[0]);
+    // 优先 KV blob URL；其次 飞书 file_token；都没有 → 首字母圆
+    const imgSrc = p.avatar_url
+      ? p.avatar_url
+      : (p.avatar_token ? '/api/poster?token=' + encodeURIComponent(p.avatar_token) : '');
+    const content = imgSrc
+      ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" loading="lazy">`
+      : `<span class="card-avatar-initials">${initials}</span>`;
+    return `<button class="card-avatar" type="button"` +
+      ` data-name="${escapeHtml(p.name)}"` +
+      ` data-bio="${escapeHtml(p.bio || '')}"` +
+      ` data-url="${escapeHtml(p.avatar_url || '')}"` +
+      ` data-token="${escapeHtml(p.avatar_token || '')}"` +
+      ` data-mid="${escapeHtml(p.member_rec_id || '')}"` +
+      ` onclick="event.stopPropagation();openPersonModal(this)"` +
+      ` aria-label="${escapeHtml(p.name)}">${content}</button>`;
+  }
+
+  let html = '<div class="card-avatar-groups">';
+
+  if (speakers.length) {
+    html += '<div class="card-avatar-group card-avatar-group--speaker">';
+    html += '<span class="card-avatar-group-label">嘉宾</span>';
+    html += '<div class="card-avatar-stack">';
+    html += speakers.map(p => avatarBtn(p)).join('');
+    html += '</div></div>';
+  }
+
+  if (attendees.length) {
+    const more = (total || attendees.length) - attendees.length;
+    html += '<div class="card-avatar-group card-avatar-group--attendee">';
+    html += '<span class="card-avatar-group-label">报名</span>';
+    html += '<div class="card-avatar-stack">';
+    html += attendees.map(p => avatarBtn(p)).join('');
+    if (more > 0) html += `<span class="card-avatar-more">+${more}</span>`;
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// ── 从 allRsvps + memberMap 构建 activity_id → 头像数据映射 ──
+function buildAvatarsByActivity(allRsvps, memberMap) {
+  const byActivity = {};
+  for (const r of allRsvps) {
+    if (!r.activity_rec_id) continue;
+    if (!byActivity[r.activity_rec_id]) byActivity[r.activity_rec_id] = [];
+    byActivity[r.activity_rec_id].push(r);
+  }
+
+  const result = {};
+  for (const [actId, rsvps] of Object.entries(byActivity)) {
+    const speakers  = rsvps.filter(r => r.roles?.includes('活动发起者'));
+    const attendees = rsvps.filter(r => !r.roles?.includes('活动发起者'));
+    function enrich(r) {
+      const m = r.member_rec_id ? memberMap[r.member_rec_id] : null;
+      return {
+        name:          r.name || '',
+        bio:           r.bio  || '',
+        member_rec_id: r.member_rec_id || '',
+        avatar_url:    m?.avatar_url   || null,  // KV blob URL（优先）
+        avatar_token:  m?.avatar_token || null,  // 飞书 file_token（fallback）
+      };
+    }
+    result[actId] = {
+      speakers:  speakers.slice(0, 5).map(enrich),
+      attendees: attendees.slice(0, 8).map(enrich),
+      total:     attendees.length,
+    };
+  }
+  return result;
+}
+
+function renderCard(a, isPast, avatarData) {
   const thumb = thumbUrl(a);
   let status = '';
   if (isPast) status = '<span class="el-card-status past">已结束</span>';
   else if (a.status === '确认举办') status = '<span class="el-card-status confirm">✓ 确认举办</span>';
   else if (a.status === '筹备酝酿中') status = '<span class="el-card-status plan">筹备中</span>';
+
+  const av = avatarData || { speakers: [], attendees: [], total: 0 };
+  const avatarHtml = renderAvatarGroups(av.speakers, av.attendees, av.total);
+
+  // 开放性 pill：未结束才显示；is_public=false → 仅成员，默认对外开放
+  let openness = '';
+  if (!isPast) {
+    openness = (a.is_public === false)
+      ? '<span class="el-card-status closed">🔒 仅成员</span>'
+      : '<span class="el-card-status open">🌿 对外开放</span>';
+  }
 
   return `<a class="el-card${isPast ? ' is-past' : ''}" href="/events/${a.record_id}">
   ${thumb ? `<img class="el-card-thumb" src="${thumb}" alt="" loading="lazy">` : '<div class="el-card-thumb el-card-thumb-empty">📅</div>'}
@@ -46,28 +137,29 @@ function renderCard(a, isPast) {
     </div>
     ${a.types?.length ? `<div class="el-card-types">${a.types.slice(0,3).map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
     ${status}
+    ${openness}
+    ${avatarHtml}
   </div>
   <span class="el-card-arrow">›</span>
 </a>`;
 }
 
-function renderGroups(acts, isPast) {
+function renderGroups(acts, isPast, avatarsByActivity) {
   const groups = {};
   for (const a of acts) {
     if (!groups[a.date]) groups[a.date] = [];
     groups[a.date].push(a);
   }
-  // 未来升序，过去降序（最新过去活动在前）
   const dates = Object.keys(groups).sort();
   if (isPast) dates.reverse();
 
   return dates.map(date => `<section class="el-day-group">
   <div class="el-day-head">${formatCnDate(date)}</div>
-  ${groups[date].map(a => renderCard(a, isPast)).join('\n')}
+  ${groups[date].map(a => renderCard(a, isPast, avatarsByActivity[a.record_id])).join('\n')}
 </section>`).join('\n');
 }
 
-function renderEventsList(acts) {
+function renderEventsList(acts, avatarsByActivity) {
   const today = todayBJ();
   const valid = acts.filter(a => a.date && a.title);
   const upcoming = valid.filter(a => a.date >= today)
@@ -75,7 +167,7 @@ function renderEventsList(acts) {
   const past     = valid.filter(a => a.date <  today);
 
   const upcomingHtml = upcoming.length
-    ? renderGroups(upcoming, false)
+    ? renderGroups(upcoming, false, avatarsByActivity)
     : `<div class="el-empty">
   <div class="el-empty-icon">🌿</div>
   <p>近期暂无即将到来的活动</p>
@@ -85,12 +177,10 @@ function renderEventsList(acts) {
   const pastHtml = past.length
     ? `<section class="el-past-section">
   <div class="el-past-divider"><span>已结束的活动</span></div>
-  ${renderGroups(past, true)}
+  ${renderGroups(past, true, avatarsByActivity)}
 </section>`
     : '';
 
-
-  // ItemList JSON-LD（提升 Google 富搜索可见性）
   const itemListLd = JSON.stringify({
     '@context': 'https://schema.org',
     '@type':    'ItemList',
@@ -172,6 +262,90 @@ ${itemListLd}
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
 
+<!-- 人物 modal（点击活动卡片头像触发）-->
+<div class="person-modal-overlay" id="personModal" onclick="if(event.target.id==='personModal')closePersonModal()">
+  <div class="person-modal">
+    <div class="person-modal-handle"></div>
+    <button class="person-modal-close" type="button" onclick="closePersonModal()" aria-label="关闭">×</button>
+    <div class="person-modal-body">
+      <div class="person-modal-avatar-wrap" id="pmAvatar">
+        <div class="person-modal-avatar-initials">?</div>
+      </div>
+      <div class="person-modal-info">
+        <div class="person-modal-name" id="pmName"></div>
+        <div class="person-modal-bio" id="pmBio"></div>
+      </div>
+    </div>
+    <a class="person-modal-link" id="pmLink" href="#">查看完整 profile →</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  window.openPersonModal = function (btn) {
+    var name  = btn.dataset.name  || '';
+    var bio   = btn.dataset.bio   || '';
+    var url   = btn.dataset.url   || '';   // KV blob URL（优先）
+    var token = btn.dataset.token || '';   // 飞书 file_token（fallback）
+    var mid   = btn.dataset.mid   || '';
+
+    var overlay   = document.getElementById('personModal');
+    var avatarWrap = document.getElementById('pmAvatar');
+    var nameEl    = document.getElementById('pmName');
+    var bioEl     = document.getElementById('pmBio');
+    var linkEl    = document.getElementById('pmLink');
+
+    var imgSrc = url || (token ? '/api/poster?token=' + encodeURIComponent(token) : '');
+    if (imgSrc) {
+      var img = new Image();
+      img.alt = name;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      img.onerror = function () {
+        avatarWrap.innerHTML = '<div class="person-modal-avatar-initials">' + esc(name[0] || '?') + '</div>';
+      };
+      avatarWrap.innerHTML = '';
+      avatarWrap.appendChild(img);
+      img.src = imgSrc;
+    } else {
+      avatarWrap.innerHTML = '<div class="person-modal-avatar-initials">' + esc(name[0] || '?') + '</div>';
+    }
+
+    nameEl.textContent = name;
+    bioEl.textContent  = bio || '';
+    if (!bio) { bioEl.className = 'person-modal-no-bio'; bioEl.textContent = '暂无简介'; }
+    else       { bioEl.className = 'person-modal-bio'; }
+
+    if (mid) {
+      linkEl.href = '/community/' + mid;
+      linkEl.style.display = '';
+    } else {
+      linkEl.style.display = 'none';
+    }
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    if (typeof cycTrack === 'function') {
+      cycTrack('event_card_avatar_click', { name: name, member_rec_id: mid });
+    }
+  };
+
+  window.closePersonModal = function () {
+    var overlay = document.getElementById('personModal');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closePersonModal();
+  });
+})();
+</script>
+
 <script src="/cyc-track.js" defer></script>
 </body>
 </html>`;
@@ -186,7 +360,7 @@ export default async function handler(req, res) {
     return res.status(500).send('Server config error');
   }
 
-  // KV 缓存（?refresh=1 跳过：admin 改完想立刻看时用）
+  // KV 缓存（?refresh=1 跳过）
   const cacheKey = 'events:upcoming';
   const bypassCache = req.query.refresh === '1';
   let acts = null;
@@ -202,7 +376,7 @@ export default async function handler(req, res) {
       acts = await fetchAllActivities();
     } catch (err) {
       console.error('[events-list]', err.message);
-      acts = [];  // 优雅降级：飞书挂了也渲染空列表
+      acts = [];
     }
     if (acts.length && isKvConfigured()) {
       try {
@@ -211,7 +385,32 @@ export default async function handler(req, res) {
     }
   }
 
+  // RSVP + 成员头像数据（各有自己的 KV 缓存，失败降级为空）
+  let avatarsByActivity = {};
+  try {
+    const [allRsvps, memberListRaw] = await Promise.all([
+      fetchAllRsvps(),
+      isKvConfigured()
+        ? kvGet('members:public_list').catch(() => null)
+        : Promise.resolve(null),
+    ]);
+
+    const memberMap = {};
+    if (memberListRaw) {
+      try {
+        const members = JSON.parse(memberListRaw);
+        for (const m of members) {
+          if (m.record_id) memberMap[m.record_id] = m;
+        }
+      } catch {}
+    }
+
+    avatarsByActivity = buildAvatarsByActivity(allRsvps, memberMap);
+  } catch (err) {
+    console.warn('[events-list] RSVP join failed:', err.message);
+  }
+
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', EDGE_CACHE);
-  return res.status(200).send(renderEventsList(acts));
+  return res.status(200).send(renderEventsList(acts, avatarsByActivity));
 }

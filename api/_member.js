@@ -10,7 +10,7 @@
  */
 
 import { getAccessToken } from './_feishu.js';
-import { kvGet, kvSet, kvDel, isKvConfigured, invalidate } from './_kv.js';
+import { kvGet, kvSet, kvDel, kvMget, isKvConfigured, invalidate } from './_kv.js';
 import { fetchAllActivities } from './_activity.js';
 import { fetchAllRsvps }       from './_rsvp.js';
 
@@ -165,6 +165,42 @@ export function stripPrivate(member) {
   return safe;
 }
 
+// ─────────── 头像 URL 注入 ───────────
+// /me/timeline 上传头像走 Vercel Blob → KV `avatar_url:{rec_id}`（永久），不写飞书
+// 「照片」字段。所有读 member 对象的下游（/community 列表/详情、活动卡片 stack）
+// 必须看见 KV 这层，否则永远拿不到 timeline 上传的头像。
+// 在拉取层统一注入 `member.avatar_url` —— 后续渲染只判断这一个字段就够。
+
+/** 单个 member 注入 avatar_url（KV 中的 blob URL，永久存储）；找不到 = null */
+async function enrichWithAvatarUrl(member) {
+  if (!member) return member;
+  if (!isKvConfigured()) { member.avatar_url = null; return member; }
+  try {
+    const url = await kvGet('avatar_url:' + member.record_id);
+    member.avatar_url = url || null;
+  } catch {
+    member.avatar_url = null;
+  }
+  return member;
+}
+
+/** 批量注入 avatar_url（kvMget 一次性拉完）*/
+async function enrichManyWithAvatarUrls(members) {
+  if (!Array.isArray(members) || !members.length) return members;
+  if (!isKvConfigured()) {
+    for (const m of members) m.avatar_url = null;
+    return members;
+  }
+  try {
+    const keys = members.map(m => 'avatar_url:' + m.record_id);
+    const urls = await kvMget(keys);
+    members.forEach((m, i) => { m.avatar_url = (urls && urls[i]) || null; });
+  } catch {
+    for (const m of members) m.avatar_url = null;
+  }
+  return members;
+}
+
 // ─────────── 数据拉取 ───────────
 
 /** 拉所有成员 — 不缓存（2000+ 超 KV 单值上限） */
@@ -190,6 +226,7 @@ export async function fetchAllMembers() {
     pageToken = data.data.page_token || '';
     if (!pageToken) break;
   }
+  await enrichManyWithAvatarUrls(all);
   return all;
 }
 
@@ -219,6 +256,7 @@ export async function fetchMember(rec_id, opts = {}) {
   const locMap     = await buildLocationMap();
   const locNameMap = await buildLocationNameMap();
   const member = parseMember(data.data.record, locMap, locNameMap);
+  await enrichWithAvatarUrl(member);
 
   if (isKvConfigured()) {
     try { await kvSet(cacheKey, JSON.stringify(member), KV_TTL_MEMBER); } catch {}

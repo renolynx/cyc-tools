@@ -1,0 +1,225 @@
+/* ═══════════════════════════════════════════════
+ * 活动卡片头像组 + 人物 modal（Phase 3.1.2）
+ * 适用于 home-act-card（首页）和 el-card（/events 列表）
+ * ═══════════════════════════════════════════════ */
+
+/* ── 头像组容器 ── */
+.card-avatar-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.card-avatar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-avatar-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--cyc-text-muted);
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.card-avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+/* ── 嘉宾头像（30px）── */
+.card-avatar {
+  position: relative;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  margin-left: -7px;
+  cursor: pointer;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: transform 0.10s, box-shadow 0.10s;
+  background: rgba(28, 61, 46, 0.08);
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.card-avatar:first-child { margin-left: 0; }
+.card-avatar:hover {
+  transform: scale(1.15);
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+.card-avatar:active { transform: scale(1.05); }
+
+.card-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-avatar-initials {
+  font-size: 11px; font-weight: 700;
+  color: var(--cyc-green);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ── 报名头像（稍小 26px）── */
+.card-avatar-group--attendee .card-avatar {
+  width: 26px; height: 26px;
+  margin-left: -6px;
+}
+.card-avatar-group--attendee .card-avatar-initials {
+  font-size: 9px;
+}
+
+/* "+N" 更多气泡 */
+.card-avatar-more {
+  font-size: 10px; font-weight: 700;
+  color: var(--cyc-text-muted);
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 50%;
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 4px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* ════════════════════════════════════════════════
+ * 人物 modal（点击头像弹出）
+ * 移动端：底部 sheet；桌面（≥640px）：居中
+ * ════════════════════════════════════════════════ */
+.person-modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s;
+}
+.person-modal-overlay.open {
+  opacity: 1; pointer-events: all;
+}
+@media (min-width: 640px) {
+  .person-modal-overlay { align-items: center; }
+}
+
+.person-modal {
+  width: 100%; max-width: 420px;
+  background: var(--cyc-sand);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 22px 32px;
+  transform: translateY(40px);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  max-height: 85vh; overflow-y: auto;
+  position: relative;
+}
+.person-modal-overlay.open .person-modal { transform: translateY(0); }
+
+@media (min-width: 640px) {
+  .person-modal {
+    border-radius: 24px;
+    transform: scale(0.94);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+    padding: 28px 32px 32px;
+  }
+  .person-modal-overlay.open .person-modal { transform: scale(1); }
+}
+
+/* 拖拽手柄（仅移动端可见）*/
+.person-modal-handle {
+  width: 36px; height: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+@media (min-width: 640px) {
+  .person-modal-handle { display: none; }
+}
+
+/* 关闭按钮 */
+.person-modal-close {
+  position: absolute; top: 14px; right: 16px;
+  width: 28px; height: 28px;
+  background: rgba(0, 0, 0, 0.08);
+  border: none; border-radius: 50%;
+  font-size: 16px; color: var(--cyc-text-muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.person-modal-close:hover { background: rgba(0, 0, 0, 0.14); }
+
+/* 内容区：头像 + 文字并排 */
+.person-modal-body {
+  display: flex; align-items: flex-start; gap: 16px;
+  margin-bottom: 18px;
+}
+
+.person-modal-avatar-wrap {
+  flex-shrink: 0;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(28, 61, 46, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  display: flex; align-items: center; justify-content: center;
+}
+.person-modal-avatar-wrap img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.person-modal-avatar-initials {
+  font-size: 24px; font-weight: 700;
+  color: var(--cyc-green);
+  user-select: none;
+}
+
+.person-modal-info { flex: 1; min-width: 0; }
+
+.person-modal-name {
+  font-size: 18px; font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--cyc-text-strong);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.person-modal-bio {
+  font-size: 14px; line-height: 1.6;
+  color: var(--cyc-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.person-modal-no-bio {
+  font-size: 13px; color: var(--cyc-text-subtle);
+  font-style: italic;
+}
+
+/* 完整 profile 链接 */
+.person-modal-link {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  padding: 12px;
+  background: var(--cyc-green);
+  color: rgba(255, 255, 255, 0.95);
+  border-radius: var(--cyc-r-inner);
+  font-size: 14px; font-weight: 600;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s;
+}
+.person-modal-link:hover { opacity: 0.88; }
+.person-modal-link:active { opacity: 0.70; }

@@ -295,11 +295,41 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 6px;
 }
 .event-spk-content {
   flex: 1;
   min-width: 0;
 }
+
+/* 整行 button：头像 + 名字 + bio，整块可点 → person modal */
+.event-spk-clickable {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(28,61,46,0.04);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 8px 12px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, transform 0.10s;
+  min-width: 0;
+}
+.event-spk-clickable:hover { background: rgba(28,61,46,0.08); }
+.event-spk-clickable:active { transform: scale(0.99); }
+/* spk row 内的 avatar：38px 比 card stack 大一点 */
+.event-spk-avatar {
+  width: 38px; height: 38px;
+  margin: 0;
+  flex-shrink: 0;
+  border-width: 1.5px;
+}
+.event-spk-avatar .card-avatar-initials { font-size: 13px; }
 
 /* chip 内 × 也别破坏圆角 */
 .event-rsvp-chip {
@@ -309,6 +339,26 @@
 .event-rsvp-chip.expanded {
   flex-wrap: wrap;
 }
+
+/* 报名 chip 整块可点 → person modal（替换原 expand toggle）*/
+.event-rsvp-chip-clickable {
+  cursor: pointer;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border-color: rgba(28,61,46,0.20);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, transform 0.10s;
+}
+.event-rsvp-chip-clickable:hover { background: rgba(28,61,46,0.10); }
+.event-rsvp-chip-clickable:active { transform: scale(0.97); }
+/* chip 内的 avatar：22px 紧凑 */
+.event-rsvp-chip-avatar {
+  width: 22px; height: 22px;
+  margin: 0;
+  flex-shrink: 0;
+  border-width: 1.5px;
+}
+.event-rsvp-chip-avatar .card-avatar-initials { font-size: 9px; }
 .event-rsvp-chip .event-rsvp-del {
   margin-left: 2px;
   margin-right: -4px;  /* 紧贴右内边距 */

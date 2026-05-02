@@ -97,6 +97,9 @@ export default async function handler(req, res) {
     // 目前状态（单选）
     if (activity.status) fields['目前状态'] = activity.status;
 
+    // 是否对外开放（单选；显式写入：默认对外开放，明确 false 才写仅成员）
+    fields['是否对外开放'] = (activity.is_public === false) ? '仅成员' : '对外开放';
+
     // 活动海报（附件，需要先上传拿 file_token）
     if (activity.poster?.base64) {
       const fileToken = await uploadPoster(activity.poster, token, FEISHU_APP_TOKEN);

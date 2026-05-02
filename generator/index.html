@@ -298,7 +298,7 @@ function makeCard(a,idx){
       +'<div class="flow-list" id="flow-'+a.id+'"></div>'
       +'<button class="add-sub" onclick="addFlow(\''+a.id+'\')">＋ 添加一条</button>'
     +'</div>'
-    +'<div class="field"><label>带领人 / 分享嘉宾<span class="opt">选填 · 多人请用 ＋ 添加 或在一栏内用逗号 / 顿号 / 斜杠隔开</span></label>'
+    +'<div class="field"><label>带领人 / 分享嘉宾<span class="req">必填</span><span class="opt"> · 多人请用 ＋ 添加 或在一栏内用逗号 / 顿号 / 斜杠隔开</span></label>'
       +'<div class="spk-list" id="spk-'+a.id+'"></div>'
       +'<button class="add-sub" onclick="addSpk(\''+a.id+'\')">＋ 添加嘉宾</button>'
     +'</div>'
@@ -307,6 +307,12 @@ function makeCard(a,idx){
         +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'筹备酝酿中\',this)">🌱 筹备酝酿中</button>'
         +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'确认举办\',this)">✅ 确认举办</button>'
         +'<button class="status-pill" onclick="updStatus(\''+a.id+'\',\'办完了！\',this)">🎉 办完了！</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="field"><label>谁能看见<span class="opt">默认对外开放，仅成员请勾「仅成员」</span></label>'
+      +'<div class="status-pills" id="public-pills-'+a.id+'">'
+        +'<button class="status-pill" onclick="updPublic(\''+a.id+'\',true,this)">🌿 对外开放</button>'
+        +'<button class="status-pill" onclick="updPublic(\''+a.id+'\',false,this)">🔒 仅成员</button>'
       +'</div>'
     +'</div>'
     +'<div class="field"><label>活动类型<span class="opt">选填 · 多选 · 助力成员匹配兴趣</span></label>'
@@ -342,7 +348,7 @@ function makeCard(a,idx){
     +'</div>'
     +'</div>';
   setTimeout(()=>{
-    renderFlows(a); renderSpks(a); initStatusPills(a); renderTypes(a);
+    renderFlows(a); renderSpks(a); initStatusPills(a); initPublicPills(a); renderTypes(a);
     updateSyncBtn(a.id);
     updateCharCounter(a.id);
     if (a.poster?.base64)           showPosterPreview(a.id, 'data:'+a.poster.type+';base64,'+a.poster.base64);
@@ -356,7 +362,7 @@ function toggle(id){const b=document.getElementById('body-'+id);b.style.display=
 function addAct(){
   if(!selDate)return;
   if(!data[selDate])data[selDate]=[];
-  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[],status:'',poster:null,types:[]};
+  const a={id:'a'+(uid++),title:'',time:'',loc:'',fee:'',signup:'',desc:'',flow:[],spk:[],status:'',poster:null,types:[],is_public:true};
   data[selDate].push(a);renderActs();renderWeek();
   setTimeout(()=>{const b=document.getElementById('body-'+a.id);if(b)b.style.display='';},50);
 }
@@ -594,6 +600,25 @@ function initStatusPills(a) {
   pills.forEach(p => {
     if (p.textContent.includes(a.status.replace(/[🌱✅🎉]\s*/,'')))
       p.classList.add(STATUS_CLASS[a.status] || 'sp-active');
+  });
+}
+
+// ── 对外开放 toggle（默认 true；点击 = 二选一，不可取消）──
+function updPublic(id, val, btn) {
+  const a = find(id); if (!a) return;
+  a.is_public = !!val;
+  document.querySelectorAll('#public-pills-'+id+' .status-pill')
+    .forEach(p => p.classList.remove('sp-active'));
+  btn.classList.add('sp-active');
+}
+function initPublicPills(a) {
+  // 飞书拉回的活动可能 is_public undefined → 视为 true
+  const isPublic = (a.is_public !== false);
+  a.is_public = isPublic;
+  const pills = document.querySelectorAll('#public-pills-'+a.id+' .status-pill');
+  pills.forEach(p => {
+    const matches = isPublic ? p.textContent.includes('对外开放') : p.textContent.includes('仅成员');
+    if (matches) p.classList.add('sp-active');
   });
 }
 
@@ -1056,6 +1081,21 @@ async function doSync(id, password) {
   const btn   = document.getElementById('sync-' + id);
   const icon  = document.getElementById('sync-icon-' + id);
   const label = document.getElementById('sync-label-' + id);
+
+  // 校验：嘉宾必填（避免活动无人挂名 → 详情页"暂无带领人"+卡片无嘉宾头像）
+  const validSpks = (a.spk || []).filter(s => s && (s.name || '').trim());
+  if (!validSpks.length) {
+    btn.classList.remove('syncing');
+    btn.classList.add('err');
+    icon.textContent  = '⚠';
+    label.textContent = '请先填写带领人 / 嘉宾';
+    setTimeout(() => {
+      btn.classList.remove('err');
+      btn.disabled = false;
+      updateSyncBtn(id);
+    }, 2500);
+    return;
+  }
 
   btn.disabled = true;
   btn.classList.add('syncing');

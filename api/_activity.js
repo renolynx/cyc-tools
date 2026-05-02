@@ -85,12 +85,16 @@ function parseDesc(raw, activity) {
 /** 单条飞书 record → 工具用 activity 对象 */
 export function parseRecord(record) {
   const f = record.fields || {};
+  // 「是否对外开放」单选字段；飞书表里没建该字段或值为空 → 默认对外开放（向后兼容）
+  // 仅当字段存在且明确为「仅成员」时 is_public=false
+  const openness = getSelect(f['是否对外开放']);
   const act = {
     record_id: record.record_id,
     title:  getText(f['标题']) || '',
     date:   tsToDate(f['意向/确认举办日期']) || '',
     loc:    getText(f['地点']) || '',
     status: getSelect(f['目前状态']) || '',
+    is_public: openness !== '仅成员',
     poster: getPoster(f['活动海报']),
     types:  getMultiSelect(f['活动类型']),  // multi-select；飞书表里没建该字段时为空数组
     time: '', fee: '', signup: '', desc: '',

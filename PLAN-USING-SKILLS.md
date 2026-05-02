@@ -231,12 +231,66 @@ cyc.center 是**一个产品两条节奏**：
 **Prompt**:
 > 读 homepage-design.md 和 DESIGN.md。设计 /community/:id 简化版人物页：daybreak-os Daybook 风格 halo 卡片 + 头像 + 名字（28px Bold）+ 一句话简介（16px regular）+ 下方"Ta 参加过的活动"列表（拉 Bitable 成员关联活动）。给完整 vanilla HTML/CSS。
 
-##### 3.1.2 活动卡片改造（首页用 + /events 列表也用）
+##### 3.1.2 活动卡片改造（首页用 + /events 列表也用）✅ 已完成（2026-05-02）
 
 每张卡片加嘉宾头像组 + 报名头像组。点击头像展开人物卡片（modal）。
 
-- [ ] 卡片 HTML / CSS 改造（首页 + /events 共用）
-- [ ] 人物卡片 modal：avatar / name / bio / "查看完整 profile →"链接
+- [x] `api/get-activities.js`：新增 `include_rsvps: true` body flag，server 端 join RSVP + 成员缓存，返回 `card_speakers` / `card_attendees` / `card_attendee_total`
+- [x] `api/events-list.js`：并行拉 RSVP + 成员数据，新增 `renderAvatarGroups` 函数，每张 `el-card` 渲染头像 stack；页面内嵌人物 modal HTML + JS
+- [x] `index.html`：`renderCard` 接 `card_speakers/attendees`，新增 `renderAvatarGroups` 函数，底部加人物 modal；fetch 改为 `include_rsvps: true`
+- [x] `styles/11-avatars-modal.css`：头像 stack（嘉宾 30px / 报名 26px，-7px/-6px overlap）+ 人物 modal（移动端底部 sheet / 桌面居中）
+- [x] `styles.css`：@import 新增 `11-avatars-modal.css`
+
+**实际改动文件**：`api/get-activities.js` · `api/events-list.js` · `index.html` · `styles/11-avatars-modal.css` · `styles.css`（+import）
+
+**起点 commit**：`70cd2fb`；`npm test` 23/23 通过
+
+##### 3.1.2.1 Avatar 同步 bug 修 ✅ 已完成（2026-05-02）
+
+**症状**：`/me/timeline` 上传头像 → `/community` 列表/详情卡片不同步。
+**根因**：`avatar-upload.js` 只把 blob URL 存进 KV，没回写飞书；下游 `_community-shared.js avatarUrl()` 只读飞书「照片」字段。
+**修法**：在 `_member.js` 的 `fetchAllMembers` / `fetchMember` 加 `enrichWithAvatarUrl` 注入步骤（kvMget 批量），让所有下游 member 对象自带 `avatar_url` 字段；`avatarUrl()` 优先用 `member.avatar_url`。
+- [x] `api/_member.js`：新增 `enrichWithAvatarUrl` / `enrichManyWithAvatarUrls` helpers + 调用
+- [x] `api/_community-shared.js`：`avatarUrl()` 改为先 `member.avatar_url` 后 `member.avatar.file_token`
+- [x] `api/get-activities.js` + `api/events-list.js`：activity 卡片 enrichment 同时返回 `avatar_url` + `avatar_token`
+- [x] `index.html` + `events-list.js` 内嵌 JS：渲染 + modal 都先 `data-url` 后 `data-token`，全链路通
+
+##### 3.1.2.2 「对外开放」字段 + 渲染 ✅ 代码完成（2026-05-02），等飞书加字段
+
+**问题**：所有未结束活动卡硬编码"🌿 对外开放"pill —— 部分活动其实仅成员。
+**修法**（**schema 变更不动飞书，纯代码 ready**）：`_activity.js` `parseRecord` 解析「是否对外开放」字段（缺字段时默认 `is_public=true`，行为兼容）；卡片按 `is_public` 渲染锁/叶 pill；已结束不显示。
+- [x] `api/_activity.js`：`parseRecord` 加 `act.is_public = openness !== '仅成员'`
+- [x] `index.html`：`renderCard` 按 `is_public` 渲染 `🌿 对外开放` / `🔒 仅成员` pill
+- [x] `api/events-list.js`：`renderCard` 加 openness pill
+- [x] `styles/10-home.css` + `styles/04-events-list.css`：`.home-act-pill-closed` / `.el-card-status.open|closed`
+- [x] 飞书「📅活动日历」表已加字段「是否对外开放」（field_id `fld1EPPMA1`，单选 `对外开放` / `仅成员`，玖玖手动加）
+- [x] `generator/index.html`：`谁能看见` toggle pill（默认 🌿 对外开放，可切 🔒 仅成员）+ `updPublic` / `initPublicPills` 函数 + 默认 `is_public:true`
+- [x] `api/add-activity.js`：显式写 `fields['是否对外开放']`（缺省默认 `对外开放`）
+
+##### 3.1.2.4 详情页交互拉齐（mini Phase 3.5.4）✅ 已完成（2026-05-02）
+
+**问题**：首页/列表卡片是新 pattern（头像 + person modal），详情页带领人/报名仍是旧 pattern（点文字直跳 community / 原地展开）—— 用户感知不一致。
+**修法**：在详情页带领人 row 和报名 chip 加头像圆 + 同款 person modal pattern；删除原地展开逻辑。
+- [x] `api/event-page.js`：handler 增加 `kvGet('members:public_list')` 给 rsvps 注入 `avatar_url` + `avatar_token`；新增 `renderPersonAvatar` / `renderPersonDataAttrs` SSR helpers
+- [x] `api/event-page.js`：带领人 row 改 `<button class="event-spk-clickable">` + 头像 + 整行点击 → `openPersonModal`；删除原 `<a href="/community/...">` 直跳
+- [x] `api/event-page.js`：报名 chip 改 `event-rsvp-chip-clickable` + 头像 + 整块点击 → `openPersonModal`；删除原 `expanded` toggle 逻辑
+- [x] `api/event-page.js`：嵌人物 modal HTML + JS（与 events-list / index.html 同一份 pattern）
+- [x] `styles/05-events-detail.css`：`.event-spk-clickable` / `.event-spk-avatar` / `.event-rsvp-chip-clickable` / `.event-rsvp-chip-avatar`
+
+##### 3.1.2.5 嘉宾必填 ✅ 已完成（2026-05-02）
+
+**问题**：嘉宾 `选填` → 经常有人录入活动忘填 → 卡片无嘉宾头像 + 详情页"暂无带领人"。
+**修法**：generator 把嘉宾 label 改 `必填`；syncToFeishu 校验，未填不让录入。
+- [x] `generator/index.html`：label 加 `<span class="req">必填</span>`
+- [x] `generator/index.html`：`doSync` 入口校验 `validSpks.length` —— 失败时按钮亮红"请先填写带领人 / 嘉宾"，2.5s 自动复位
+- [x] `styles/02-tools.css`：`.req` 橙色 chip 样式（与 `.opt` 灰色对称）
+
+##### 3.1.2.3 主页活动流：未来 4 周 + 最近 2 周历史 ✅ 已完成（2026-05-02）
+
+**问题**：首页只看未来 4 周，活动稀少时一片空。
+**修法**：把 `weekStart` 拉到 `today - 14d`，未来卡升序在前、过去倒序补在后，限 12 张；过去卡 `is-past` opacity 0.62 + 缩略图 grayscale 0.35。
+- [x] `index.html`：日期范围 `-14d ~ +28d`，`upcoming + recent` 拼接
+- [x] `styles/10-home.css`：`.home-act-card.is-past` desaturate 样式
 
 **Prompt**:
 > 读 homepage-design.md。设计活动卡片新版：现有视觉 + 加嘉宾头像组（28-32px，最多 5 个）+ 报名头像组（24-28px，stack 叠加，最多 6-8 个）。点击任一头像不离开当前页，弹出 modal 显示人物卡片（avatar + name + bio + 查看完整 profile 链接到 /community/:id）。给完整改造 vanilla HTML/CSS + JS modal 行为。

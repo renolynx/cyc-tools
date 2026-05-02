@@ -35,6 +35,27 @@ function posterUrl(act) {
   return null;
 }
 
+// 人物头像 button：圆形 avatar + click → openPersonModal
+//   p: { name, bio, member_rec_id, avatar_url, avatar_token }
+//   size: 'lg'(40px 嘉宾) / 'sm'(28px 报名)
+function renderPersonAvatar(p, size) {
+  const initials = escapeHtml((p.name || '?')[0]);
+  const url = p.avatar_url || '';
+  const tok = p.avatar_token || '';
+  const imgSrc = url ? url : (tok ? '/api/poster?token=' + encodeURIComponent(tok) : '');
+  return imgSrc
+    ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" loading="lazy">`
+    : `<span class="card-avatar-initials">${initials}</span>`;
+}
+
+function renderPersonDataAttrs(p) {
+  return ` data-name="${escapeHtml(p.name)}"` +
+    ` data-bio="${escapeHtml(p.bio || '')}"` +
+    ` data-url="${escapeHtml(p.avatar_url || '')}"` +
+    ` data-token="${escapeHtml(p.avatar_token || '')}"` +
+    ` data-mid="${escapeHtml(p.member_rec_id || '')}"`;
+}
+
 function buildJsonLd(act, ogImage, url, isPast) {
   // 把活动地点拆成结构化地址（飞书里 a.loc 是自由文本，只能粗略归到大理）
   const ld = {
@@ -187,14 +208,18 @@ ${jsonLd}
     <div class="event-spk">${
       rsvpHosts.length
         ? rsvpHosts.map(h => `<div class="event-spk-row" data-rid="${escapeHtml(h.record_id)}" data-name="${escapeHtml(h.name)}">
-            <span class="event-spk-content">${
-              h.member_rec_id
-                ? `<a href="/community/${escapeHtml(h.member_rec_id)}?from=${escapeHtml(act.record_id)}" class="event-spk-link"><strong>${escapeHtml(h.name)}</strong></a>`
-                : `<strong>${escapeHtml(h.name)}</strong>`
-            }${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</span>
-            <button class="event-rsvp-del" onclick="askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
+            <button type="button" class="event-spk-clickable card-avatar-btn-wrap"${renderPersonDataAttrs(h)} onclick="openPersonModal(this)">
+              <span class="card-avatar event-spk-avatar">${renderPersonAvatar(h)}</span>
+              <span class="event-spk-content"><strong>${escapeHtml(h.name)}</strong>${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</span>
+            </button>
+            <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
           </div>`).join('')
-        : act.spk.map(s => `<div class="event-spk-row"><span class="event-spk-content"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</span></div>`).join('')
+        : act.spk.map(s => `<div class="event-spk-row">
+            <button type="button" class="event-spk-clickable card-avatar-btn-wrap"${renderPersonDataAttrs(s)} onclick="openPersonModal(this)">
+              <span class="card-avatar event-spk-avatar">${renderPersonAvatar(s)}</span>
+              <span class="event-spk-content"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</span>
+            </button>
+          </div>`).join('')
     }</div>
     ${(!rsvpHosts.length && act.spk?.length) ? `<p class="event-spk-hint">
       ℹ️ 嘉宾资料尚未关联到社群成员主页 · <a href="${SITE_URL}/" class="event-spk-hint-link">在主页重新录入此活动 →</a> 可自动补全
@@ -207,17 +232,10 @@ ${jsonLd}
       <p class="event-rsvp-count">已 <strong>${rsvpAttendees.length}</strong> 位伙伴报名</p>
       <div class="event-rsvp-list">
         ${rsvpAttendees.slice(0, 30).map(a => {
-          const hasMember = !!a.member_rec_id;
-          const hasBio    = !!a.bio;
-          const expandable = hasMember || hasBio;
-          const profileUrl = hasMember ? `/community/${escapeHtml(a.member_rec_id)}?from=${escapeHtml(act.record_id)}` : '';
-          return `<div class="event-rsvp-chip${hasBio ? ' has-bio' : ''}${expandable ? ' expandable' : ''}" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}" ${expandable ? `onclick="if(!event.target.closest('button,a'))this.classList.toggle('expanded')"` : ''}>
+          return `<div class="event-rsvp-chip event-rsvp-chip-clickable" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}"${renderPersonDataAttrs(a)} onclick="if(!event.target.closest('.event-rsvp-del'))openPersonModal(this)">
+          <span class="card-avatar event-rsvp-chip-avatar">${renderPersonAvatar(a)}</span>
           <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
           <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
-          ${expandable ? `<div class="event-rsvp-chip-detail">
-            ${hasBio ? `<div class="event-rsvp-chip-bio">${escapeHtml(a.bio)}</div>` : ''}
-            ${hasMember ? `<a class="event-rsvp-chip-profile" href="${profileUrl}">查看完整资料 →</a>` : ''}
-          </div>` : ''}
         </div>`;
         }).join('')}
         ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
@@ -227,10 +245,10 @@ ${jsonLd}
   </section>` : (rsvpAttendees.length ? `<section class="event-section">
     <h2>当时参加的伙伴</h2>
     <div class="event-rsvp-list">
-      ${rsvpAttendees.map(a => a.member_rec_id
-        ? `<a class="event-rsvp-chip is-past event-rsvp-chip-link" href="/community/${escapeHtml(a.member_rec_id)}?from=${escapeHtml(act.record_id)}">${escapeHtml(a.name)} ›</a>`
-        : `<div class="event-rsvp-chip is-past">${escapeHtml(a.name)}</div>`
-      ).join('')}
+      ${rsvpAttendees.map(a => `<div class="event-rsvp-chip is-past event-rsvp-chip-clickable"${renderPersonDataAttrs(a)} onclick="openPersonModal(this)">
+        <span class="card-avatar event-rsvp-chip-avatar">${renderPersonAvatar(a)}</span>
+        <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
+      </div>`).join('')}
     </div>
   </section>` : '')}
 </main>
@@ -240,6 +258,24 @@ ${jsonLd}
   <p class="event-footer-tagline">链接每一座孤岛</p>
   <p><a href="${SITE_URL}">${SITE_NAME} · cyc.center</a></p>
 </footer>
+
+<!-- 人物 modal（点击 嘉宾 / 报名 头像或行触发）-->
+<div class="person-modal-overlay" id="personModal" onclick="if(event.target.id==='personModal')closePersonModal()">
+  <div class="person-modal">
+    <div class="person-modal-handle"></div>
+    <button class="person-modal-close" type="button" onclick="closePersonModal()" aria-label="关闭">×</button>
+    <div class="person-modal-body">
+      <div class="person-modal-avatar-wrap" id="pmAvatar">
+        <div class="person-modal-avatar-initials">?</div>
+      </div>
+      <div class="person-modal-info">
+        <div class="person-modal-name" id="pmName"></div>
+        <div class="person-modal-bio" id="pmBio"></div>
+      </div>
+    </div>
+    <a class="person-modal-link" id="pmLink" href="#">查看完整 profile →</a>
+  </div>
+</div>
 
 <!-- 编辑活动类型 modal（任何活动状态都能用） -->
 <div class="rsvp-modal-overlay" id="typesModal" onclick="if(event.target.id==='typesModal')closeTypesModal()">
@@ -377,6 +413,71 @@ async function submitRsvp() {
 </script>` : ''}
 
 <script>
+// ─────────── 人物 modal（点击头像/行触发）───────────
+(function () {
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  window.openPersonModal = function (btn) {
+    var name  = btn.dataset.name  || '';
+    var bio   = btn.dataset.bio   || '';
+    var url   = btn.dataset.url   || '';
+    var token = btn.dataset.token || '';
+    var mid   = btn.dataset.mid   || '';
+
+    var overlay    = document.getElementById('personModal');
+    var avatarWrap = document.getElementById('pmAvatar');
+    var nameEl     = document.getElementById('pmName');
+    var bioEl      = document.getElementById('pmBio');
+    var linkEl     = document.getElementById('pmLink');
+
+    var imgSrc = url || (token ? '/api/poster?token=' + encodeURIComponent(token) : '');
+    if (imgSrc) {
+      var img = new Image();
+      img.alt = name;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      img.onerror = function () {
+        avatarWrap.innerHTML = '<div class="person-modal-avatar-initials">' + esc(name[0] || '?') + '</div>';
+      };
+      avatarWrap.innerHTML = '';
+      avatarWrap.appendChild(img);
+      img.src = imgSrc;
+    } else {
+      avatarWrap.innerHTML = '<div class="person-modal-avatar-initials">' + esc(name[0] || '?') + '</div>';
+    }
+
+    nameEl.textContent = name;
+    if (bio) {
+      bioEl.className   = 'person-modal-bio';
+      bioEl.textContent = bio;
+    } else {
+      bioEl.className   = 'person-modal-no-bio';
+      bioEl.textContent = '暂无简介';
+    }
+
+    if (mid) {
+      linkEl.href = '/community/' + mid + '?from=' + encodeURIComponent(${JSON.stringify(act.record_id)});
+      linkEl.style.display = '';
+    } else {
+      linkEl.style.display = 'none';
+    }
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (typeof cycTrack === 'function') {
+      cycTrack('event_card_avatar_click', { name: name, member_rec_id: mid });
+    }
+  };
+  window.closePersonModal = function () {
+    var overlay = document.getElementById('personModal');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closePersonModal();
+  });
+})();
+
 // ─────────── 删除报名（admin 用，密码保护） ───────────
 const _ACT_REC_ID = ${JSON.stringify(act.record_id)};
 let _delRsvpId = null;
@@ -657,6 +758,27 @@ export default async function handler(req, res) {
     rsvps = await fetchRsvpsForActivity(id);
   } catch (err) {
     console.error('[event-page] rsvp fetch failed:', err.message);
+  }
+
+  // 4b. 给 rsvps 注入头像数据（avatar_url + avatar_token），从 members:public_list 缓存拿
+  if (rsvps.length && isKvConfigured()) {
+    try {
+      const memberListRaw = await kvGet('members:public_list').catch(() => null);
+      if (memberListRaw) {
+        const members = JSON.parse(memberListRaw);
+        const memberMap = {};
+        for (const m of members) {
+          if (m.record_id) memberMap[m.record_id] = m;
+        }
+        for (const r of rsvps) {
+          const m = r.member_rec_id ? memberMap[r.member_rec_id] : null;
+          r.avatar_url   = m?.avatar_url   || null;
+          r.avatar_token = m?.avatar_token || null;
+        }
+      }
+    } catch (err) {
+      console.warn('[event-page] avatar enrich failed:', err.message);
+    }
   }
 
   // 5. 渲染

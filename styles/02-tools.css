@@ -280,6 +280,11 @@ label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.02em}
   background:rgba(0,0,0,0.05);
   padding:1px 5px;border-radius:4px;margin-left:3px;
 }
+.req{
+  font-size:10px;font-weight:700;color:var(--cyc-orange);
+  background:rgba(217,101,42,0.10);
+  padding:1px 5px;border-radius:4px;margin-left:3px;letter-spacing:0.04em;
+}
 input,textarea{
   background:rgba(255,255,255,0.9);
   border:1px solid rgba(0,0,0,0.10);

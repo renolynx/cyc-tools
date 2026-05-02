@@ -153,6 +153,11 @@
 .home-act-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.10), 0 0 0 0.5px var(--cyc-inset-shine) inset; }
 .home-act-card:active { transform: scale(0.99); }
 
+/* 已结束卡片 desaturate（保持可读但视觉次级）*/
+.home-act-card.is-past { opacity: 0.62; }
+.home-act-card.is-past:hover { opacity: 0.92; }
+.home-act-card.is-past .home-act-thumb { filter: grayscale(0.35); }
+
 .home-act-thumb {
   width: 100%; aspect-ratio: 16/10;
   background: rgba(28,61,46,0.06);
@@ -178,8 +183,9 @@
 }
 .home-act-pill-date  { background: rgba(28,61,46,0.10); color: var(--cyc-green); }
 .home-act-pill-time  { background: rgba(255,255,255,0.7); color: var(--cyc-text); border: 1px solid var(--cyc-stroke); }
-.home-act-pill-open  { background: rgba(200,169,110,0.18); color: #6b5022; border: 1px solid rgba(200,169,110,0.35); }
-.home-act-pill-past  { background: rgba(0,0,0,0.05); color: var(--cyc-text-muted); }
+.home-act-pill-open   { background: rgba(200,169,110,0.18); color: #6b5022; border: 1px solid rgba(200,169,110,0.35); }
+.home-act-pill-closed { background: rgba(0,0,0,0.06); color: var(--cyc-text-muted); border: 1px solid rgba(0,0,0,0.10); }
+.home-act-pill-past   { background: rgba(0,0,0,0.05); color: var(--cyc-text-muted); }
 
 .home-act-title {
   font-size: 15px; font-weight: 700; letter-spacing: -0.01em;

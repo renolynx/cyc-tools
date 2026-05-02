@@ -82,25 +82,114 @@
   <p>CYC 链岛青年社区 · Connected Youth Community in Dali</p>
 </footer>
 
+<!-- 人物 modal（点击活动卡片头像触发）-->
+<div class="person-modal-overlay" id="personModal" onclick="if(event.target.id==='personModal')closePersonModal()">
+  <div class="person-modal">
+    <div class="person-modal-handle"></div>
+    <button class="person-modal-close" type="button" onclick="closePersonModal()" aria-label="关闭">×</button>
+    <div class="person-modal-body">
+      <div class="person-modal-avatar-wrap" id="pmAvatar">
+        <div class="person-modal-avatar-initials">?</div>
+      </div>
+      <div class="person-modal-info">
+        <div class="person-modal-name" id="pmName"></div>
+        <div class="person-modal-bio" id="pmBio"></div>
+      </div>
+    </div>
+    <a class="person-modal-link" id="pmLink" href="#">查看完整 profile →</a>
+  </div>
+</div>
+
 <script>
-// ── 活动卡片流：拉未来 4 周活动 ──
+// ── 人物 modal ──
+(function () {
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  window.openPersonModal = function (btn) {
+    var name  = btn.dataset.name  || '';
+    var bio   = btn.dataset.bio   || '';
+    var url   = btn.dataset.url   || '';   // KV blob URL（优先）
+    var token = btn.dataset.token || '';   // 飞书 file_token（fallback）
+    var mid   = btn.dataset.mid   || '';
+
+    var overlay    = document.getElementById('personModal');
+    var avatarWrap = document.getElementById('pmAvatar');
+    var nameEl     = document.getElementById('pmName');
+    var bioEl      = document.getElementById('pmBio');
+    var linkEl     = document.getElementById('pmLink');
+
+    var imgSrc = url || (token ? '/api/poster?token=' + encodeURIComponent(token) : '');
+    if (imgSrc) {
+      var img = new Image();
+      img.alt = name;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      img.onerror = function () {
+        avatarWrap.innerHTML = '<div class="person-modal-avatar-initials">' + esc(name[0] || '?') + '</div>';
+      };
+      avatarWrap.innerHTML = '';
+      avatarWrap.appendChild(img);
+      img.src = imgSrc;
+    } else {
+      avatarWrap.innerHTML = '<div class="person-modal-avatar-initials">' + esc(name[0] || '?') + '</div>';
+    }
+
+    nameEl.textContent = name;
+    if (bio) {
+      bioEl.className   = 'person-modal-bio';
+      bioEl.textContent = bio;
+    } else {
+      bioEl.className   = 'person-modal-no-bio';
+      bioEl.textContent = '暂无简介';
+    }
+
+    if (mid) {
+      linkEl.href         = '/community/' + mid;
+      linkEl.style.display = '';
+    } else {
+      linkEl.style.display = 'none';
+    }
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    if (typeof cycTrack === 'function') {
+      cycTrack('event_card_avatar_click', { name: name, member_rec_id: mid });
+    }
+  };
+
+  window.closePersonModal = function () {
+    var overlay = document.getElementById('personModal');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closePersonModal();
+  });
+})();
+
+// ── 活动卡片流：未来 4 周 + 最近 2 周历史（含 RSVP 头像数据）──
+//   未来活动按时间升序在前（最近的在最前面），最近过去活动倒序补在后（已结束 desaturate）
+//   总数限 12 张，避免首页过长
 (async function loadActivities() {
   const today = new Date();
-  const start = today.toISOString().slice(0, 10);
+  const todayStr = today.toISOString().slice(0, 10);
+  const past = new Date(today.getTime() - 14 * 86400000);
   const future = new Date(today.getTime() + 28 * 86400000);
-  const end = future.toISOString().slice(0, 10);
+  const start = past.toISOString().slice(0, 10);
+  const end   = future.toISOString().slice(0, 10);
 
   let acts = [];
   try {
     const res = await fetch('/api/get-activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weekStart: start, weekEnd: end }),
+      body: JSON.stringify({ weekStart: start, weekEnd: end, include_rsvps: true }),
     });
     const data = await res.json();
     acts = (data.activities || []).filter(a => a.status !== '胎死腹中' && a.status !== '已归档');
-    // 按日期升序
-    acts.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   } catch (err) {
     document.getElementById('actStream').innerHTML =
       '<div class="home-act-empty">活动加载失败 · <a href="/events">看 /events</a></div>';
@@ -113,7 +202,12 @@
     return;
   }
 
-  stream.innerHTML = acts.slice(0, 12).map(renderCard).join('');
+  // 切两段：未来升序 + 过去倒序，未来在前
+  const upcoming = acts.filter(a => (a.date || '') >= todayStr).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const recent   = acts.filter(a => (a.date || '') <  todayStr).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const ordered  = [...upcoming, ...recent].slice(0, 12);
+
+  stream.innerHTML = ordered.map(renderCard).join('');
 })();
 
 function renderCard(a) {
@@ -122,18 +216,74 @@ function renderCard(a) {
   const thumbHtml = a.poster?.file_token
     ? `<img class="home-act-thumb" src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="" loading="lazy">`
     : `<div class="home-act-thumb home-act-thumb-empty">📅</div>`;
-  return `<a class="home-act-card" href="/events/${escapeAttr(a.record_id)}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}'>
+  const avatarHtml = renderAvatarGroups(
+    a.card_speakers || [],
+    a.card_attendees || [],
+    a.card_attendee_total || 0
+  );
+  return `<a class="home-act-card${isPast ? ' is-past' : ''}" href="/events/${escapeAttr(a.record_id)}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}'>
     ${thumbHtml}
     <div class="home-act-body">
       <div class="home-act-meta">
         ${dateStr ? `<span class="home-act-pill home-act-pill-date">${dateStr}</span>` : ''}
         ${a.time ? `<span class="home-act-pill home-act-pill-time">⏰ ${escapeHtml(a.time)}</span>` : ''}
-        ${isPast ? '<span class="home-act-pill home-act-pill-past">已结束</span>' : '<span class="home-act-pill home-act-pill-open">🌿 对外开放</span>'}
+        ${isPast
+          ? '<span class="home-act-pill home-act-pill-past">已结束</span>'
+          : (a.is_public === false
+              ? '<span class="home-act-pill home-act-pill-closed">🔒 仅成员</span>'
+              : '<span class="home-act-pill home-act-pill-open">🌿 对外开放</span>')}
       </div>
       <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
       ${a.loc ? `<div class="home-act-loc">📍 ${escapeHtml(a.loc)}</div>` : ''}
+      ${avatarHtml}
     </div>
   </a>`;
+}
+
+function renderAvatarGroups(speakers, attendees, total) {
+  if (!speakers.length && !attendees.length) return '';
+
+  function avatarBtn(p) {
+    const initials = escapeHtml((p.name || '?')[0]);
+    // 优先 KV blob URL；其次 飞书 file_token；都没有 → 首字母圆
+    const imgSrc = p.avatar_url
+      ? p.avatar_url
+      : (p.avatar_token ? '/api/poster?token=' + encodeURIComponent(p.avatar_token) : '');
+    const content = imgSrc
+      ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" loading="lazy">`
+      : `<span class="card-avatar-initials">${initials}</span>`;
+    return `<button class="card-avatar" type="button"` +
+      ` data-name="${escapeHtml(p.name)}"` +
+      ` data-bio="${escapeHtml(p.bio || '')}"` +
+      ` data-url="${escapeHtml(p.avatar_url || '')}"` +
+      ` data-token="${escapeHtml(p.avatar_token || '')}"` +
+      ` data-mid="${escapeHtml(p.member_rec_id || '')}"` +
+      ` onclick="event.stopPropagation();openPersonModal(this)"` +
+      ` aria-label="${escapeHtml(p.name)}">${content}</button>`;
+  }
+
+  let html = '<div class="card-avatar-groups">';
+
+  if (speakers.length) {
+    html += '<div class="card-avatar-group card-avatar-group--speaker">';
+    html += '<span class="card-avatar-group-label">嘉宾</span>';
+    html += '<div class="card-avatar-stack">';
+    html += speakers.map(p => avatarBtn(p)).join('');
+    html += '</div></div>';
+  }
+
+  if (attendees.length) {
+    const more = (total || attendees.length) - attendees.length;
+    html += '<div class="card-avatar-group card-avatar-group--attendee">';
+    html += '<span class="card-avatar-group-label">报名</span>';
+    html += '<div class="card-avatar-stack">';
+    html += attendees.map(p => avatarBtn(p)).join('');
+    if (more > 0) html += `<span class="card-avatar-more">+${more}</span>`;
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function formatDate(d) {

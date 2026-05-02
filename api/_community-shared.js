@@ -26,7 +26,9 @@ export function escapeHtml(s) {
 }
 
 export function avatarUrl(member) {
-  if (member && member.avatar?.file_token)
+  // 优先 KV blob URL（/me/timeline 上传走这条），fallback 飞书「照片」字段
+  if (member?.avatar_url) return member.avatar_url;
+  if (member?.avatar?.file_token)
     return SITE_URL + '/api/poster?token=' + encodeURIComponent(member.avatar.file_token);
   return null;
 }
