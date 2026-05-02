@@ -85,7 +85,10 @@ export async function writeEvent({
 
 /** 拉最近 N 天事件用于 dashboard
  *  返回 [{record_id, fields:{...}}, ...] 按时间倒序
- *  最多返回 1000 条（飞书单页上限是 500 + 翻页）
+ *
+ *  实现说明：飞书 search API 的 DateTime filter 在 type=5 字段上格式很挑剔
+ *  （1254018 InvalidFilter）。索性服务端只 sort 不 filter，500 条拉回来
+ *  客户端按 since 过滤。当前规模够用（每天事件量级 < 几百条）。
  */
 export async function fetchRecentEvents({ days = 7, limit = 500 } = {}) {
   const appToken = process.env.FEISHU_APP_TOKEN;
@@ -94,15 +97,8 @@ export async function fetchRecentEvents({ days = 7, limit = 500 } = {}) {
   const token = await getAccessToken();
   const since = Date.now() - days * 24 * 60 * 60 * 1000;
 
-  // 用 search 接口（支持 filter + sort）
   const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${EVENTS_TABLE_ID}/records/search?page_size=${Math.min(limit, 500)}`;
   const body = {
-    filter: {
-      conjunction: 'and',
-      conditions: [
-        { field_name: '时间戳', operator: 'isGreater', value: [String(since)] },
-      ],
-    },
     sort: [{ field_name: '时间戳', desc: true }],
   };
 
@@ -117,5 +113,13 @@ export async function fetchRecentEvents({ days = 7, limit = 500 } = {}) {
 
   const data = await res.json();
   if (data.code !== 0) throw new Error(`事件拉取失败 (${data.code}): ${data.msg}`);
-  return data.data?.items || [];
+
+  const items = data.data?.items || [];
+
+  // 客户端过滤 since 时间（避免飞书 DateTime filter 1254018）
+  return items.filter((it) => {
+    const ts = it.fields?.['时间戳'];
+    if (!ts) return false;
+    return Number(ts) >= since;
+  });
 }
