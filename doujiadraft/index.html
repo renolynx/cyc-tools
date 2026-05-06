@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>豆荚暑期素描 × 艺术史营 · 2026</title>
+<meta name="description" content="艺术从来就是一场从符合标准到打破规则的运动史。两期 5 天课程，让判断力、游戏规则、自主叙事在画面中逐步生成。悠洋老师 · 北京豆荚 · 2026 年 7 月 15-25 日。">
+
+<!-- Open Graph / 微信分享 -->
+<meta property="og:title" content="豆荚暑期素描 × 艺术史营 · 2026">
+<meta property="og:description" content="艺术从来就是一场从符合标准到打破规则的运动史。悠洋老师 · 北京豆荚 · 2026 年 7 月 15-25 日。">
+<meta property="og:image" content="/doujiadraft/悠洋老师.jpg">
+<meta property="og:url" content="https://cyc.center/doujiadraft">
+<meta property="og:type" content="article">
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: #f5f1ea;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    color: #2a2a2a;
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+  }
+  .article {
+    max-width: 680px;
+    margin: 0 auto;
+    background: #fdfcf9;
+    padding: 56px 36px 80px;
+  }
+  h1.title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-align: center;
+    line-height: 1.5;
+    margin: 0 0 18px;
+    letter-spacing: 0.02em;
+  }
+  p.subtitle {
+    text-align: center;
+    color: #6b6157;
+    font-size: 15px;
+    margin: 0 0 56px;
+    line-height: 1.7;
+  }
+  h2.author {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 48px 0 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #8b6f47;
+    display: inline-block;
+  }
+  h3.section {
+    font-size: 19px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 56px 0 20px;
+    padding-left: 14px;
+    border-left: 4px solid #8b6f47;
+    line-height: 1.5;
+  }
+  h4.subsection {
+    font-size: 17px;
+    font-weight: 700;
+    color: #3a342c;
+    margin: 36px 0 14px;
+  }
+  p {
+    font-size: 16px;
+    margin: 0 0 18px;
+    color: #2a2a2a;
+  }
+  .lead {
+    font-size: 16.5px;
+    color: #1a1a1a;
+  }
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 28px auto;
+    border-radius: 2px;
+  }
+  .caption {
+    text-align: center;
+    font-size: 13.5px;
+    color: #8a7e72;
+    margin: -16px auto 32px;
+    line-height: 1.7;
+    font-style: italic;
+    max-width: 90%;
+  }
+  .caption.no-italic {
+    font-style: normal;
+  }
+  .quote-block {
+    background: #f3ede1;
+    border-left: 3px solid #8b6f47;
+    padding: 22px 26px;
+    margin: 32px 0;
+    font-size: 15.5px;
+    line-height: 1.85;
+    color: #3a342c;
+  }
+  .pull {
+    font-size: 18px;
+    font-weight: 600;
+    color: #8b6f47;
+    text-align: center;
+    margin: 40px 0;
+    line-height: 1.7;
+    letter-spacing: 0.05em;
+  }
+  hr.divider {
+    border: none;
+    height: 1px;
+    background: #e8e1d4;
+    margin: 48px 0;
+  }
+  .course-card {
+    background: #ffffff;
+    border: 1px solid #e8e1d4;
+    border-radius: 4px;
+    padding: 24px 22px;
+    margin: 24px 0;
+  }
+  .course-card .day {
+    display: inline-block;
+    background: #8b6f47;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-bottom: 10px;
+    letter-spacing: 0.08em;
+  }
+  .course-card h5 {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 12px;
+    line-height: 1.5;
+  }
+  .course-card .pair {
+    display: flex;
+    gap: 14px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .course-card .pair > div {
+    flex: 1;
+    min-width: 200px;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+  .course-card .pair .label {
+    font-size: 12px;
+    color: #8b6f47;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .course-card .pair .content {
+    color: #2a2a2a;
+  }
+  .three-step {
+    display: flex;
+    gap: 16px;
+    margin: 28px 0;
+    flex-wrap: wrap;
+  }
+  .three-step .step {
+    flex: 1;
+    min-width: 160px;
+    background: #f3ede1;
+    padding: 18px 16px;
+    border-radius: 3px;
+  }
+  .three-step .step .num {
+    font-size: 13px;
+    font-weight: 700;
+    color: #8b6f47;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+  }
+  .three-step .step .title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+  .three-step .step .desc {
+    font-size: 14px;
+    color: #4a443c;
+    line-height: 1.65;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 32px 0;
+  }
+  .gallery img {
+    margin: 0;
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 2px;
+  }
+  .teacher-block {
+    background: #f3ede1;
+    padding: 32px 28px;
+    margin: 48px 0;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .teacher-block img {
+    max-width: 200px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+  }
+  .teacher-block p {
+    font-size: 15px;
+    line-height: 1.85;
+    text-align: left;
+    color: #3a342c;
+  }
+  .info-block {
+    background: #1a1a1a;
+    color: #f5f1ea;
+    padding: 36px 30px;
+    margin: 48px 0 24px;
+    border-radius: 4px;
+  }
+  .info-block h3 {
+    color: #fff;
+    font-size: 18px;
+    margin: 0 0 20px;
+    border: none;
+    padding: 0;
+  }
+  .info-block p {
+    color: #d4cabc;
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .info-block .session {
+    border-top: 1px solid #4a443c;
+    padding-top: 18px;
+    margin-top: 18px;
+  }
+  .info-block strong {
+    color: #fff;
+  }
+  .closer {
+    text-align: center;
+    font-size: 16px;
+    color: #1a1a1a;
+    line-height: 1.85;
+    margin: 56px 0 24px;
+    padding: 32px 20px;
+    border-top: 1px solid #e8e1d4;
+    border-bottom: 1px solid #e8e1d4;
+  }
+  .ornament {
+    text-align: center;
+    color: #8b6f47;
+    font-size: 16px;
+    letter-spacing: 1em;
+    margin: 24px 0;
+  }
+  strong { color: #1a1a1a; font-weight: 600; }
+
+  @media (max-width: 600px) {
+    .article { padding: 40px 20px 60px; }
+    h1.title { font-size: 22px; }
+    .gallery img { height: 180px; }
+  }
+</style>
+</head>
+<body>
+
+<article class="article">
+
+  <p class="ornament">✦  ✦  ✦</p>
+
+  <h1 class="title">豆荚暑期素描 × 艺术史营</h1>
+
+  <p class="subtitle">
+    艺术从来就是一场<br>
+    从符合标准到打破规则的运动史<br>
+    <br>
+    <span style="color:#8b6f47;">零基础友好 · 两期 5 天课程</span><br>
+    <span style="font-size:13.5px;">让判断力、游戏规则、自主叙事在画面中逐步生成</span>
+  </p>
+
+  <hr class="divider">
+
+  <h2 class="author">悠洋：</h2>
+
+  <p class="lead">在过去几年的课程里，我发现一个很成功的教学切入点是把素描，作为一种<strong>理性的视觉思维工具</strong>向孩子们介绍，带他们一起用一种研究者的视角去做纸上的构筑游戏。</p>
+
+  <p>比起传授技能，我更希望传授规则和方法。当最简单的原理能够被孩子理解，那么在此基础之上的组合就不再是需要按部就班的规矩，而变成了<strong>可以自由探索的游戏</strong>。</p>
+
+  <img src="1.png" alt="">
+
+  <h4 class="subsection">关于课堂的两种典型路径</h4>
+
+  <p>传统上来讲，为了得到一个好的课堂结果——</p>
+
+  <p>一个老师可以用颗粒度非常细的指导，按着孩子的头去深入画面，那么一节课就可以几乎手把手地带着一个绘画基础薄弱的学生生产出一张非常惊艳的作品。</p>
+
+  <div class="quote-block">
+    <p style="margin:0 0 10px;"><strong>这样一来：</strong>孩子在被不断规训课堂纪律、被逼着专注的过程中可能会体验到来课外加班上学的感觉，耐力会得到训练，但也会逐渐对来上课、甚至画画本身都感到消耗和厌倦。</p>
+    <p style="margin:0;"><strong>二来：</strong>当下结果如果是好的，孩子可以在结束时得到一些正反馈，家长可能会赞许他学到了真东西。</p>
+  </div>
+
+  <img src="2.png" alt="">
+
+  <p>但如果老师想用允许和引导对话的方式去激发想象，孩子可能会天马行空地在纸上做各种创意实验。而这种想象力的激发在话题的不断偏移中，会不可避免地落在身体和语言上——吵闹的课堂，落不到纸面上的手舞足蹈。</p>
+
+  <p>而课堂上画面的转译，在没有足够多的手头练习的情况下可能会看起来像胡来。有时候叠加上反复涂改，结果会惨不忍睹。</p>
+
+  <div class="quote-block">
+    <p style="margin:0 0 10px;"><strong>这样一来：</strong>孩子可能课后心情不错，嘴皮子和社交能力越来越好，但留下的作品草率，家长在没参与过程的情况下可能会对带回家的结果感到不知所谓、轻如鸿毛。</p>
+    <p style="margin:0;"><strong>二来：</strong>对于将来是否能够就靠这样胡来下去拿到结果，会感到猜疑和焦虑。</p>
+  </div>
+
+  <img src="3.png" alt="Paul Klee, Sozusagen (Pour Ainsi Dire), 1933">
+  <p class="caption">PAUL KLEE / "Sozusagen" (Pour Ainsi Dire), 1933-29</p>
+
+  <p class="pull">找到可以同时激发兴趣和构建秩序的切入点，<br>去平衡好艺术中的<strong style="color:#8b6f47;">自由发散 vs. 技能训练</strong>，<br>是每一个真正在乎教育的老师都要去深入研究的课题。</p>
+
+  <hr class="divider">
+
+  <h3 class="section">关于这次课程的切入点</h3>
+
+  <p>去年夏天，我们用素描在二维纸面上构建过三维空间，那时课程的标题叫"<strong>开启理性之眼，构建无限空间</strong>"。</p>
+
+  <p>今年，我想把这件事再往前推一段——</p>
+
+  <p>如果说去年练习的是"<strong>看见无形的支点</strong>"，今年练习的就是去看见每一组规则背后那些隐而不显的支点：艺术家是怎么发现旧规则的边界，又是怎么发明新规则的。</p>
+
+  <p class="pull">绘画，从来不是一组固定的标准；<br>它更像一场不断打破又重建的运动。<br>素描——作为最朴素、也最有研究感的工具——<br>一直在这场运动里，扮演基础规则的角色。</p>
+
+  <img src="4.png" alt="">
+
+  <hr class="divider">
+
+  <h3 class="section">课程主题：在艺术史里，素描是怎么成为每一个艺术家的创作工具的？</h3>
+
+  <p>7 月 15-25 日，我会在豆荚开设两期 5 天课程：</p>
+
+  <p>
+    📐 <strong>第一期</strong>：7 月 15 日 — 19 日（休一天）<br>
+    🎨 <strong>第二期</strong>：7 月 21 日 — 25 日
+  </p>
+
+  <p>我们将通过艺术史里几次重要的运动，去看素描怎么作为<strong>基础规则</strong>，又怎么参与了对规则的<strong>打破与重建</strong>。</p>
+
+  <p>每天聚焦一次运动，孩子们会经历三件事：</p>
+
+  <div class="three-step">
+    <div class="step">
+      <div class="num">01 · 看</div>
+      <div class="title">观察</div>
+      <div class="desc">一组代表性的艺术家与作品</div>
+    </div>
+    <div class="step">
+      <div class="num">02 · 拆</div>
+      <div class="title">理解</div>
+      <div class="desc">这次运动打破了什么、发明了什么</div>
+    </div>
+    <div class="step">
+      <div class="num">03 · 做</div>
+      <div class="title">实验</div>
+      <div class="desc">用这种方法，在自己的纸上做一次实验</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h3 class="section">第一期 ｜ 从"按规则画"到"打破规则"<br><span style="font-size:14px; font-weight:400; color:#8a7e72; letter-spacing:0.05em;">7.15 – 7.19</span></h3>
+
+  <div class="course-card">
+    <span class="day">DAY 1</span>
+    <h5>文艺复兴素描 · 达芬奇 / 米开朗基罗</h5>
+    <div class="pair">
+      <div><div class="label">起 点</div><div class="content">—— 一切的开始</div></div>
+      <div><div class="label">发 明</div><div class="content">素描作为研究、解剖、构思的工具</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 2</span>
+    <h5>印象派 · 莫奈 / 雷诺阿</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">沙龙的精细完成度</div></div>
+      <div><div class="label">发 明</div><div class="content">户外、瞬间、笔触本身的存在</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 3</span>
+    <h5>塞尚 / 后印象派</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">印象派的"只看一瞬"</div></div>
+      <div><div class="label">发 明</div><div class="content">用圆柱、球体、圆锥重新处理自然</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 4</span>
+    <h5>立体主义 · 毕加索 / 布拉克</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">单一视点的透视</div></div>
+      <div><div class="label">发 明</div><div class="content">多视点同时呈现、对象被拆解重组</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 5</span>
+    <h5>野兽派 / 马蒂斯线条</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">形与色的"真实"</div></div>
+      <div><div class="label">发 明</div><div class="content">几笔勾出整个人，线条本身成为世界</div></div>
+    </div>
+  </div>
+
+  <img src="塞上.jpg" alt="塞尚作品">
+  <p class="caption no-italic">保罗·塞尚（Paul Cézanne，1839-1906）的后期作品试图用最少的技巧来传达自然以及他对自然的印象。他摒弃了艺术传统（尤其是线性透视法则）的沉重影响，越来越依赖于纯粹的笔触来构建整体全景。</p>
+
+  <hr class="divider">
+
+  <h3 class="section">第二期 ｜ 从"打破规则"到"重新发明规则"<br><span style="font-size:14px; font-weight:400; color:#8a7e72; letter-spacing:0.05em;">7.21 – 7.25</span></h3>
+
+  <div class="course-card">
+    <span class="day">DAY 6</span>
+    <h5>包豪斯 / 克利</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">艺术与设计的分割</div></div>
+      <div><div class="label">发 明</div><div class="content">系统化的图形语言；"让线条出去散步"</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 7</span>
+    <h5>超现实主义 / 自动绘画 · 米罗 / 马松</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">意识对手的控制</div></div>
+      <div><div class="label">发 明</div><div class="content">让手自己说话，从偶然里找形</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 8</span>
+    <h5>抽象表现主义 · 波洛克</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">画面的中心构图</div></div>
+      <div><div class="label">发 明</div><div class="content">身体作为画笔，画面成为行动的痕迹</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 9</span>
+    <h5>极简 / 观念艺术 · Sol LeWitt</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">艺术家"亲手做"的执念</div></div>
+      <div><div class="label">发 明</div><div class="content">素描作为指令；规则可被另一个人执行</div></div>
+    </div>
+  </div>
+
+  <div class="course-card">
+    <span class="day">DAY 10</span>
+    <h5>涂鸦艺术 · Keith Haring / 巴斯奎特</h5>
+    <div class="pair">
+      <div><div class="label">打 破</div><div class="content">高雅艺术的围墙</div></div>
+      <div><div class="label">发 明</div><div class="content">街头语言进入美术馆，符号变成自传</div></div>
+    </div>
+  </div>
+
+  <img src="巴斯奎特.jpeg" alt="巴斯奎特作品">
+  <p class="caption no-italic">街头起家的美国涂鸦艺术家巴斯奎特（Jean-Michel Basquiat），永远"光芒四射的孩子"。</p>
+
+  <hr class="divider">
+
+  <h3 class="section">课堂现场 · 往届学员作品</h3>
+
+  <div class="gallery">
+    <img src="授课图.jpg" alt="授课现场">
+    <img src="授课图2.jpg" alt="授课现场">
+    <img src="萱萱.jpg" alt="萱萱作品">
+    <img src="林曦.jpg" alt="林曦作品">
+    <img src="河豚.jpg" alt="河豚作品">
+    <img src="向明煜.jpg" alt="向明煜作品">
+    <img src="越越.jpg" alt="越越作品">
+  </div>
+
+  <hr class="divider">
+
+  <div class="teacher-block">
+    <img src="悠洋老师.jpg" alt="悠洋老师">
+    <h4 style="margin-top:0; font-size:18px; color:#1a1a1a;">悠洋老师</h4>
+    <p>留英 7 年，环游欧洲，毕业于英国皇家艺术学院。独立动画导演，艺术教育者。费那奇北京动画周共同创始人。自 2018 年起在豆荚进行创意绘画和西方艺术史的教学，2021 年赴美游学，研究 AI，目前往返居住于中美之间。</p>
+  </div>
+
+  <div class="info-block">
+    <h3>2026 暑期艺术营 · 招生信息</h3>
+    <p><strong>上课教师：</strong>悠洋老师</p>
+    <p><strong>上课地点：</strong>（待定）</p>
+    <p><strong>招募对象：</strong>（待定）</p>
+
+    <div class="session">
+      <p style="margin-bottom:6px;"><strong>第一期 · 从"按规则画"到"打破规则"</strong></p>
+      <p style="margin-bottom:0;">7 月 15 日 — 19 日　每天 9:00-12:00，13:30-16:30</p>
+    </div>
+
+    <div class="session">
+      <p style="margin-bottom:6px;"><strong>第二期 · 从"打破规则"到"重新发明规则"</strong></p>
+      <p style="margin-bottom:0;">7 月 21 日 — 25 日　每天 9:00-12:00，13:30-16:30</p>
+    </div>
+  </div>
+
+  <p class="closer">
+    艺术从来就是一场<br>
+    从符合标准到打破规则的运动史。<br>
+    <br>
+    <strong>2026 暑期艺术营</strong><br>
+    期待和你一起，把这场运动<br>
+    在自己的纸上重新走一遍。
+  </p>
+
+  <p class="ornament">✦  ✦  ✦</p>
+
+</article>
+
+</body>
+</html>
