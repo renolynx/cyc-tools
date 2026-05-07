@@ -17,9 +17,17 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:locale:alternate" content="en_US">
 <link rel="canonical" href="https://cyc.center/">
+
+<!-- dayrise-os v4 fonts (2026-05-07): Source Serif 4 Light + IBM Plex Mono + Source Han Serif Light -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<!-- 中文 display serif (按需加载，仅 brand register 路由) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/earlyaccess/notoserifsc.css" media="print" onload="this.media='all'">
+
 <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
+<body class="cyc-brand">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>
@@ -40,7 +48,7 @@
   <section class="home-hero">
     <a class="hero-poster hero-poster-a" href="/about" data-track="hero_path_a_click" data-track-meta='{"target":"about"}'>
       <div class="hero-poster-content">
-        <h2>在大理</h2>
+        <h2 class="cyc-display">在大理</h2>
         <p class="hero-poster-tagline">有这样一群人在认真做事 —— 做独立项目、做创作、做社区</p>
         <span class="hero-poster-cta">了解 CYC →</span>
       </div>
@@ -60,7 +68,10 @@
   <!-- 活动卡片流 -->
   <section class="home-activities">
     <header class="home-activities-head">
-      <h3>近期活动</h3>
+      <div class="home-activities-title">
+        <span class="cyc-eyebrow cyc-eyebrow--sm">EVENTS · 大理</span>
+        <h3>近期活动</h3>
+      </div>
       <a href="/events">全部活动 →</a>
     </header>
     <div id="actStream" class="home-act-grid">

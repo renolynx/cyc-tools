@@ -4,9 +4,23 @@
 
 product
 
-> 默认 register 是 product（/me、/tools、/team、/admin、/api 等占据主体）。
-> Brand register 在以下路由 override：`/`、`/events`、`/events/:id`、所有用于对外宣发或单独成篇的活动详情页。
+> 默认 register 是 product（/me、/tools、/team、/admin、/api、/generator、/community、/community/:id、/community/admin 等占据主体）。
+> Brand register 在以下路由 override：`/`、`/about`、`/events`、`/events/:id`、`/rooms`、`/community/memories`、所有用于对外宣发或单独成篇的活动详情页。
 > 切换原则：用户在这里是来"用东西"还是"被打动"？前者 product，后者 brand。
+>
+> **brand register 的视觉表达**（dayrise-os v4，由设计层承接）：
+> - hero h1 用 display serif（Source Serif 4 Light，48-56px）
+> - section gap 加大到 80-96px
+> - section eyebrow pattern（小灰字 ALL CAPS）
+> - 一个橙色 pill CTA 作为唯一信号
+>
+> **product register 的视觉表达**（保持 v3 quiet 基调）：
+> - system grotesque（Inter / PingFang）
+> - section gap 32-64px
+> - 紧凑 density
+> - 按 layer 区分（Aurora 绿 CTA / Daybook 橙 temporal）
+>
+> 详见 [dayrise-os SKILL.md](.claude/skills/dayrise-os/SKILL.md) "brand register vs product register" 章节。
 
 ## Users
 
@@ -49,8 +63,9 @@ cyc.center 是大理"链岛社区"的**轻量公共操作系统**。
 - **Are.na** —— internet-native 的克制、为认真创作的人服务、不商业化、靠内容沉淀气质
 - **Linear** —— 工艺感、键盘流、速度即奢侈、暗色优雅但不冷
 - **小宇宙** —— 中文语境下少有的人味、gentle UI、对创作者温柔
+- **ElevenLabs** —— editorial restraint, type-as-signature, "whisper where competitors shout"（轻量衬线 + 蛋壳暖白底，以排版节制颠覆 SaaS bold grotesque 惯例）
 
-三者交集 = **为创作型用户做的、有人味的、克制但有性格的产品**。
+四者交集 = **为创作型用户做的、有人味的、克制但有 type signature 的产品**。
 
 **用户应该感觉到**："这个工具站好讲究、好实用、好优雅！" —— 三层堆叠：
 1. **讲究** = 看得出每个细节被想过，不糊弄
@@ -82,6 +97,13 @@ cyc.center 绝不能像：
 5. **慢，但每一步都准**
    不需要让用户停留更久。让他每次来都觉得"找到了"。一秒钟解决，比五分钟逛舒服更高级。
 
+6. **Type as character**（v4 dayrise-os 引入）
+   字体本身是品牌的一部分，不是中性容器。在 brand register（`/`、`/events`、`/about` 等对外面），用一个轻量衬线（Source Serif 4 Light）做 hero h1，跟正文 Inter / PingFang 形成"严肃文献 + 现代日常"对话 —— 这是"独立 zine 编辑部"气质的视觉签名。
+
+   在 product register（`/me`、`/admin`、工具），保持 system-grade 中性字体，让工具不抢戏。
+
+   字体的"signature"和"克制"是同一件事的两面：在该 signature 的地方建立 signature，在不该的地方退回中性。
+
 ## Accessibility & Inclusion
 
 **WCAG AAA 严要求**作为目标，但允许在两类场景下降到 AA 让步：
@@ -100,15 +122,27 @@ cyc.center 绝不能像：
 - 视觉敏感用户：避免高频闪烁、自动播放视频、长时间动画循环
 - 中英文混排：中文字号需比英文略大 2-4%（`PingFang SC` 视觉重量比 `Inter` 略轻）
 
-## 与 daybreak-os 的关系
+## 与 dayrise-os 的关系（v4，2026-05-07）
 
-cyc.center 同时使用 [daybreak-os](.claude/skills/daybreak-os/SKILL.md) 设计系统。本文件提供**战略上下文**（who/what/why），daybreak-os 提供**视觉规范**（how it looks）。两者关系：
+cyc.center 使用 [dayrise-os](.claude/skills/dayrise-os/SKILL.md) 设计系统（前身 daybreak-os v3 quiet，2026-05-07 升级 v4 dayrise）。本文件提供**战略上下文**（who/what/why），dayrise-os 提供**视觉规范**（how it looks）。两者关系：
 
-- daybreak-os 的 **Atlas 层** ↔ 本文档的 brand register（/、/events 系列）
-- daybreak-os 的 **Aurora 层** ↔ 本文档的 product register 中的 admin 子集（/admin、设置、command palette）
-- daybreak-os 的 **Daybook 层** ↔ 本文档的 product register 中的个人/社区子集（/me、/tools、/members）
+**Layer 维度**（色 / 装饰 / pattern）：
+- dayrise-os 的 **Atlas 层** ↔ 编辑/对外 surface（hero、活动、宣发）
+- dayrise-os 的 **Aurora 层** ↔ admin chrome（settings、`/admin`、command palette、dialogs）
+- dayrise-os 的 **Daybook 层** ↔ 亲密 surface（`/me`、journal、profile、`/community`）
 
-⚠️ **已知冲突待解（移交 DESIGN.md）**：
-- daybreak-os 默认调色（黑白 + 珊瑚 accent）与 cyc.center 现有"大理配色"（绿/橙/沙）需要协调
-- WCAG AAA 要求与 daybreak-os 部分 token（如 `--db-text-tertiary: oklch(0.75 0 0)`）的对比度不达标，需重写
-- 这两件事在做 DESIGN.md（`/impeccable document`）时定下方案
+**Register 维度**（字层级密度 / 节奏）—— v4 引入：
+- **brand register**（`/`、`/about`、`/events`、`/events/:id`、`/rooms`、`/community/memories`）→ display serif 可用 + 大 spacing
+- **product register**（其余路由）→ system grotesque + 紧 density
+
+**两个维度垂直，不互相覆盖**。例：
+- `/events/:id` = Atlas + brand → display serif h1 + 大 gap + orange CTA + 玻璃卡
+- `/community/admin` = Aurora + product → 2px 绿线 + 紧 density + green CTA + mono numerals
+- `/me/journal` = Daybook + product → halo + mascot + warm muted body
+- `/community/memories` = Daybook + brand → halo + 大 gap（不上 display serif，主调温柔）
+
+**v4 历史档案**：
+- 原 daybreak-os v2（黑白 + 珊瑚 accent）已于 2026-05-02 撤回（commit `c8b8fcf`）
+- v3 quiet（沙底 + 三 blob unified base）保留为 v4 的 base
+- v4 dayrise（2026-05-07）在 v3 上 additive 加 display serif / mono stamp / brand register flag
+- 旧 daybreak-os v3 SKILL 在 `.claude/skills/daybreak-os-archived/` 仅作历史参考

@@ -49,6 +49,9 @@
 .hero-poster-a h2 { color: #fff; }
 .hero-poster-a .hero-poster-tagline { color: rgba(255,255,255,0.78); }
 .hero-poster-a .hero-poster-cta { color: rgba(255,255,255,0.92); }
+/* dayrise v4 H1 落地：display serif h2 在深绿底要保持白字
+ * （specificity 0,3,2 > v4 default body.cyc-brand h2.cyc-display 0,2,2）*/
+body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 
 /* poster B —— 订房入口 */
 .hero-poster-b {
@@ -121,6 +124,11 @@
   text-decoration: none;
 }
 .home-activities-head a:active { opacity: 0.6; }
+
+/* dayrise v4 H2 落地：activities head 加 eyebrow 在 h3 上方（column 子容器）*/
+.home-activities-title { display: flex; flex-direction: column; gap: 2px; }
+.home-activities-title h3 { margin: 0; }
+.home-activities-title .cyc-eyebrow { line-height: 1; }
 
 .home-act-grid {
   display: grid;
@@ -304,7 +312,7 @@
   display: flex; gap: 4px;
 }
 .home-topbar-nav a {
-  font-size: 13px; font-weight: 500; color: var(--cyc-text-muted);
+  font-size: 13px; font-weight: 600; color: var(--cyc-text-muted);
   text-decoration: none;
   padding: 6px 12px; border-radius: 100px;
   -webkit-tap-highlight-color: transparent;

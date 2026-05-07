@@ -286,10 +286,16 @@
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
-.cm-role-chip.role-host    { background: rgba(217,101,42,0.16); color: var(--orange); }
-.cm-role-chip.role-speaker { background: rgba(217,101,42,0.10); color: var(--orange); }
-.cm-role-chip.role-attend  { background: rgba(28,61,46,0.10);  color: var(--green); }
-.cm-role-chip.role-other   { background: rgba(0,0,0,0.06);     color: var(--muted); }
+/* role chips —— 用 tan / green / muted 三层（v3 hard rule #8: orange 不作 brand/identity color）
+ * host    = deep tan（主办 = 主持人，黄昏色）
+ * speaker = light tan（嘉宾 = 受邀人，淡）
+ * attend  = green（参加 = 在场，主品牌色）
+ * other   = muted（其他 = 默认）
+ */
+.cm-role-chip.role-host    { background: rgba(200,169,110,0.22); color: #6b5022; }
+.cm-role-chip.role-speaker { background: rgba(200,169,110,0.12); color: #8a6d2e; }
+.cm-role-chip.role-attend  { background: rgba(28,61,46,0.10);  color: var(--cyc-green); }
+.cm-role-chip.role-other   { background: rgba(0,0,0,0.06);     color: var(--cyc-text-muted); }
 
 /* ── 活动类型 chip（成员卡 top-3 + 活动页）── */
 .cm-card-types {

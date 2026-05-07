@@ -1,6 +1,6 @@
 /* ──────────────────────────────────────────────
  *  CYC.center — 主样式（manifest）
- *  设计语言：玻璃拟态 · 大理配色 · iOS 体感 · daybreak-os v3 quiet
+ *  设计语言：玻璃拟态 · 大理配色 · iOS 体感 · dayrise-os v4 (quiet base + editorial signature)
  *
  *  本文件已拆为 9 份小文件（2026-05-02 split）。每个 < 1000 行，
  *  改东西可以瞬间定位。零 build step，零依赖，纯 vanilla。
@@ -23,3 +23,4 @@
 @import url('/styles/09-atlas.css');
 @import url('/styles/10-home.css');
 @import url('/styles/11-avatars-modal.css');
+@import url('/styles/12-dayrise.css');  /* dayrise-os v4 utilities (2026-05-07) */

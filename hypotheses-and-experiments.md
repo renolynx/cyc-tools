@@ -283,7 +283,7 @@ Week 0
 ```
 ├─ 基线访谈（H1 + H-Canvas-2 共用）
 ├─ 老首页基线数据收集（2 周）
-├─ profile v1 与 Path A 首屏的 design 同步推进（用 daybreak-os）
+├─ profile v1 与 Path A 首屏的 design 同步推进（用 dayrise-os）
 └─ 同时跑那"一小时 76 分"改造（已经做完了 ✅）
 ```
 

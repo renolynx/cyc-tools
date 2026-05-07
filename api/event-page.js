@@ -157,7 +157,7 @@ function renderEventDetail(act, rsvps = [], fromMemberId = '') {
 ${jsonLd}
 </script>
 </head>
-<body class="event-page atlas-canvas">
+<body class="event-page atlas-canvas cyc-brand">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>
@@ -179,7 +179,7 @@ ${jsonLd}
     ${!isPast ? '<span class="event-open-pill">🌿 对外开放 · 欢迎来玩</span>' : ''}
   </div>
 
-  <h1 class="event-title">${title}</h1>
+  <h1 class="event-title cyc-display">${title}</h1>
 
   <div class="event-types-row">
     ${act.types?.length

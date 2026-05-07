@@ -169,7 +169,7 @@
 ### 固定 / 极低 🟢
 - Vercel（hobby tier）+ Upstash KV + 飞书 API：≈ 0-200/月
 - 域名：≈ 100/年
-- daybreak-os / 设计资产：边际成本 0（已有框架）
+- dayrise-os / 设计资产：边际成本 0（已有框架）
 
 ### 主要成本：你的时间 🟢
 - 产品开发：每周 20-40 小时（vibe coding）
@@ -226,7 +226,7 @@
    - 你的痛点 = 用户痛点 → 不需要 user research 也能基本对路
    - 在地真实关系网络 → 其他玩家进不来
 2. **设计 + 工程一体**（RCA + Vibe coding）
-   - 极少创始人能同时把视觉做到 daybreak-os 这种水准 + 自己写代码
+   - 极少创始人能同时把视觉做到 dayrise-os 这种水准 + 自己写代码
    - 节省 2-3 个全职岗位的成本
 3. **完整 AI toolkit**（85 skills + 3 MCP + 自定义 design system）
    - 单人开发速度 ≈ 5-8 人小团队

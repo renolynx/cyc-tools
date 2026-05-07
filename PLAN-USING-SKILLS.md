@@ -8,7 +8,7 @@
 - **3 个 MCP**（lark / vercel / hex-graph）
 - **1 个 plugin**（pitch-deck，待装）
 - **2 份战略文档**（PRODUCT.md / DESIGN.md）
-- **1 套设计系统**（daybreak-os v2，三层架构）
+- **1 套设计系统**（dayrise-os v4，三层架构 + editorial signature；v3 quiet 保留为 base，v4 加 display serif + mono stamp + brand/product register 区分）
 
 工具已经超出 95% 独立产品人。**接下来是执行。**
 
@@ -229,7 +229,7 @@ cyc.center 是**一个产品两条节奏**：
 **还可以加但不阻塞 3.1.2 / 3.1.3**：active project 卡片（v2 升级，参考 [[2.3 机会树 ICE 排序 (Phase 2.3)]] 中的 Read.cv 风格）。
 
 **Prompt**:
-> 读 homepage-design.md 和 DESIGN.md。设计 /community/:id 简化版人物页：daybreak-os Daybook 风格 halo 卡片 + 头像 + 名字（28px Bold）+ 一句话简介（16px regular）+ 下方"Ta 参加过的活动"列表（拉 Bitable 成员关联活动）。给完整 vanilla HTML/CSS。
+> 读 homepage-design.md 和 DESIGN.md。设计 /community/:id 简化版人物页：dayrise-os Daybook 风格 halo 卡片 + 头像 + 名字（28px Bold）+ 一句话简介（16px regular）+ 下方"Ta 参加过的活动"列表（拉 Bitable 成员关联活动）。给完整 vanilla HTML/CSS。
 
 ##### 3.1.2 活动卡片改造（首页用 + /events 列表也用）✅ 已完成（2026-05-02）
 
@@ -320,7 +320,7 @@ cyc.center 是**一个产品两条节奏**：
 > 1. 顶部 hero 25-35%：左右两张海报图（移动端上下堆叠），分别 link 到 /about 和 /rooms。先用 placeholder 占位图，文案可以是 "在大理，有这样一群人在认真做事" 和 "想试一个月吗"。
 > 2. 紧接着 "创建活动" CTA 按钮（橙色 pill，醒目但不抢 hero）链到 /generator
 > 3. 下方活动卡片流（动态从 /api/events-list 拉）—— 用 3.1.2 改造后的卡片组件
-> 4. 全局保持 daybreak-os 大理玻璃风 + AAA 对比度。
+> 4. 全局保持 dayrise-os 大理玻璃风 + AAA 对比度。
 > 把活动通告生成器（旧 index.html）搬到 /generator，加 vercel.json redirect。
 
 ##### 3.1.4 数据采集 ✅ 完成（2026-05-02 commit dc94c4a）
@@ -365,7 +365,7 @@ cyc.center 是**一个产品两条节奏**：
 > 2. 中部"社区文化" section（3-6 个真实成员故事卡片，每张带 link 到 /community/:id）
 > 3. 嵌入照片墙 section（gallery grid，参考 Mia 拍照传播路径）—— 整 section 可点击跳转到独立 /community/memories
 > 4. 底部三选一 CTA：来活动 → /events / 想长租 → /rooms / 关注 → newsletter（可选）
-> daybreak-os Atlas 层风格。
+> dayrise-os Atlas 层风格。
 
 ##### 3.2.2 房型页 /rooms（双海报海报 2 跳转目标）
 
@@ -376,14 +376,14 @@ cyc.center 是**一个产品两条节奏**：
 > 1. 房型卡片 grid（每间房一张：大照片 + 价格 + 容量 + 当前可入住日期）
 > 2. 设施 / 一日生活时间线（可选，先简版）
 > 3. 试住政策（如确定要做）+ 联系入口
-> daybreak-os Atlas 层风格。
+> dayrise-os Atlas 层风格。
 
 ##### 3.2.3 活动结束页 / 回顾
 
 - [ ] 活动结束后的 /events/:id 状态变化：照片墙 + 参与者头像 + 下次预告
 
 **Prompt**:
-> 设计活动结束后的 /events/:id 状态：peak-end rule —— 上半部分照片墙（grid）+ 中部参与者头像 grid（链到 profile）+ 底部"下次活动预告"卡片。daybreak-os Daybook 风格 halo 卡片。
+> 设计活动结束后的 /events/:id 状态：peak-end rule —— 上半部分照片墙（grid）+ 中部参与者头像 grid（链到 profile）+ 底部"下次活动预告"卡片。dayrise-os Daybook 风格 halo 卡片。
 
 ---
 
@@ -401,7 +401,7 @@ cyc.center 是**一个产品两条节奏**：
 - [ ] profile 页 v2：加 active project 卡片（最多 3 条 + 链接）+ 活动历史时间线 + 月度活跃度
 
   **Prompt**:
-  > 用 daybreak-os Daybook 层升级 /community/:id：在 v1 基础上加 active project 卡片（玖玖型用户用来展示自己在做什么）+ Ta 参加过的活动时间线 + 本月活跃度。用 lark MCP 实时拉数据。
+  > 用 dayrise-os Daybook 层升级 /community/:id：在 v1 基础上加 active project 卡片（玖玖型用户用来展示自己在做什么）+ Ta 参加过的活动时间线 + 本月活跃度。用 lark MCP 实时拉数据。
 
 - [ ] 用 ux-psychology 审 profile v2
 
@@ -429,7 +429,7 @@ cyc.center 是**一个产品两条节奏**：
 
 介绍页里的照片墙 section 二级跳转到这个独立页面。
 
-- [ ] 用 daybreak-os Artifact 模式 + Stack ↔ Lineup view-mode toggle
+- [ ] 用 dayrise-os Artifact 模式 + Stack ↔ Lineup view-mode toggle
 
   **Prompt**:
   > 设计独立 /community/memories 社区照片墙：Stack 模式做月度概览（"上个月发生了好多事"），Lineup 模式按日期分组浏览。点开一张照片进入对应活动回顾页。完整 vanilla HTML/CSS。
@@ -537,7 +537,7 @@ cyc.center 是**一个产品两条节奏**：
 - ❌ 不要装新 skill（85 个够了，再装是工具收藏症）
 - ❌ 不要让 Claude "全自动跑完整个 chain" —— 每一步要看输出再决定下一步，不然产生大量垃圾
 - ❌ 不要在每个对话开头都从零解释 cyc.center —— PRODUCT.md / DESIGN.md / CLAUDE.md 已经做了这件事
-- ❌ 不要跨 layer 用 skill —— 比如别让 daybreak-os 在 /admin 用 Daybook，那应该用 Aurora
+- ❌ 不要跨 layer 用 skill —— 比如别让 dayrise-os 在 /admin 用 Daybook，那应该用 Aurora
 
 ---
 

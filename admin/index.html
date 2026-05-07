@@ -155,7 +155,10 @@ document.getElementById('snapshotTile')?.addEventListener('click', async (e) => 
   const box = document.getElementById('snapshotBox');
   const msg = document.getElementById('snapshotMsg');
   box.style.display = 'block';
-  msg.innerHTML = '⏳ 正在备份所有飞书表… 可能要 30-60 秒，别关页面。';
+  msg.textContent = '⏳ 正在备份所有飞书表… 可能要 30-60 秒，别关页面。';
+
+  // XSS guard：服务端 / 浏览器返回的字符串可能含 HTML，输出前必须 escape
+  const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   try {
     const res = await fetch('/api/admin/snapshot', {
@@ -165,17 +168,17 @@ document.getElementById('snapshotTile')?.addEventListener('click', async (e) => 
     });
     const data = await res.json();
     if (!data.ok) {
-      msg.innerHTML = '❌ 失败：' + (data.msg || data.error || '未知错误');
+      msg.textContent = '❌ 失败：' + (data.msg || data.error || '未知错误');
       return;
     }
     msg.innerHTML = `
       ✅ 备份成功 ·
-      <strong>${data.snapshot_id}</strong><br>
-      Bitable ${data.bitable_count} 个 · 表 ${data.table_count} 张 · 记录 ${data.record_total} 条 · ${data.size_kb} KB · 用时 ${data.duration_ms}ms<br>
+      <strong>${esc(data.snapshot_id)}</strong><br>
+      Bitable ${esc(data.bitable_count)} 个 · 表 ${esc(data.table_count)} 张 · 记录 ${esc(data.record_total)} 条 · ${esc(data.size_kb)} KB · 用时 ${esc(data.duration_ms)}ms<br>
       <span style="color: var(--cyc-text-muted); font-size: 11px;">已写到 KV，TTL 90 天。建议每周一次。如需恢复，调 /api/admin/snapshot 用 action=get + snapshot_id。</span>
     `;
   } catch (err) {
-    msg.innerHTML = '❌ 网络错误：' + err.message;
+    msg.textContent = '❌ 网络错误：' + err.message;
   }
 });
 </script>

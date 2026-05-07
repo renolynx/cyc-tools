@@ -10,8 +10,9 @@
   transition: border-color 0.15s, color 0.15s;
 }
 .event-spk-link:hover {
-  color: var(--orange);
-  border-bottom-color: var(--orange);
+  color: var(--cyc-green);
+  border-bottom-color: rgba(28,61,46,0.7);
+  border-bottom-style: solid;
 }
 
 /* 报名情况 section */
@@ -198,7 +199,7 @@
   margin-bottom: 5px;
   letter-spacing: 0.02em;
 }
-.rsvp-label .rsvp-required { color: var(--orange); }
+.rsvp-label .rsvp-required { color: var(--cyc-danger); }
 .rsvp-label .rsvp-hint {
   font-weight: 400;
   color: var(--muted);

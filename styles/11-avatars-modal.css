@@ -265,7 +265,7 @@
   position: absolute; bottom: 16px; left: 50%;
   transform: translateX(-50%);
   color: rgba(255, 255, 255, 0.92);
-  font-size: 13px; font-weight: 500;
+  font-size: 13px; font-weight: 600;
   background: rgba(0, 0, 0, 0.45);
   padding: 5px 14px; border-radius: 100px;
   max-width: calc(100vw - 64px);

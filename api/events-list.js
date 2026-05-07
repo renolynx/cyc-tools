@@ -251,7 +251,7 @@ function renderEventsList(acts, avatarsByActivity) {
 ${itemListLd}
 </script>
 </head>
-<body class="event-page el-page atlas-canvas">
+<body class="event-page el-page atlas-canvas cyc-brand">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>
@@ -264,7 +264,8 @@ ${itemListLd}
 
 <main class="el-main">
   <div class="el-hero">
-    <h1>近期活动</h1>
+    <span class="cyc-eyebrow cyc-eyebrow--sm" style="display:block;margin-bottom:8px">EVENTS · 大理</span>
+    <h1 class="cyc-display">近期活动</h1>
     <p class="el-hero-sub">${SITE_NAME} · 大理</p>
   </div>
 

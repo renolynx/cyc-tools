@@ -70,6 +70,41 @@
   --cyc-text-2xl:  40px;
   --cyc-text-3xl:  56px;
 
+  /* ─── dayrise-os v4 typography (additive, 2026-05-07) ───
+   * Display serif: Atlas brand register hero only
+   * Mono stamp:    跨层 meta / 时间 / 类型 pill / admin 数字
+   * Warm muted:    Daybook long-form opt-in (暖偏移)
+   * Brand layout:  brand register section gap / max-width
+   * 详见 .claude/skills/dayrise-os/SKILL.md
+   */
+
+  /* Display serif — Atlas brand register hero only */
+  --cyc-font-display: 'Source Serif 4', 'Source Han Serif SC',
+                      'Songti SC', Georgia, serif;
+  --cyc-font-display-weight: 300;
+  --cyc-text-display-sm: 40px;     /* h2 brand */
+  --cyc-text-display-md: 48px;     /* h1 brand 紧凑场景 */
+  --cyc-text-display-lg: 56px;     /* h1 brand 常规 */
+  --cyc-text-display-xl: 64px;     /* hero display 仅 brand */
+  --cyc-tracking-display: -0.02em;
+  --cyc-leading-display: 1.08;
+
+  /* Mono stamp — IBM Plex Mono (meta / time / pill / admin nums) */
+  --cyc-font-mono: 'IBM Plex Mono', ui-monospace,
+                   SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --cyc-text-stamp-sm: 11px;
+  --cyc-text-stamp:    13px;
+  --cyc-tracking-stamp: 0.04em;
+  --cyc-leading-stamp:  1.4;
+
+  /* Warm muted — Daybook long-form 选项 */
+  --cyc-text-muted-warm: #5c554c;  /* 6.4:1 on sand · AAA at ≥18px or ≥14px bold */
+
+  /* Brand register layout */
+  --cyc-section-gap-brand:        96px;
+  --cyc-section-gap-brand-tight:  80px;
+  --cyc-content-max-brand:        1120px;
+
   /* Motion */
   --ease-out-iox:  cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);

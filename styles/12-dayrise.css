@@ -1,0 +1,163 @@
+/* ──────────────────────────────────────────────
+ *  dayrise-os v4 — utility classes (2026-05-07)
+ *
+ *  v4 = v3 daybreak quiet base + editorial signature
+ *
+ *  3 个新 utility 角色：
+ *    1. Display serif    Source Serif 4 Light · Atlas brand register hero only
+ *    2. Mono stamp       IBM Plex Mono · meta / time / pill / admin nums (跨层)
+ *    3. Warm muted body  #5c554c · Daybook long-form opt-in
+ *
+ *  3 个新 patterns：
+ *    1. .cyc-editorial-header   eyebrow + display h1 + tagline
+ *    2. .cyc-stamp              mono stamp（含 sm / time / live / pill 变体）
+ *    3. body.cyc-brand          brand register flag（开 display + 大 spacing）
+ *
+ *  Token 在 01-tokens.css。本文件只放 utility CSS。
+ *  详见 .claude/skills/dayrise-os/SKILL.md
+ * ─────────────────────────────────────────────── */
+
+/* ─── 1. Display serif (Atlas brand register hero only) ─── */
+
+body.cyc-brand .cyc-display,
+body.cyc-brand h1.cyc-display,
+body.cyc-brand h2.cyc-display {
+  font-family: var(--cyc-font-display);
+  font-weight: var(--cyc-font-display-weight);
+  letter-spacing: var(--cyc-tracking-display);
+  line-height: var(--cyc-leading-display);
+  color: var(--cyc-text-strong);
+}
+
+body.cyc-brand h1.cyc-display {
+  font-size: clamp(40px, 5vw, var(--cyc-text-display-lg));
+}
+
+body.cyc-brand h2.cyc-display {
+  font-size: var(--cyc-text-display-sm);
+}
+
+/* ─── 2. Section eyebrow (灰字 ALL CAPS 在 hero h1 上方) ─── */
+
+.cyc-eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cyc-text-muted);
+}
+
+.cyc-eyebrow--sm {
+  font-size: 11px;
+}
+
+/* ─── 3. Mono stamp (跨层：meta / time / pill / admin nums) ─── */
+
+.cyc-stamp {
+  font-family: var(--cyc-font-mono);
+  font-size: var(--cyc-text-stamp);
+  letter-spacing: var(--cyc-tracking-stamp);
+  line-height: var(--cyc-leading-stamp);
+  text-transform: uppercase;
+  color: var(--cyc-text-muted);
+}
+
+.cyc-stamp--sm {
+  font-size: var(--cyc-text-stamp-sm);
+}
+
+/* time stamp — 不大写、不放 letter-spacing（数字本身有节奏） */
+.cyc-stamp--time {
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cyc-text-muted);
+}
+
+/* live stamp — 唯一允许橙色的 stamp 变体（temporal 信号）*/
+.cyc-stamp--live {
+  color: var(--cyc-warning);
+  letter-spacing: 0.08em;
+}
+
+/* mono pill — 类型 chip / 状态 badge */
+.cyc-pill.cyc-stamp {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--cyc-r-pill);
+  background: rgba(28, 61, 46, 0.08);
+}
+
+/* ─── 4. Aurora admin 数字字段 mono override ─── */
+
+body.aurora-canvas .aurora-num,
+body.aurora-canvas .kpi-num,
+body.aurora-canvas td.numeric {
+  font-family: var(--cyc-font-mono);
+  font-feature-settings: 'tnum';
+  letter-spacing: 0;
+}
+
+/* ─── 5. Daybook long-form warm muted ─── */
+
+.daybook-long-form,
+.daybook-journal-body,
+.daybook-event-description {
+  color: var(--cyc-text-muted-warm);
+  line-height: 1.7;
+}
+
+/* ─── 6. Brand register layout helpers ─── */
+
+body.cyc-brand .cyc-section-gap {
+  margin-block: var(--cyc-section-gap-brand);
+}
+
+body.cyc-brand .cyc-section-gap--tight {
+  margin-block: var(--cyc-section-gap-brand-tight);
+}
+
+body.cyc-brand .cyc-content-max {
+  max-width: var(--cyc-content-max-brand);
+  margin-inline: auto;
+}
+
+/* ─── 7. Editorial Header pattern (Atlas brand register hero) ─── */
+
+body.cyc-brand .cyc-editorial-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-block: 64px 32px;
+  max-width: var(--cyc-content-max-brand);
+}
+
+body.cyc-brand .cyc-editorial-header .cyc-eyebrow {
+  margin-bottom: 4px;
+}
+
+body.cyc-brand .cyc-editorial-header h1 {
+  font-family: var(--cyc-font-display);
+  font-weight: 300;
+  font-size: clamp(40px, 5vw, var(--cyc-text-display-lg));
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--cyc-text-strong);
+  margin: 0;
+  max-width: 880px;
+}
+
+body.cyc-brand .cyc-editorial-header .cyc-tagline {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--cyc-text-muted);
+  font-style: italic;
+  max-width: 720px;
+  margin: 0;
+}
+
+/* ─── 8. Reduced-motion respect ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  /* dayrise utilities 本身不动画。这里仅 reserve 以便未来加 */
+}
