@@ -10,8 +10,9 @@
 }
 
 /* ── Hero 单海报（点进 /about 后才出现第二条 path 的海报）── */
+/* dayrise v4 H5：brand register section gap 加大（24 → 56px）*/
 .home-hero {
-  margin-bottom: 24px;
+  margin-bottom: 56px;
 }
 .home-hero .hero-poster {
   min-height: 280px;  /* 单海报独占，给足存在感 */
@@ -68,6 +69,7 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 .hero-poster .hero-poster-tagline {
   font-size: 14px; line-height: 1.55; color: var(--cyc-text-muted);
   max-width: 280px;
+  font-style: italic;  /* dayrise v4 H6：editorial italic (ElevenLabs 范例) */
 }
 .hero-poster .hero-poster-cta {
   display: inline-block; margin-top: 16px;
@@ -84,8 +86,9 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 /* ── 创建活动 CTA ── */
+/* dayrise v4 H5：brand register section gap 加大（32 → 56px）*/
 .home-cta-section {
-  margin-bottom: 32px;
+  margin-bottom: 56px;
   text-align: center;
 }
 .home-cta-create {
@@ -276,8 +279,9 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   padding: 2px 8px; border-radius: 100px;
   font-weight: 600; letter-spacing: -0.01em;
 }
-.home-act-pill-date  { background: rgba(28,61,46,0.10); color: var(--cyc-green); }
-.home-act-pill-time  { background: rgba(255,255,255,0.7); color: var(--cyc-text); border: 1px solid var(--cyc-stroke); }
+/* dayrise v4 H3 + H4：日期 / 时间 pill 用 mono stamp（ASCII 数字 + slash + colon，hard rule #18 不冲突）*/
+.home-act-pill-date  { background: rgba(28,61,46,0.10); color: var(--cyc-green); font-family: var(--cyc-font-mono); letter-spacing: 0; }
+.home-act-pill-time  { background: rgba(255,255,255,0.7); color: var(--cyc-text); border: 1px solid var(--cyc-stroke); font-family: var(--cyc-font-mono); letter-spacing: 0; }
 .home-act-pill-open   { background: rgba(200,169,110,0.18); color: #6b5022; border: 1px solid rgba(200,169,110,0.35); }
 .home-act-pill-closed { background: rgba(0,0,0,0.06); color: var(--cyc-text-muted); border: 1px solid rgba(0,0,0,0.10); }
 .home-act-pill-past   { background: rgba(0,0,0,0.05); color: var(--cyc-text-muted); }

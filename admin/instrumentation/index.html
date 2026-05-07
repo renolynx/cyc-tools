@@ -80,6 +80,8 @@
 .sum-value {
   font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
   color: var(--cyc-text-strong);
+  /* dayrise v4 A1：admin KPI 数字 mono（IBM Plex Mono）*/
+  font-family: var(--cyc-font-mono);
   font-feature-settings: 'tnum';
 }
 .sum-value.warm { color: var(--cyc-green); }
@@ -112,6 +114,8 @@
 .spark-tip {
   font-size: 10px; color: var(--cyc-text-muted);
   display: flex; justify-content: space-between; margin-top: 4px; padding: 0 12px;
+  /* dayrise v4 A3：sparkline date label mono */
+  font-family: var(--cyc-font-mono);
   font-feature-settings: 'tnum';
 }
 
@@ -148,7 +152,8 @@
   border: 1px solid var(--cyc-border-glass);
   border-radius: var(--cyc-r-card);
   padding: 12px; max-height: 480px; overflow-y: auto;
-  font-family: 'SF Mono', Menlo, ui-monospace, monospace; font-size: 11.5px;
+  /* dayrise v4 A4：log mono 字体统一到 IBM Plex Mono token */
+  font-family: var(--cyc-font-mono); font-size: 11.5px;
   line-height: 1.7; color: var(--cyc-text-muted);
 }
 .log-line { padding: 2px 0; word-break: break-all; }

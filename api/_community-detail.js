@@ -81,22 +81,22 @@ export function renderDetail(member, rsvps, fromActivityId, topTypes = []) {
 
   ${member.bio ? `<section class="event-section">
     <h2>个人介绍</h2>
-    <p class="event-desc">${escapeHtml(member.bio)}</p>
+    <p class="event-desc daybook-long-form">${escapeHtml(member.bio)}</p>
   </section>` : ''}
 
   ${member.willShare ? `<section class="event-section">
     <h2>愿意做的分享</h2>
-    <p class="event-desc">${escapeHtml(member.willShare)}</p>
+    <p class="event-desc daybook-long-form">${escapeHtml(member.willShare)}</p>
   </section>` : ''}
 
   ${member.interests ? `<section class="event-section">
     <h2>感兴趣的活动</h2>
-    <p class="event-desc">${escapeHtml(member.interests)}</p>
+    <p class="event-desc daybook-long-form">${escapeHtml(member.interests)}</p>
   </section>` : ''}
 
   ${member.topics ? `<section class="event-section">
     <h2>关注的话题</h2>
-    <p class="event-desc">${escapeHtml(member.topics)}</p>
+    <p class="event-desc daybook-long-form">${escapeHtml(member.topics)}</p>
   </section>` : ''}
 
   ${(founded.length || joined.length) ? `<section class="event-section">
