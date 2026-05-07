@@ -242,7 +242,7 @@ ${jsonLd}
         ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
       </div>
     ` : `<p class="event-rsvp-empty">还没有伙伴报名 · 你来当第一个 →</p>`}
-    <button class="event-rsvp-btn" onclick="openRsvpModal()" data-track="rsvp_click">📝 我要参加</button>
+    <button class="event-rsvp-btn" onclick="openRsvpModal(); if(typeof cycTrack==='function')cycTrack('path_c_complete',{source:'rsvp_button'})" data-track="rsvp_click">📝 我要参加</button>
   </section>` : (rsvpAttendees.length ? `<section class="event-section">
     <h2>当时参加的伙伴</h2>
     <div class="event-rsvp-list">

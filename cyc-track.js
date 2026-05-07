@@ -103,4 +103,28 @@
     }
     track(event, meta);
   }, { capture: true });
+
+  // ─────────── 自动: external link → path_drop_off (P3 漏斗实测) ───────────
+  // page-load 内一次，防狂点污染。session 跨多页时每页 reset，第一次外链点击的 from_page 最重要。
+  let dropOffFired = false;
+  document.addEventListener('click', (e) => {
+    if (dropOffFired) return;
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    let href;
+    try { href = new URL(a.href, window.location.href); }
+    catch { return; }
+    // 同主域不算 drop_off（含子域）
+    if (href.hostname === window.location.hostname) return;
+    if (href.hostname.endsWith('.' + window.location.hostname)) return;
+    if (window.location.hostname.endsWith('.' + href.hostname)) return;
+    // 仅 http/https；mailto / tel / javascript 不算
+    if (!['http:', 'https:'].includes(href.protocol)) return;
+
+    dropOffFired = true;
+    track('path_drop_off', {
+      from_page: window.location.pathname,
+      to_host: href.hostname,
+    });
+  }, { capture: true });
 })();

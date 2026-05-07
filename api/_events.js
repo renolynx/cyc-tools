@@ -40,6 +40,11 @@ export const KNOWN_EVENTS = new Set([
   // admin
   'admin_dashboard_view',
   'instrumentation_view',
+  // P3 漏斗实测（[[03 problem-statement (Phase 1.5)]] §4 — 2026-05-08）
+  'path_a_complete',         // /about photo stack 进入 viewport（Path A 倒数第二步）
+  'path_b_complete',         // /rooms hero 进入 viewport（Path B = 看到 stub）
+  'path_c_complete',         // /events/:id RSVP 点击（funnel 语义 alias rsvp_click）
+  'path_drop_off',           // 离开 cyc.center 域名（external link 点击，page-load 内一次）
 ]);
 
 /** 写一条事件到飞书 Bitable */

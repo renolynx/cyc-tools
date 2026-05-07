@@ -213,6 +213,28 @@
   } catch {}
 })();
 </script>
+<script>
+// P3 漏斗实测：photo stack 进入 viewport → path_a_complete（page-load 内一次）
+(function () {
+  let fired = false;
+  const stack = document.getElementById('photoStack');
+  if (!stack || !window.IntersectionObserver) return;
+  const obs = new IntersectionObserver((entries) => {
+    if (fired) return;
+    for (const e of entries) {
+      if (e.isIntersecting && e.intersectionRatio > 0.5) {
+        fired = true;
+        if (typeof cycTrack === 'function') {
+          cycTrack('path_a_complete', { source: 'about_photostack' });
+        }
+        obs.disconnect();
+        break;
+      }
+    }
+  }, { threshold: 0.5 });
+  obs.observe(stack);
+})();
+</script>
 <script src="/cyc-track.js" defer></script>
 </body>
 </html>

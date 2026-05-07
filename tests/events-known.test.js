@@ -47,6 +47,14 @@ describe('KNOWN_EVENTS', () => {
     expect(KNOWN_EVENTS.has('about_memories_click')).toBe(true);
   });
 
+  it('包含 P3 漏斗实测事件（path completion + drop_off）', () => {
+    // Phase 1.5 problem-statement P3: 3 类 persona 漏斗实测
+    expect(KNOWN_EVENTS.has('path_a_complete')).toBe(true);   // Path A: 首页 → /about → photo stack 入 viewport
+    expect(KNOWN_EVENTS.has('path_b_complete')).toBe(true);   // Path B: 首页 → /rooms hero 入 viewport
+    expect(KNOWN_EVENTS.has('path_c_complete')).toBe(true);   // Path C: /events/:id RSVP 点击（alias rsvp_click 给 funnel 语义）
+    expect(KNOWN_EVENTS.has('path_drop_off')).toBe(true);     // 离开 cyc.center 域名（external link 点击）
+  });
+
   it('未注册事件名应被拒绝（防脏数据）', () => {
     expect(KNOWN_EVENTS.has('random_event_name')).toBe(false);
     expect(KNOWN_EVENTS.has('')).toBe(false);

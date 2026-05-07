@@ -24,7 +24,7 @@
 
 <main style="position:relative; z-index:1; max-width:680px; margin:0 auto; padding:32px 16px 64px;">
 
-  <section style="text-align:center; padding:48px 16px 32px;">
+  <section id="roomsHero" style="text-align:center; padding:48px 16px 32px;">
     <h1 style="font-size:36px; font-weight:700; letter-spacing:-0.02em; color:var(--cyc-text-strong); line-height:1.15; margin-bottom:12px;">
       想试一个月吗
     </h1>
@@ -58,6 +58,28 @@
   <p>CYC 链岛青年社区 · cyc.center</p>
 </footer>
 
+<script>
+// P3 漏斗实测：rooms hero 进入 viewport → path_b_complete（即便 rooms 是 stub，"看到 hero" = "完成 Path B 抵达"）
+(function () {
+  let fired = false;
+  const hero = document.getElementById('roomsHero');
+  if (!hero || !window.IntersectionObserver) return;
+  const obs = new IntersectionObserver((entries) => {
+    if (fired) return;
+    for (const e of entries) {
+      if (e.isIntersecting && e.intersectionRatio > 0.5) {
+        fired = true;
+        if (typeof cycTrack === 'function') {
+          cycTrack('path_b_complete', { source: 'rooms_hero' });
+        }
+        obs.disconnect();
+        break;
+      }
+    }
+  }, { threshold: 0.5 });
+  obs.observe(hero);
+})();
+</script>
 <script src="/cyc-track.js" defer></script>
 </body>
 </html>
