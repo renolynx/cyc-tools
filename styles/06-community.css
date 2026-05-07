@@ -199,12 +199,16 @@
   text-transform: uppercase;
   margin-bottom: 6px;
 }
-.cm-rsvp-list { display: flex; flex-direction: column; gap: 6px; }
+.cm-rsvp-list { display: flex; flex-direction: column; gap: 2px; }
+/* dayrise v4 同款 flatten（2026-05-08）：去 default bg + border，hover 才显（同 .event-person 思路）
+ * 之前每行有 rgba(255,255,255,0.5) 白底 + var(--stroke) 边 + 10px 圆角，整 list 是"卡片堆"。
+ * 现在每行透明，hover 才显轻 bg —— 跟 /community/:id section 内 prose 段一致的视觉权重。
+ */
 .cm-rsvp-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(255,255,255,0.5);
-  border: 1px solid var(--stroke);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 10px;
   text-decoration: none;
   color: var(--text);
@@ -212,8 +216,8 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .cm-rsvp-row:hover {
-  background: rgba(255,255,255,0.85);
-  border-color: rgba(28,61,46,0.20);
+  background: rgba(28,61,46,0.05);
+  border-color: rgba(28,61,46,0.10);
 }
 .cm-rsvp-row:active { transform: scale(0.99); }
 .cm-rsvp-title {

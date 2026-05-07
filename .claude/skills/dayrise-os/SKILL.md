@@ -325,7 +325,7 @@ body.aurora-canvas td.numeric {
 5. 字号底线 16px，行高 ≥ 1.6
 6. 🆕 v4：长文段落可选 warm muted
 
-## v4 patterns（v3 5 个 + 🆕 v4 3 个）
+## v4 patterns（v3 5 个 + 🆕 v4 3 个 + 🆕 v4.1 1 个）
 
 ### Pattern 1 — Artifact (= v3，不变)
 
@@ -526,6 +526,65 @@ body.cyc-brand .cyc-editorial-header .cyc-tagline {
 
 不加 `.cyc-brand` 的页面（admin、settings、journal、tools）保持 v3 quiet 节奏。
 
+### Pattern 9 — Flat People Row（🆕 v4.1，2026-05-08）
+
+人物列表（嘉宾 / RSVP / 成员行）的扁平行 pattern。**反对"框里套框"** —— section + 内 pill + 子框 + 内容 4 层 enclosure 是 anti-pattern。把"人"flatten 成 inline 行：透明底 + hover 才显 bg。
+
+**Markup**:
+
+```html
+<!-- ≤4 人 stack 模式（带 bio）-->
+<ul class="event-people-list">
+  <li class="event-person" tabindex="0" data-... onclick="onPersonRowClick(event, this)">
+    <span class="card-avatar event-person-avatar">{avatar}</span>
+    <span class="event-person-text">
+      <strong>{名字}</strong>
+      <span class="event-person-bio"> · {bio}</span>
+    </span>
+    <button class="event-person-del" type="button" onclick="...">×</button>
+  </li>
+</ul>
+
+<!-- ≥5 人 flow 模式（紧凑 pill 无 bio）-->
+<div class="event-rsvp-flow">
+  <div class="event-rsvp-chip-flat" tabindex="0" role="button" data-... onclick="onPersonRowClick(event, this)">
+    <span class="card-avatar event-rsvp-flat-avatar">{avatar}</span>
+    <span class="event-rsvp-flat-name">{名字}</span>
+    <button class="event-person-del">×</button>
+  </div>
+</div>
+
+<!-- 仅 1 人 → inline 单行（省独立 section）-->
+<div class="event-host-inline" tabindex="0" data-... onclick="onPersonRowClick(event, this)">
+  <span class="event-host-label">🎤 带领人</span>
+  <span class="card-avatar event-host-avatar">{avatar}</span>
+  <span class="event-host-text"><strong>{名字}</strong> · {bio}</span>
+</div>
+```
+
+**核心规则**：
+
+1. **行 default 透明**——不要 default bg / border / 内 pill 包裹
+2. **hover-only bg**——鼠标悬停 row 时显轻浅绿 `rgba(28,61,46,0.05-0.08)`
+3. **× 按钮 hover-only / tap-to-reveal**：
+   - 桌面 hover row → × fade in
+   - 移动 (`@media (hover: none)`) 首次 tap → row 加 `.is-revealed` 显 ×；再次 tap row body = 打开 modal；tap × = delete confirm；tap 行外 = dismiss reveal
+4. **数量自适应**：≤4 人 stack（带 bio）；5+ flow（紧凑 pill 无 bio，bio 在 modal 中）；1 人 inline（省独立 section）
+5. **count 合并 h2**：`<h2>已 N 位伙伴报名</h2>` 取代 `<h2>报名情况</h2>` + `<p>已 N 位...</p>` 的冗余
+
+**触发场景跨层**：
+- Atlas + brand：`/events/:id` 嘉宾 + RSVP 列表（已落地）
+- Daybook + product：`/community/:id` "ta 参加过的活动"（v4.1 同款 flatten apply 到 `.cm-rsvp-row`）
+- Aurora + product：`/community/admin` admin 行（待 v4.2）
+
+**Anti-pattern**：
+- ❌ 默认每行 bg + border = "卡片堆"视觉 → 4 层 enclosure
+- ❌ × 按钮总显示 = UI 噪音 + 误触
+- ❌ heading + caption 重复（"报名情况" + "已 4 位伙伴报名"）—— 合并到 h2
+- ❌ 不要把 stack / flow 的阈值 hard-code（语义 = "≤4 列出 bio，5+ 隐 bio 节省垂直空间"，写在代码里 self-evident）
+
+**触发原因（玖玖 2026-05-08 反馈）**："带领人 / 嘉宾 section 框里套框，浅灰框里圆头像框；报名情况 + 已 4 位伙伴报名信息重复"。完整 refactor 见 commit `cf0d6e0`。
+
 ## Mascot system（= v3，不变）
 
 ### Self-Mood Mascot (monochrome, 5-state)
@@ -600,6 +659,12 @@ If still unclear, ask:
 19. ❌ 不要把 editorial-header pattern 用在非 hero 区。一 surface 一个，不堆叠。
 20. ❌ 不要给 product register 页加大 spacing 模仿 brand。product register 的紧凑是有意为之（信息密度 = 工具感）。
 
+### 🆕 v4.1 新增（21-22）
+
+21. ❌ `--cyc-erhai-deep / erhai / erhai-light` 三色仅作 **environment base**（hero overlay 暗化 / dusk 末端 / night 主体 / 月色场景）。**不能下沉 brand identity** —— 不能做 logo / 主 CTA / admin tint / 装饰线 / pill / button shadow / brand 阴影。brand identity 仍由 `cyc-green / green-2 / orange / tan` 承担。erhai 不是第二种 accent（不破 hard rule #1），是第二组 base —— 把"brand 色"和"atmosphere 色"分开是 v4.1 的清晰化。详见 DESIGN.md "Environment base — 洱海三色" 段。
+
+22. ❌ **不要 4+ 层 enclosure 装单一内容**（section + 子容器 + 内 pill + 内容 = "框里套框"）。人物 / 列表行 default 应透明，hover 才显 bg。完整 markup + 交互 见 Pattern 9 Flat People Row。**违规典型**：每个列表行都套独立白底 pill + 浅灰边 + 圆角—— 这是 SaaS table style，跟 cyc 的 prose-flow 哲学违背。
+
 ## Output format
 
 When generating UI, structure response as:
@@ -636,6 +701,15 @@ This skill 专属 for cyc.center ("链岛社区工具站"), a vanilla-HTML/CSS/J
 ---
 
 ## Changelog
+
+**v4.1.0** (2026-05-08) — **加洱海三色 environment base**
+- 🆕 加 `--cyc-erhai-deep #2a3f5f` / `--cyc-erhai #5a6e8a` / `--cyc-erhai-light #aab5c4` 三色 token
+- 🆕 hard rule #21：erhai 仅作 environment base，不下沉 brand identity
+- 改 anti-pattern #1（DESIGN.md）措辞：禁电子蓝，erhai dusty blue 允许
+- 改 atlas-canvas / atlas-card 文档示例 + styles/10-home.css `.hero-poster-a` 真实代码（用户反馈"首页 hero 墨绿色丑爆了"）
+- 引入 token 概念分层：brand identity vs environment base vs temporal accent
+- Non-breaking · v4.0 全部规则保留 · 仅追加
+- 决策依据见 配色探索 demo v0.4 → v0.6 + 提案文档 `cyc.center/03 设计/07 dayrise-os v4.1 加洱海三色提案.md`
 
 **v4.0.0** (2026-05-07) — **dayrise rename + editorial signature additions**
 - Renamed daybreak-os → dayrise-os（隐喻：天刚亮 → 日已升起）
