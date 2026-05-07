@@ -57,6 +57,30 @@ function renderPersonDataAttrs(p) {
     ` data-mid="${escapeHtml(p.member_rec_id || '')}"`;
 }
 
+// dayrise v4 框里套框 fix（2026-05-08）—— 扁平人物行，hover/tap 显 ×
+//   personRowHtml: 嘉宾 stack + RSVP stack 用（≤4 人时）
+//   rsvpChipFlatHtml: RSVP flow 用（≥5 人时）
+//   inline single speaker: 见 renderEventDetail 里的 inlineSpeakerHtml
+//
+//   onPersonRowClick / askDelRsvp 是客户端 JS（在底部 inline script 里）
+function personRowHtml(p, deletable) {
+  const ridAttr = deletable && p.record_id ? ` data-rid="${escapeHtml(p.record_id)}"` : '';
+  return `<li class="event-person" tabindex="0"${ridAttr}${renderPersonDataAttrs(p)} onclick="onPersonRowClick(event, this)">
+    <span class="card-avatar event-person-avatar">${renderPersonAvatar(p)}</span>
+    <span class="event-person-text"><strong>${escapeHtml(p.name)}</strong>${p.bio ? `<span class="event-person-bio"> · ${escapeHtml(p.bio)}</span>` : ''}</span>
+    ${deletable && p.record_id ? `<button class="event-person-del" type="button" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>` : ''}
+  </li>`;
+}
+
+function rsvpChipFlatHtml(p, deletable) {
+  const ridAttr = deletable && p.record_id ? ` data-rid="${escapeHtml(p.record_id)}"` : '';
+  return `<div class="event-rsvp-chip-flat" tabindex="0" role="button"${ridAttr}${renderPersonDataAttrs(p)} onclick="onPersonRowClick(event, this)">
+    <span class="card-avatar event-rsvp-flat-avatar">${renderPersonAvatar(p)}</span>
+    <span class="event-rsvp-flat-name">${escapeHtml(p.name)}</span>
+    ${deletable && p.record_id ? `<button class="event-person-del" type="button" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>` : ''}
+  </div>`;
+}
+
 function buildJsonLd(act, ogImage, url, isPast) {
   // 把活动地点拆成结构化地址（飞书里 a.loc 是自由文本，只能粗略归到大理）
   const ld = {
@@ -194,6 +218,21 @@ ${jsonLd}
     ${act.signup ? `<div class="event-info-row"><dt>🙋 报名</dt><dd>${escapeHtml(act.signup)}</dd></div>` : ''}
   </dl>
 
+  ${(() => {
+    // dayrise v4: 单嘉宾 inline 在 meta info 下方（≥2 嘉宾走下面 section）
+    const speakers = rsvpHosts.length ? rsvpHosts : (act.spk || []);
+    const speakersFromRsvp = rsvpHosts.length > 0;
+    if (speakers.length !== 1) return '';
+    const s = speakers[0];
+    const ridAttr = speakersFromRsvp && s.record_id ? ` data-rid="${escapeHtml(s.record_id)}"` : '';
+    return `<div class="event-host-inline" tabindex="0"${ridAttr}${renderPersonDataAttrs(s)} onclick="onPersonRowClick(event, this)">
+      <span class="event-host-label">🎤 带领人</span>
+      <span class="card-avatar event-host-avatar">${renderPersonAvatar(s)}</span>
+      <span class="event-host-text"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-host-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</span>
+      ${speakersFromRsvp && s.record_id ? `<button class="event-person-del" type="button" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>` : ''}
+    </div>`;
+  })()}
+
   ${act.desc ? `<section class="event-section">
     <h2>活动简介</h2>
     <p class="event-desc">${escapeHtml(act.desc)}</p>
@@ -204,54 +243,59 @@ ${jsonLd}
     <ul class="event-flow">${act.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
   </section>` : ''}
 
-  ${(rsvpHosts.length || act.spk?.length) ? `<section class="event-section">
-    <h2>带领人 / 嘉宾</h2>
-    <div class="event-spk">${
-      rsvpHosts.length
-        ? rsvpHosts.map(h => `<div class="event-spk-row" data-rid="${escapeHtml(h.record_id)}" data-name="${escapeHtml(h.name)}">
-            <button type="button" class="event-spk-clickable card-avatar-btn-wrap"${renderPersonDataAttrs(h)} onclick="openPersonModal(this)">
-              <span class="card-avatar event-spk-avatar">${renderPersonAvatar(h)}</span>
-              <span class="event-spk-content"><strong>${escapeHtml(h.name)}</strong>${h.bio ? `<span class="event-spk-bio"> · ${escapeHtml(h.bio)}</span>` : ''}</span>
-            </button>
-            <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
-          </div>`).join('')
-        : act.spk.map(s => `<div class="event-spk-row">
-            <button type="button" class="event-spk-clickable card-avatar-btn-wrap"${renderPersonDataAttrs(s)} onclick="openPersonModal(this)">
-              <span class="card-avatar event-spk-avatar">${renderPersonAvatar(s)}</span>
-              <span class="event-spk-content"><strong>${escapeHtml(s.name)}</strong>${s.bio ? `<span class="event-spk-bio"> · ${escapeHtml(s.bio)}</span>` : ''}</span>
-            </button>
-          </div>`).join('')
-    }</div>
-    ${(!rsvpHosts.length && act.spk?.length) ? `<p class="event-spk-hint">
-      ℹ️ 嘉宾资料尚未关联到社群成员主页 · <a href="${SITE_URL}/" class="event-spk-hint-link">在主页重新录入此活动 →</a> 可自动补全
-    </p>` : ''}
-  </section>` : ''}
+  ${(() => {
+    // dayrise v4: 多嘉宾 → flat list section（单嘉宾已在上面 inline）
+    const speakers = rsvpHosts.length ? rsvpHosts : (act.spk || []);
+    const speakersFromRsvp = rsvpHosts.length > 0;
+    if (speakers.length < 2) return '';
+    return `<section class="event-section">
+      <h2>带领人 / 嘉宾</h2>
+      <ul class="event-people-list">
+        ${speakers.map(s => personRowHtml(s, speakersFromRsvp)).join('')}
+      </ul>
+      ${(!speakersFromRsvp && act.spk?.length) ? `<p class="event-spk-hint">
+        ℹ️ 嘉宾资料尚未关联到社群成员主页 · <a href="${SITE_URL}/" class="event-spk-hint-link">在主页重新录入此活动 →</a> 可自动补全
+      </p>` : ''}
+    </section>`;
+  })()}
 
-  ${!isPast ? `<section class="event-section event-rsvp-section">
-    <h2>报名情况</h2>
-    ${rsvpAttendees.length ? `
-      <p class="event-rsvp-count">已 <strong>${rsvpAttendees.length}</strong> 位伙伴报名</p>
-      <div class="event-rsvp-list">
-        ${rsvpAttendees.slice(0, 30).map(a => {
-          return `<div class="event-rsvp-chip event-rsvp-chip-clickable" data-rid="${escapeHtml(a.record_id)}" data-name="${escapeHtml(a.name)}"${renderPersonDataAttrs(a)} onclick="if(!event.target.closest('.event-rsvp-del'))openPersonModal(this)">
-          <span class="card-avatar event-rsvp-chip-avatar">${renderPersonAvatar(a)}</span>
-          <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
-          <button class="event-rsvp-del" onclick="event.stopPropagation();askDelRsvp(this.parentElement.dataset.rid, this.parentElement.dataset.name)" aria-label="删除">×</button>
-        </div>`;
-        }).join('')}
-        ${rsvpAttendees.length > 30 ? `<div class="event-rsvp-more">+${rsvpAttendees.length - 30}</div>` : ''}
-      </div>
-    ` : `<p class="event-rsvp-empty">还没有伙伴报名 · 你来当第一个 →</p>`}
-    <button class="event-rsvp-btn" onclick="openRsvpModal(); if(typeof cycTrack==='function')cycTrack('path_c_complete',{source:'rsvp_button'})" data-track="rsvp_click">📝 我要参加</button>
-  </section>` : (rsvpAttendees.length ? `<section class="event-section">
-    <h2>当时参加的伙伴</h2>
-    <div class="event-rsvp-list">
-      ${rsvpAttendees.map(a => `<div class="event-rsvp-chip is-past event-rsvp-chip-clickable"${renderPersonDataAttrs(a)} onclick="openPersonModal(this)">
-        <span class="card-avatar event-rsvp-chip-avatar">${renderPersonAvatar(a)}</span>
-        <span class="event-rsvp-chip-name">${escapeHtml(a.name)}</span>
-      </div>`).join('')}
-    </div>
-  </section>` : '')}
+  ${(() => {
+    // dayrise v4: count 合并到 h2；4 人内 stack；5+ flow
+    const rsvpCount = rsvpAttendees.length;
+    const useFlow = rsvpCount >= 5;
+
+    if (!isPast) {
+      const headHtml = rsvpCount > 0
+        ? `<h2 class="event-rsvp-h2-count">已 <strong>${rsvpCount}</strong> 位伙伴报名</h2>`
+        : `<h2>报名情况</h2>`;
+      const bodyHtml = rsvpCount === 0
+        ? `<p class="event-rsvp-empty">还没有伙伴报名 · 你来当第一个 →</p>`
+        : useFlow
+          ? `<div class="event-rsvp-flow">
+              ${rsvpAttendees.slice(0, 30).map(a => rsvpChipFlatHtml(a, true)).join('')}
+              ${rsvpCount > 30 ? `<span class="event-rsvp-more">+${rsvpCount - 30}</span>` : ''}
+            </div>`
+          : `<ul class="event-people-list event-rsvp-stack">
+              ${rsvpAttendees.map(a => personRowHtml(a, true)).join('')}
+            </ul>`;
+      return `<section class="event-section event-rsvp-section">
+        ${headHtml}
+        ${bodyHtml}
+        <button class="event-rsvp-btn" onclick="openRsvpModal(); if(typeof cycTrack==='function')cycTrack('path_c_complete',{source:'rsvp_button'})" data-track="rsvp_click">📝 我要参加</button>
+      </section>`;
+    }
+    // past
+    if (rsvpCount === 0) return '';
+    const pastHead = `<h2 class="event-rsvp-h2-count">当时 <strong>${rsvpCount}</strong> 位伙伴参加</h2>`;
+    const pastBody = useFlow
+      ? `<div class="event-rsvp-flow">
+          ${rsvpAttendees.map(a => rsvpChipFlatHtml(a, false)).join('')}
+        </div>`
+      : `<ul class="event-people-list event-rsvp-stack">
+          ${rsvpAttendees.map(a => personRowHtml(a, false)).join('')}
+        </ul>`;
+    return `<section class="event-section">${pastHead}${pastBody}</section>`;
+  })()}
 </main>
 
 <footer class="event-footer">
@@ -524,6 +568,30 @@ window.smartBack = function (e) {
 // ─────────── 删除报名（admin 用，密码保护） ───────────
 const _ACT_REC_ID = ${JSON.stringify(act.record_id)};
 let _delRsvpId = null;
+
+// dayrise v4: 人物行点击 dispatcher（嘉宾 / RSVP / inline host 共用）
+//   - 桌面 hover 显 ×；点击行 = 打开 person modal
+//   - 移动（hover:none）首次 tap = reveal × 状态；再次 tap 行 body = 打开 modal；tap × = askDelRsvp
+//   - tap 行外 = 取消 reveal
+window.onPersonRowClick = function(e, row) {
+  if (e.target.closest('.event-person-del')) return;  // × 自己 stopPropagation
+  const isTouchOnly = window.matchMedia && window.matchMedia('(hover: none)').matches;
+  if (isTouchOnly && !row.classList.contains('is-revealed')) {
+    document.querySelectorAll('.event-person.is-revealed, .event-rsvp-chip-flat.is-revealed, .event-host-inline.is-revealed')
+      .forEach(r => { if (r !== row) r.classList.remove('is-revealed'); });
+    row.classList.add('is-revealed');
+    e.stopPropagation();
+    return;
+  }
+  if (typeof openPersonModal === 'function') openPersonModal(row);
+};
+// tap 行外 → 取消 reveal
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.event-person, .event-rsvp-chip-flat, .event-host-inline')) {
+    document.querySelectorAll('.event-person.is-revealed, .event-rsvp-chip-flat.is-revealed, .event-host-inline.is-revealed')
+      .forEach(el => el.classList.remove('is-revealed'));
+  }
+}, true);
 
 function askDelRsvp(record_id, name) {
   if (!record_id) return;

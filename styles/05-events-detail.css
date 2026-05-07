@@ -368,3 +368,150 @@
   flex-basis: 100%;  /* 展开时占整行 */
 }
 
+/* ═══════════════════════════════════════════════
+ * dayrise v4 框里套框 fix（2026-05-08）
+ * 用 .event-person* 替代 .event-spk-clickable + .event-rsvp-chip 的内 pill bg。
+ * × 按钮 hover-only（desktop）/ tap-to-reveal（mobile · is-revealed class）
+ * ═══════════════════════════════════════════════ */
+
+/* ─── flat 人物行（嘉宾 stack ≥2 + RSVP stack ≤4 共用）─── */
+.event-people-list {
+  list-style: none; padding: 0; margin: 0 0 12px;
+  display: flex; flex-direction: column;
+  gap: 2px;
+}
+.event-person {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  position: relative;
+  min-width: 0;
+}
+.event-person:hover { background: rgba(28,61,46,0.05); }
+.event-person.is-revealed { background: rgba(28,61,46,0.08); }
+.event-person:focus-visible { outline: 2px solid var(--cyc-green); outline-offset: 1px; }
+.event-person-avatar {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  margin: 0;
+  border-width: 1.5px;
+}
+.event-person-avatar .card-avatar-initials { font-size: 12px; }
+.event-person-text {
+  flex: 1; min-width: 0;
+  font-size: 14px; line-height: 1.4;
+  color: var(--cyc-text);
+  overflow: hidden;
+}
+.event-person-text strong { font-weight: 700; color: var(--cyc-text-strong); }
+.event-person-bio { color: var(--cyc-text-muted); }
+
+/* ─── 单嘉宾 inline（meta info 下方，省独立 section）─── */
+.event-host-inline {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 6px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  position: relative;
+}
+.event-host-inline:hover { background: rgba(28,61,46,0.05); }
+.event-host-inline.is-revealed { background: rgba(28,61,46,0.08); }
+.event-host-inline:focus-visible { outline: 2px solid var(--cyc-green); outline-offset: 1px; }
+.event-host-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cyc-text-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.event-host-avatar {
+  width: 28px; height: 28px;
+  flex-shrink: 0;
+  margin: 0;
+  border-width: 1.5px;
+}
+.event-host-avatar .card-avatar-initials { font-size: 11px; }
+.event-host-text {
+  flex: 1; min-width: 0;
+  font-size: 14px; line-height: 1.5;
+  color: var(--cyc-text);
+}
+.event-host-text strong { font-weight: 700; color: var(--cyc-text-strong); }
+.event-host-bio { color: var(--cyc-text-muted); }
+
+/* ─── RSVP flow chip（≥5 人，紧凑 pill）─── */
+.event-rsvp-flow {
+  display: flex; flex-wrap: wrap; gap: 4px 6px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.event-rsvp-chip-flat {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border: none; background: transparent;
+  border-radius: 100px;
+  font: inherit; color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+  position: relative;
+}
+.event-rsvp-chip-flat:hover { background: rgba(28,61,46,0.08); }
+.event-rsvp-chip-flat.is-revealed { background: rgba(28,61,46,0.10); }
+.event-rsvp-chip-flat:focus-visible { outline: 2px solid var(--cyc-green); outline-offset: 1px; }
+.event-rsvp-flat-avatar {
+  width: 24px; height: 24px;
+  flex-shrink: 0; margin: 0;
+  border-width: 1.25px;
+}
+.event-rsvp-flat-avatar .card-avatar-initials { font-size: 10px; }
+.event-rsvp-flat-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cyc-text);
+}
+
+/* ─── 删除 ×（hover-only desktop / is-revealed on mobile）─── */
+.event-person-del {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  margin-left: 4px;
+  border: none; background: transparent;
+  color: rgba(0,0,0,0.30);
+  font-size: 18px; line-height: 1;
+  border-radius: 50%; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s, color 0.15s, background 0.15s, transform 0.10s;
+}
+.event-person:hover .event-person-del,
+.event-person.is-revealed .event-person-del,
+.event-host-inline:hover .event-person-del,
+.event-host-inline.is-revealed .event-person-del,
+.event-rsvp-chip-flat:hover .event-person-del,
+.event-rsvp-chip-flat.is-revealed .event-person-del {
+  opacity: 1; pointer-events: auto;
+}
+.event-person-del:hover {
+  color: #c0392b;
+  background: rgba(192,57,43,0.10);
+}
+.event-person-del:active {
+  transform: scale(0.88);
+  background: rgba(192,57,43,0.18);
+}
+
+/* ─── h2 + count 合并（"已 N 位伙伴报名"）─── */
+.event-rsvp-h2-count strong {
+  color: var(--cyc-green);
+  font-weight: 700;
+}
+
