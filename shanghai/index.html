@@ -355,6 +355,46 @@
   .sh-confirm-fee.is-paid {
     background: rgba(217,101,42,0.08); color: var(--sh-warm);
   }
+
+  /* card expand on tap */
+  .sh-event { cursor: pointer; }
+  .sh-event-expand {
+    grid-column: 1 / -1;
+    max-height: 0; overflow: hidden;
+    transition: max-height .28s ease;
+    border-top: 1px solid transparent;
+  }
+  .sh-event.is-expanded .sh-event-expand {
+    max-height: 600px;
+    border-top-color: var(--sh-line-soft);
+  }
+  .sh-event-expand-inner {
+    padding: 16px 20px 18px;
+    font-size: 13.5px; line-height: 1.6; color: var(--sh-ink-soft);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sh-event-expand-desc { margin: 0; white-space: pre-line; }
+  .sh-event-expand-loc, .sh-event-expand-link, .sh-event-expand-fee {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+    color: var(--sh-ink-soft);
+  }
+  .sh-event-expand-link a { color: var(--sh-accent); text-decoration: underline; }
+  .sh-event-expand-fee { color: var(--sh-warm); }
+
+  /* WeChat → Email toggle link in RSVP form */
+  .sh-form-toggle-link {
+    margin-top: 4px; font-size: 12px;
+    color: var(--sh-accent); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px;
+    background: none; border: 0; padding: 0;
+    font-family: inherit;
+  }
+  .sh-form-toggle-link:hover { color: var(--sh-warm); }
+
+  .sh-form-hint {
+    margin-top: 4px; font-size: 11.5px;
+    color: var(--sh-ink-mute); line-height: 1.5; font-style: italic;
+  }
 </style>
 </head>
 <body class="sh-page sh-lang-zh">
@@ -397,7 +437,7 @@
 
     <div class="sh-hero-cta-row">
       <a class="sh-hero-cta sh-hero-cta-primary"
-         href="https://wcnbuffhffle.feishu.cn/base/YPFmbJXyua0CTRscp0XcegWDnwh?from=from_copylink"
+         href="https://wcnbuffhffle.feishu.cn/share/base/form/shrcn2Bc79UfHG2MPVPvgQper6r"
          target="_blank" rel="noopener"
          data-track="shanghai_hero_role_apply">
         <span class="lang-zh">想做讲者 / 开发者 / 志愿者 ↗</span>
@@ -519,22 +559,31 @@
                placeholder="Jane Doe" autocomplete="name">
       </div>
 
-      <div class="sh-form-row">
+      <!-- Contact: WeChat by default; switch to Email for international users -->
+      <div class="sh-form-row" id="rsvpWechatRow">
         <label class="sh-form-label">
-          <span class="lang-zh">邮箱 (留下让你能收到腾讯会议链接)</span>
-          <span class="lang-en">Email (so we can send you the Tencent Meeting link)</span>
+          <span class="lang-zh">微信号 *</span>
+          <span class="lang-en">WeChat ID *</span>
         </label>
-        <input class="sh-form-input" type="email" name="email" maxlength="100"
-               placeholder="you@example.com" autocomplete="email">
+        <input class="sh-form-input" type="text" name="wechat" id="rsvpWechatInput" maxlength="30"
+               placeholder="—" autocomplete="username">
+        <button type="button" class="sh-form-toggle-link" id="rsvpToggleToEmail">
+          <span class="lang-zh">没有微信号？用邮箱填写 →</span>
+          <span class="lang-en">Don't have WeChat? Use email instead →</span>
+        </button>
       </div>
 
-      <div class="sh-form-row">
+      <div class="sh-form-row" id="rsvpEmailRow" style="display:none;">
         <label class="sh-form-label">
-          <span class="lang-zh">微信号（可选）</span>
-          <span class="lang-en">WeChat ID (optional)</span>
+          <span class="lang-zh">邮箱 *</span>
+          <span class="lang-en">Email *</span>
         </label>
-        <input class="sh-form-input" type="text" name="wechat" maxlength="30"
-               placeholder="—">
+        <input class="sh-form-input" type="email" name="email" id="rsvpEmailInput" maxlength="100"
+               placeholder="you@example.com" autocomplete="email">
+        <button type="button" class="sh-form-toggle-link" id="rsvpToggleToWechat">
+          <span class="lang-zh">← 我有微信号</span>
+          <span class="lang-en">← I have WeChat</span>
+        </button>
       </div>
 
       <div class="sh-form-row">
@@ -572,16 +621,20 @@
 
       <div class="sh-form-row">
         <label class="sh-form-label">
-          <span class="lang-zh">备注（可选）</span>
-          <span class="lang-en">Notes (optional)</span>
+          <span class="lang-zh">个人简介（可选）</span>
+          <span class="lang-en">Bio (optional)</span>
         </label>
         <textarea class="sh-form-input" name="notes" maxlength="200"
                   placeholder=""></textarea>
+        <p class="sh-form-hint">
+          <span class="lang-zh">会自动添加为社区成员，让其他人认识你（后续可编辑）</span>
+          <span class="lang-en">We'll add you as a community member so others can find you (editable later)</span>
+        </p>
       </div>
 
       <div id="rsvpError" class="sh-form-error" style="display:none;"></div>
       <button type="submit" class="sh-form-submit" id="rsvpSubmitBtn">
-        <span class="lang-zh">RSVP · 我要报名</span>
+        <span class="lang-zh">我要报名</span>
         <span class="lang-en">RSVP · Save my spot</span>
       </button>
     </form>
@@ -773,7 +826,40 @@ function renderShanghaiEvent(a) {
   // attendees pill
   const attCount = a.card_attendee_total || 0;
 
-  return `<article class="sh-event${isPast ? ' is-past' : ''}${isLive ? ' is-live' : ''}">
+  // Expand section content (only when there is something useful to show)
+  const hasExpand = !!(a.desc || a.desc_en || a.location_en || a.tencent_meeting_url || (a.onsite_fee >= 0));
+  const fee = Number(a.onsite_fee) || 0;
+  const expandHtml = hasExpand ? `
+    <div class="sh-event-expand">
+      <div class="sh-event-expand-inner">
+        ${a.desc || a.desc_en ? `
+          <p class="sh-event-expand-desc">
+            <span class="lang-zh">${esc(a.desc || a.desc_en || '')}</span>
+            <span class="lang-en">${esc(a.desc_en || a.desc || '')}</span>
+          </p>` : ''}
+        ${a.loc || a.location_en ? `
+          <div class="sh-event-expand-loc">📍
+            <span class="lang-zh">${esc(a.loc || a.location_en || '')}</span>
+            <span class="lang-en">${esc(a.location_en || a.loc || '')}</span>
+          </div>` : ''}
+        ${a.tencent_meeting_url ? `
+          <div class="sh-event-expand-link">🎥
+            <a href="${esc(a.tencent_meeting_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+              <span class="lang-zh">腾讯会议链接</span>
+              <span class="lang-en">Tencent Meeting link</span>
+            </a>
+          </div>` : ''}
+        <div class="sh-event-expand-fee">💰
+          ${fee > 0
+            ? `<span class="lang-zh">现场 ¥${fee} · 持票人/线上免费</span>
+               <span class="lang-en">On-site ¥${fee} · Free for ticket holders / online</span>`
+            : `<span class="lang-zh">免费</span>
+               <span class="lang-en">Free</span>`}
+        </div>
+      </div>
+    </div>` : '';
+
+  return `<article class="sh-event${isPast ? ' is-past' : ''}${isLive ? ' is-live' : ''}" data-rec-id="${esc(a.record_id)}">
     <div class="sh-event-date">
       <div class="sh-event-date-day">
         <span class="lang-zh">${monNum}/${dayNum} · ${dowZh}</span>
@@ -814,13 +900,27 @@ function renderShanghaiEvent(a) {
              <span class="lang-zh">已结束</span>
              <span class="lang-en">Past</span>
            </button>`
-        : `<button class="sh-rsvp-btn js-rsvp-btn" type="button" data-rec-id="${esc(a.record_id)}" data-fee="${Number(a.onsite_fee) || 0}" data-type="${esc(pill.cls)}">
-             RSVP
+        : `<button class="sh-rsvp-btn js-rsvp-btn" type="button" data-rec-id="${esc(a.record_id)}" data-fee="${fee}" data-type="${esc(pill.cls)}">
+             <span class="lang-zh">我要报名</span>
+             <span class="lang-en">RSVP</span>
            </button>`
       }
     </div>
+    ${expandHtml}
   </article>`;
 }
+
+// click anywhere on the card except RSVP button / link → toggle expand
+document.addEventListener('click', function (e) {
+  const card = e.target.closest('.sh-event');
+  if (!card) return;
+  // ignore clicks on buttons / links / inputs inside the card
+  if (e.target.closest('button, a, input, textarea, label')) return;
+  card.classList.toggle('is-expanded');
+  if (typeof cycTrack === 'function') {
+    cycTrack('shanghai_card_expand', { record_id: card.dataset.recId, expanded: card.classList.contains('is-expanded') });
+  }
+});
 
 // event delegation for RSVP buttons
 document.addEventListener('click', function (e) {
@@ -877,6 +977,52 @@ document.getElementById('ticketHolderInput').addEventListener('change', function
   document.getElementById('ticketHolderLabel').classList.toggle('is-checked', this.checked);
 });
 
+// ── WeChat ↔ Email mode toggle ──
+// Default = wechat (Chinese-first); switch to email for international users
+let _rsvpAuthMode = 'wechat';  // 'wechat' | 'email'
+
+function setAuthMode(mode) {
+  _rsvpAuthMode = mode;
+  const wechatRow = document.getElementById('rsvpWechatRow');
+  const emailRow  = document.getElementById('rsvpEmailRow');
+  const wechatInput = document.getElementById('rsvpWechatInput');
+  const emailInput  = document.getElementById('rsvpEmailInput');
+  if (mode === 'email') {
+    wechatRow.style.display = 'none';
+    emailRow.style.display = '';
+    wechatInput.value = '';
+    setTimeout(() => emailInput.focus(), 50);
+  } else {
+    wechatRow.style.display = '';
+    emailRow.style.display = 'none';
+    emailInput.value = '';
+    setTimeout(() => wechatInput.focus(), 50);
+  }
+  if (typeof cycTrack === 'function') cycTrack('shanghai_rsvp_auth_mode', { mode });
+}
+document.getElementById('rsvpToggleToEmail').addEventListener('click', () => setAuthMode('email'));
+document.getElementById('rsvpToggleToWechat').addEventListener('click', () => setAuthMode('wechat'));
+
+// EN-language users default to email mode (less likely to have WeChat).
+// Sync once on initial load — but never override after user has manually toggled.
+let _authModeUserOverridden = false;
+document.getElementById('rsvpToggleToEmail').addEventListener('click', () => { _authModeUserOverridden = true; });
+document.getElementById('rsvpToggleToWechat').addEventListener('click', () => { _authModeUserOverridden = true; });
+
+function syncAuthModeToLang() {
+  if (_authModeUserOverridden) return;
+  const isEn = document.body.classList.contains('sh-lang-en');
+  if (isEn && _rsvpAuthMode === 'wechat') setAuthMode('email');
+  else if (!isEn && _rsvpAuthMode === 'email') setAuthMode('wechat');
+}
+// initial sync after lang has been applied
+setTimeout(syncAuthModeToLang, 100);
+// follow the lang toggle (post-click microtask catches the new body class)
+const _langToggleEl = document.getElementById('langToggle');
+if (_langToggleEl) {
+  _langToggleEl.addEventListener('click', () => setTimeout(syncAuthModeToLang, 0));
+}
+
 // ─────────── Submit ───────────
 document.getElementById('rsvpForm').addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -903,15 +1049,24 @@ document.getElementById('rsvpForm').addEventListener('submit', async function (e
     errBox.style.display = '';
     return;
   }
-  if (!payload.email && !payload.wechat) {
-    errBox.textContent = isEn ? 'Please provide either email or WeChat so we can reach you.' : '请填写邮箱或微信号（用于通知）。';
-    errBox.style.display = '';
-    return;
-  }
-  if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
-    errBox.textContent = isEn ? 'Email format looks off.' : '邮箱格式不对。';
-    errBox.style.display = '';
-    return;
+  // mode-aware required field: wechat OR email depending on which is active
+  if (_rsvpAuthMode === 'email') {
+    if (!payload.email) {
+      errBox.textContent = isEn ? 'Please enter your email so we can send you the meeting link.' : '请填写邮箱（我们会用它通知你会议链接）。';
+      errBox.style.display = '';
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      errBox.textContent = isEn ? 'Email format looks invalid.' : '邮箱格式不对。';
+      errBox.style.display = '';
+      return;
+    }
+  } else {
+    if (!payload.wechat) {
+      errBox.textContent = isEn ? 'Please enter your WeChat ID — or click "Don\'t have WeChat?" to use email.' : '请填写微信号 —— 或点"没有微信号？"切换到邮箱。';
+      errBox.style.display = '';
+      return;
+    }
   }
 
   errBox.style.display = 'none';
