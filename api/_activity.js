@@ -46,6 +46,18 @@ function tsToDate(ts) {
   return bj.toISOString().slice(0, 10);
 }
 
+/** 从 datetime timestamp 提取 HH:mm 北京时间（00:00 视为"未设置"返回空）
+ *  用于 datetime 字段直接含时间的活动（上海 MCP 录入路径），兜底 parseDesc */
+function tsToTime(ts) {
+  if (!ts) return '';
+  const d  = new Date(Number(ts));
+  const bj = new Date(d.getTime() + 8 * 3600 * 1000);
+  const hh = bj.getUTCHours();
+  const mm = bj.getUTCMinutes();
+  if (hh === 0 && mm === 0) return '';  // T00:00 = generator 路径写的占位 → 时间在描述里
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+
 const _CN_DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
 
 /**
@@ -164,6 +176,9 @@ export function parseRecord(record) {
   act.attendance_modes    = getMultiSelect(f['attendance_modes']);
 
   parseDesc(f['活动/项目描述'], act);
+  // 双数据源兜底：generator 走描述里 ⏰ 时间：HH:mm（act.time 已被 parseDesc 填）；
+  // MCP 直接写 datetime（含小时分钟）走 tsToTime 回填。
+  if (!act.time) act.time = tsToTime(f['意向/确认举办日期']);
   return act;
 }
 

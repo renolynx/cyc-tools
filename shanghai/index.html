@@ -180,8 +180,36 @@
     display: grid; grid-template-columns: 100px 1fr auto; gap: 18px;
     align-items: start;
   }
+  .sh-event.has-poster { grid-template-columns: 100px 88px 1fr auto; }
   @media (max-width: 600px) {
-    .sh-event { grid-template-columns: 1fr; gap: 14px; padding: 18px; }
+    .sh-event,
+    .sh-event.has-poster { grid-template-columns: 1fr; gap: 14px; padding: 18px; }
+  }
+  .sh-event-poster {
+    width: 88px; height: 88px;
+    border-radius: 4px; overflow: hidden;
+    background: rgba(0,0,0,0.04);
+  }
+  .sh-event-poster img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    cursor: zoom-in;
+  }
+  @media (max-width: 600px) {
+    .sh-event-poster { width: 100%; height: auto; aspect-ratio: 16/9; }
+  }
+  /* Inline poster lightbox */
+  .sh-poster-lightbox {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.78);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .sh-poster-lightbox.open { display: flex; }
+  .sh-poster-lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; }
+  .sh-poster-lightbox-close {
+    position: absolute; top: 18px; right: 18px;
+    background: transparent; border: 0; color: #fff; font-size: 28px;
+    cursor: pointer; line-height: 1;
   }
   .sh-event.is-past { opacity: 0.55; }
   .sh-event.is-live { background: linear-gradient(to right, rgba(195,50,42,0.04) 0%, #fff 60%); }
@@ -539,6 +567,12 @@
 
 </main>
 
+<!-- ───────── Poster Lightbox ───────── -->
+<div class="sh-poster-lightbox" id="shPosterLightbox" onclick="if(event.target.id==='shPosterLightbox')closePosterLightbox()">
+  <button class="sh-poster-lightbox-close" type="button" onclick="closePosterLightbox()" aria-label="Close">×</button>
+  <img id="shPosterLightboxImg" src="" alt="">
+</div>
+
 <!-- ───────── RSVP Modal ───────── -->
 <div class="sh-modal-overlay" id="rsvpModal" onclick="if(event.target.id==='rsvpModal')closeRsvp()">
   <div class="sh-modal" role="dialog" aria-labelledby="rsvpModalTitle">
@@ -859,15 +893,26 @@ function renderShanghaiEvent(a) {
       </div>
     </div>` : '';
 
-  return `<article class="sh-event${isPast ? ' is-past' : ''}${isLive ? ' is-live' : ''}" data-rec-id="${esc(a.record_id)}">
+  const timeStr = a.time ? `${esc(a.time)} CST` : '20:00 CST';
+  const posterToken = a.poster?.file_token || '';
+  const posterHtml = posterToken ? `
+    <div class="sh-event-poster">
+      <img src="/api/poster?token=${encodeURIComponent(posterToken)}"
+           alt="${esc(a.title || '')}"
+           loading="lazy"
+           onclick="event.stopPropagation(); openPosterLightbox && openPosterLightbox(event, '${esc(posterToken)}', ${JSON.stringify(a.title || '')})">
+    </div>` : '';
+
+  return `<article class="sh-event${isPast ? ' is-past' : ''}${isLive ? ' is-live' : ''}${posterToken ? ' has-poster' : ''}" data-rec-id="${esc(a.record_id)}">
     <div class="sh-event-date">
       <div class="sh-event-date-day">
         <span class="lang-zh">${monNum}/${dayNum} · ${dowZh}</span>
         <span class="lang-en">${dowEn} · ${monNum}/${dayNum}</span>
       </div>
-      <div class="sh-event-date-time">20:00 CST</div>
+      <div class="sh-event-date-time">${timeStr}</div>
       ${week ? `<span class="sh-event-week-pill">W${week}</span>` : ''}
     </div>
+    ${posterHtml}
     <div class="sh-event-body">
       <div class="sh-event-type-row">
         <span class="sh-event-type-pill ${pill.cls}">
@@ -910,15 +955,36 @@ function renderShanghaiEvent(a) {
   </article>`;
 }
 
-// click anywhere on the card except RSVP button / link → toggle expand
+// click anywhere on the card except RSVP button / link / poster → toggle expand
 document.addEventListener('click', function (e) {
   const card = e.target.closest('.sh-event');
   if (!card) return;
-  // ignore clicks on buttons / links / inputs inside the card
-  if (e.target.closest('button, a, input, textarea, label')) return;
+  // ignore clicks on buttons / links / inputs / images (poster) inside the card
+  if (e.target.closest('button, a, input, textarea, label, img')) return;
   card.classList.toggle('is-expanded');
   if (typeof cycTrack === 'function') {
     cycTrack('shanghai_card_expand', { record_id: card.dataset.recId, expanded: card.classList.contains('is-expanded') });
+  }
+});
+
+// Poster lightbox (matches homepage's openPosterLightbox API)
+window.openPosterLightbox = function (e, token, title) {
+  if (e) { e.stopPropagation(); e.preventDefault(); }
+  if (!token) return;
+  const img = document.getElementById('shPosterLightboxImg');
+  img.src = '/api/poster?token=' + encodeURIComponent(token);
+  img.alt = title || '';
+  document.getElementById('shPosterLightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (typeof cycTrack === 'function') cycTrack('shanghai_poster_click', { token });
+};
+window.closePosterLightbox = function () {
+  document.getElementById('shPosterLightbox').classList.remove('open');
+  document.body.style.overflow = '';
+};
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('shPosterLightbox').classList.contains('open')) closePosterLightbox();
   }
 });
 
