@@ -33,7 +33,7 @@ function thumbUrl(act) {
 
 function thumbHtml(act) {
   const url = thumbUrl(act);
-  if (!url) return `<div class="el-card-thumb el-card-thumb-empty ${cycTimeClass(act.time)}">📅</div>`;
+  if (!url) return `<div class="el-card-thumb el-card-thumb-empty ${cycTimeClass(act.time)}" aria-hidden="true"></div>`;
   const tok = act.poster.file_token;
   const title = escapeHtml(act.title || '');
   return `<img class="el-card-thumb" data-zoomable src="${url}" alt="${title}" loading="lazy" onclick="openPosterLightbox(event, '${escapeHtml(tok)}', '${title}')">`;

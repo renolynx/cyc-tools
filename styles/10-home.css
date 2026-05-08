@@ -41,13 +41,15 @@
 }
 
 /* poster A —— 介绍社区入口 */
-/* dayrise-os v4.1 (2026-05-08)：从 cyc-green 暗化（用户反馈"墨绿丑爆了"）       */
-/*   换成 cyc-erhai-deep / erhai 渐变 — 洱海月色 atmosphere base                 */
-/*   poster A (深蓝/夜) + poster B (浅 sand+暖橙/昼) = 大理"日夜"双面对比          */
+/* dayrise-os v4.2.2 (2026-05-08)：从 linear 135deg 2-stop 改 radial 多 stop 弥散
+ *   月光从左上漫射 → 深水底边缘，跟 .cyc-time-night 同语言但保留 brand 视觉锚点
+ *   （活动卡 night thumb 是缺图占位通透 / hero 是 brand 入口饱满，层级清晰）*/
 .hero-poster-a {
-  background: linear-gradient(135deg,
-    rgba(42, 63, 95, 0.88) 0%,    /* --cyc-erhai-deep */
-    rgba(90, 110, 138, 0.78) 100%); /* --cyc-erhai */
+  background: radial-gradient(ellipse 130% 100% at 25% 20%,
+    rgba(135, 155, 180, 0.78) 0%,
+    rgba(85, 108, 138, 0.86) 38%,
+    rgba(52, 75, 108, 0.92) 72%,
+    rgba(38, 58, 90, 0.95) 100%);
   color: rgba(255,255,255,0.96);
 }
 .hero-poster-a h2 { color: #fff; }

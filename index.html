@@ -329,7 +329,7 @@ function renderCard(a) {
   const dateStr = formatDate(a.date);
   const thumbHtml = a.poster?.file_token
     ? `<img class="home-act-thumb" data-zoomable src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="${escapeHtml(a.title || '海报')}" loading="lazy" onclick="openPosterLightbox(event, '${escapeAttr(a.poster.file_token)}', '${escapeAttr(a.title || '')}')">`
-    : `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(a.time)}">📅</div>`;
+    : `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(a.time)}" aria-hidden="true"></div>`;
   const avatarHtml = renderAvatarGroups(
     a.card_speakers || [],
     a.card_attendees || [],
