@@ -155,21 +155,27 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 .home-act-card {
+  /* dayrise v4.2.3 透明化（2026-05-08，玖玖反馈"白卡套半透 thumb 对比生硬"）：
+   * 卡片 background 0.75 → 0.40，让卡片跟 thumb 渐变融为一体
+   * 边框 alpha 也降低 · hover 时回升做 affordance */
   display: flex; flex-direction: row; flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  background: var(--cyc-surface-glass);
+  background: rgba(255, 255, 255, 0.40);
   backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  border: 1px solid var(--cyc-border-glass);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: var(--cyc-r-card);
   text-decoration: none; color: var(--cyc-text);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px var(--cyc-inset-shine) inset;
-  transition: transform 0.12s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(255,255,255,0.55) inset;
+  transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
-.home-act-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.10), 0 0 0 0.5px var(--cyc-inset-shine) inset; }
+.home-act-card:hover {
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(255,255,255,0.7) inset;
+}
 .home-act-card:active { transform: scale(0.99); }
 
 /* 已结束卡片 desaturate（保持可读但视觉次级）*/
