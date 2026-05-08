@@ -11,7 +11,7 @@
 <link rel="canonical" href="https://cyc.center/about">
 <link rel="stylesheet" href="/styles.css">
 </head>
-<body class="atlas-canvas">
+<body class="atlas-canvas cyc-brand">
 
 <div class="blob b1"></div>
 <div class="blob b2"></div>
@@ -24,13 +24,25 @@
 
 <main class="about-wrap">
 
-  <!-- 品牌叙事 hero -->
+  <!-- 品牌叙事 hero · v4 brand register editorial -->
   <section class="about-hero">
-    <h1>在大理，有这样一群人在认真做事</h1>
-    <p>
+    <span class="cyc-eyebrow">ABOUT · 链岛青年社区</span>
+    <h1 class="cyc-display">在大理，有这样一群人在认真做事</h1>
+    <p class="about-hero-sub">
       做独立项目的设计师、做内容的创作者、远程工作的程序员、开咖啡店的本地主理人 ——
       链岛青年社区是为他们建的一个非正式的"客厅 + 工具站"。
     </p>
+  </section>
+
+  <!-- 社区文化 · 来认识他们（动态拉精选成员） -->
+  <section class="about-people" aria-label="社区里的人">
+    <span class="cyc-eyebrow cyc-eyebrow--sm">PEOPLE · 来认识他们</span>
+    <h2 class="about-section-title">社区里的几位</h2>
+    <p class="about-section-sub">每个人都在做点什么 · 每个故事都值得被看见</p>
+    <div class="about-people-grid" id="aboutPeopleGrid">
+      <div class="about-people-loading">加载中…</div>
+    </div>
+    <a class="about-people-link" href="/community">看完整成员目录 →</a>
   </section>
 
   <!-- 社区照片墙 section（精选照片堆叠预览，点击进时间线）-->
@@ -56,15 +68,6 @@
         <span class="hero-poster-cta">看房型 →</span>
       </div>
     </a>
-  </section>
-
-  <!-- 建设中提示 -->
-  <section class="about-todo">
-    <h3>🚧 这个页面还在长</h3>
-    <p>
-      完整的介绍页（社区文化 / 现有成员故事 / 空间相册 / 加入入口）是 Phase 3.2.1 的工作。
-      上方几个入口先够你逛。
-    </p>
   </section>
 
 </main>
@@ -174,23 +177,152 @@
 /* 想试一个月吗 hero poster section */
 .about-rooms-section { margin-bottom: 28px; }
 
-/* 建设中提示 */
-.about-todo {
-  padding: 18px 20px;
+/* hero 副文 · italic editorial（ElevenLabs 范式）*/
+.about-hero-sub {
+  font-style: italic;
+}
+
+/* 社区文化 section · 来认识他们（动态成员卡）*/
+.about-people {
+  margin-bottom: 32px;
+}
+.about-people .cyc-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+}
+.about-section-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--cyc-text-strong);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.about-section-sub {
+  font-size: 14px;
+  color: var(--cyc-text-muted);
+  font-style: italic;
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+.about-people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.about-people-loading,
+.about-people-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px;
+  color: var(--cyc-text-muted);
+  font-size: 13px;
+}
+.about-person-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 12px;
   background: var(--cyc-surface-glass);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
   border: 1px solid var(--cyc-border-glass);
   border-radius: var(--cyc-r-card);
+  text-decoration: none;
+  color: inherit;
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.about-todo h3 {
-  font-size: 14px; font-weight: 700; color: var(--cyc-green);
-  margin-bottom: 8px; letter-spacing: -0.01em;
+.about-person-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
 }
-.about-todo p {
-  font-size: 13px; color: var(--cyc-text-muted); line-height: 1.65;
+.about-person-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(28,61,46,0.10);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700;
+  color: var(--cyc-green);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.about-person-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.about-person-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cyc-text-strong);
+  letter-spacing: -0.01em;
+}
+.about-person-bio {
+  font-size: 12px;
+  color: var(--cyc-text-muted);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.about-people-link {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cyc-green);
+  text-decoration: none;
+  letter-spacing: 0;
+}
+.about-people-link:active { opacity: 0.6; }
+
+@media (max-width: 480px) {
+  .about-people-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .about-person-card { padding: 12px 8px; }
+  .about-person-avatar { width: 44px; height: 44px; font-size: 16px; }
 }
 </style>
 
 <script>
+// ── 拉社区成员（最多 6 位有 bio 的成员，random shuffle 避免每次刷新都一样）──
+(async function loadFeaturedPeople() {
+  try {
+    const res = await fetch('/api/members');
+    if (!res.ok) return;
+    const data = await res.json();
+    const all = (data.members || []).filter(m => m.bio && m.bio.length >= 8);
+    const grid = document.getElementById('aboutPeopleGrid');
+    if (!grid) return;
+    if (!all.length) {
+      grid.innerHTML = '<div class="about-people-empty">还没有成员填了 bio · 来 <a href="/me/timeline" style="color:var(--cyc-green);font-weight:600">关联自己</a> 写一条？</div>';
+      return;
+    }
+    const picks = all.sort(() => Math.random() - 0.5).slice(0, 6);
+    grid.innerHTML = picks.map(m => {
+      const initials = (m.name || m.nickname || '·').slice(0, 1);
+      const avatarUrl = m.avatar_url || (m.avatar_token ? '/api/poster?token=' + encodeURIComponent(m.avatar_token) : '');
+      const avatarHtml = avatarUrl
+        ? `<img src="${esc(avatarUrl)}" alt="${esc(m.name || '')}" loading="lazy">`
+        : esc(initials);
+      return `<a class="about-person-card" href="/community/${esc(m.record_id)}">
+        <div class="about-person-avatar">${avatarHtml}</div>
+        <div class="about-person-name">${esc(m.name || m.nickname || '')}</div>
+        <div class="about-person-bio">${esc(m.bio)}</div>
+      </a>`;
+    }).join('');
+  } catch (err) {
+    console.warn('[about] load people failed:', err);
+  }
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+})();
+
 // ── 拉精选照片填进 photo stack（最多 3 张，缺省 placeholder 不变）──
 (async function loadFeaturedPhotos() {
   try {
