@@ -250,7 +250,7 @@ function renderCard(a) {
   const dateStr = formatDate(a.date);
   const thumbHtml = a.poster?.file_token
     ? `<img class="home-act-thumb" data-zoomable src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="${escapeHtml(a.title || '海报')}" loading="lazy" onclick="openPosterLightbox(event, '${escapeAttr(a.poster.file_token)}', '${escapeAttr(a.title || '')}')">`
-    : `<div class="home-act-thumb home-act-thumb-empty">📅</div>`;
+    : `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(a.time)}">📅</div>`;
   const avatarHtml = renderAvatarGroups(
     a.card_speakers || [],
     a.card_attendees || [],
@@ -377,6 +377,19 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 function escapeAttr(s) { return escapeHtml(s); }
+
+// dayrise v4.2 时段渐变占位（活动海报缺失降级 fallback）
+// 镜像 _activity.js cycTimeClass —— 服务端 / 客户端共享逻辑
+function cycTimeClass(timeStr) {
+  const m = String(timeStr || '').match(/^(\d{1,2}):/);
+  const hour = m ? parseInt(m[1], 10) : null;
+  if (hour == null || isNaN(hour)) return 'cyc-time-noon';
+  if (hour < 5)  return 'cyc-time-night';
+  if (hour < 11) return 'cyc-time-morning';
+  if (hour < 15) return 'cyc-time-noon';
+  if (hour < 19) return 'cyc-time-dusk';
+  return 'cyc-time-night';
+}
 </script>
 <script src="/cyc-track.js" defer></script>
 

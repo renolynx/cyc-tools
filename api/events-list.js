@@ -7,7 +7,7 @@
  */
 
 import { applyCors, checkFeishuEnv }    from './_feishu.js';
-import { fetchAllActivities, formatCnDate, todayBJ } from './_activity.js';
+import { fetchAllActivities, formatCnDate, todayBJ, cycTimeClass } from './_activity.js';
 import { kvGet, kvSet, isKvConfigured }  from './_kv.js';
 import { fetchAllRsvps }                 from './_rsvp.js';
 import { fetchMember }                   from './_member.js';
@@ -33,7 +33,7 @@ function thumbUrl(act) {
 
 function thumbHtml(act) {
   const url = thumbUrl(act);
-  if (!url) return '<div class="el-card-thumb el-card-thumb-empty">📅</div>';
+  if (!url) return `<div class="el-card-thumb el-card-thumb-empty ${cycTimeClass(act.time)}">📅</div>`;
   const tok = act.poster.file_token;
   const title = escapeHtml(act.title || '');
   return `<img class="el-card-thumb" data-zoomable src="${url}" alt="${title}" loading="lazy" onclick="openPosterLightbox(event, '${escapeHtml(tok)}', '${title}')">`;

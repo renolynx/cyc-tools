@@ -161,3 +161,27 @@ body.cyc-brand .cyc-editorial-header .cyc-tagline {
 @media (prefers-reduced-motion: reduce) {
   /* dayrise utilities 本身不动画。这里仅 reserve 以便未来加 */
 }
+
+/* ─── 9. v4.2 时段渐变占位（活动海报缺失降级 fallback）─── */
+/* 仅 4 时段 utility class · 由 cycTimeClass(activity.time) 派发 · 见 [[08 dayrise-os v4.2 时段渐变占位提案]]
+ * 边界（Hard rule #23）：仅作海报缺失 fallback / 空状态背景；不做 chrome / 不做始终可见装饰 / 不直接覆盖可读文字。
+ * night 复用 v4.1 erhai token；morning/noon/dusk 用 dali 实景 hex（不进 token，避免膨胀）*/
+.cyc-time-morning {
+  /* 5-11 苍山日出 · 蓝灰天 → 沙金 → 山绿 */
+  background: linear-gradient(180deg, #b3c5d4 0%, #e3d2b6 55%, #8a9876 100%);
+}
+.cyc-time-noon {
+  /* 11-15 烈日泛沙金 · 浅蓝天 → 强沙金 → 暖 tan */
+  background: linear-gradient(180deg, #c5d4dd 0%, #ead7a8 50%, #d4b878 100%);
+}
+.cyc-time-dusk {
+  /* 15-19 洱海日落 · 西天橙红 → 沙金 → 暮蓝（暖到冷反转）*/
+  background: linear-gradient(180deg, #d97c46 0%, #d4b878 48%, #6f80a0 100%);
+}
+.cyc-time-night {
+  /* 19-5 洱海月夜 · erhai 三色 ladder（v4.1 token）*/
+  background: linear-gradient(180deg,
+    var(--cyc-erhai-deep) 0%,
+    var(--cyc-erhai)     60%,
+    var(--cyc-erhai-light) 100%);
+}

@@ -585,6 +585,69 @@ body.cyc-brand .cyc-editorial-header .cyc-tagline {
 
 **触发原因（玖玖 2026-05-08 反馈）**："带领人 / 嘉宾 section 框里套框，浅灰框里圆头像框；报名情况 + 已 4 位伙伴报名信息重复"。完整 refactor 见 commit `cf0d6e0`。
 
+### Pattern 10 — Time Gradient Fallback（🆕 v4.2，2026-05-08）
+
+活动卡片海报缺失时的时段渐变占位。把 `activity.time` 映射到 4 段大理日色 utility class，让占位携带"时间感"。**A 边界**：仅当无海报时降级；有海报永远优先真实图。
+
+**4 时段定义**：
+
+| 时段 | 区间 | 色谱 |
+|---|---|---|
+| morning | 5-11 | 苍山日出 · 蓝灰天 → 沙金 → 山绿 |
+| noon | 11-15 | 烈日泛沙金 · 浅蓝天 → 强沙金 → 暖 tan |
+| dusk | 15-19 | 洱海日落 · 西天橙红 → 沙金 → 暮蓝（暖到冷反转）|
+| night | 19-5 | 洱海月夜 · erhai 三色 ladder（v4.1 token 串接）|
+
+**派发逻辑**：
+
+```js
+// 服务端 api/_activity.js export · 客户端 index.html 同步镜像
+function cycTimeClass(timeStr) {
+  const m = String(timeStr || '').match(/^(\d{1,2}):/);
+  const hour = m ? parseInt(m[1], 10) : null;
+  if (hour == null) return 'cyc-time-noon';
+  if (hour < 5)  return 'cyc-time-night';
+  if (hour < 11) return 'cyc-time-morning';
+  if (hour < 15) return 'cyc-time-noon';
+  if (hour < 19) return 'cyc-time-dusk';
+  return 'cyc-time-night';
+}
+```
+
+**应用模式**：
+
+```html
+<!-- 海报缺失 fallback -->
+<div class="home-act-thumb home-act-thumb-empty cyc-time-dusk">📅</div>
+<div class="el-card-thumb el-card-thumb-empty cyc-time-morning">📅</div>
+```
+
+**核心规则**：
+
+1. **A 边界**：有海报永远优先（渲染 `<img>`）；缺图才降级到 cyc-time-*
+2. **触发**：`cycTimeClass(activity.time)` 派发，跨夜活动按开始时间，无时间 fallback `cyc-time-noon`
+3. **不进 token**：morning / noon / dusk 用直接 hex（dali 实景色）；只有 night 复用 v4.1 erhai token（避免 token 膨胀）
+4. **不带文字**：占位仅 emoji（📅）+ 渐变背景，文字直接放在外部容器（meta-row / title 在卡片 body 段）
+
+**应用边界**（A 边界 matrix）：
+
+| Surface | 海报存在 | 海报缺失 |
+|---|---|---|
+| `home-act-card` | 真实海报 `<img>` | `.cyc-time-*` 渐变占位 |
+| `el-card` (events list) | 真实海报 | `.cyc-time-*` 渐变占位 |
+| `event-detail` hero | 真实海报 | （v4.2 未 ship，候选 v4.3） |
+| `home-act-thumb-empty` | n/a（永远缺图态） | `.cyc-time-*` 替代旧 mix gradient |
+| `mini` surface / chrome / nav / button | n/a（不显示海报） | **不做** |
+
+**Anti-pattern**：
+
+- ❌ 不做 chrome（topbar / nav / button / pill / 装饰线）
+- ❌ 不做"始终可见" hero 背景（仅缺图时）
+- ❌ 不直接放可读文字（文字必须在外部容器或带暗化叠加）
+- ❌ 不下沉到 brand identity（避免破 hard rule #21 erhai 边界）
+
+**触发原因 / 决策路径**：见 [[08 dayrise-os v4.2 时段渐变占位提案]]，demo v0 → v0.6 用户验证（3 次失败 + 1 次转向 + 1 次通过）。
+
 ## Mascot system（= v3，不变）
 
 ### Self-Mood Mascot (monochrome, 5-state)
@@ -664,6 +727,10 @@ If still unclear, ask:
 21. ❌ `--cyc-erhai-deep / erhai / erhai-light` 三色仅作 **environment base**（hero overlay 暗化 / dusk 末端 / night 主体 / 月色场景）。**不能下沉 brand identity** —— 不能做 logo / 主 CTA / admin tint / 装饰线 / pill / button shadow / brand 阴影。brand identity 仍由 `cyc-green / green-2 / orange / tan` 承担。erhai 不是第二种 accent（不破 hard rule #1），是第二组 base —— 把"brand 色"和"atmosphere 色"分开是 v4.1 的清晰化。详见 DESIGN.md "Environment base — 洱海三色" 段。
 
 22. ❌ **不要 4+ 层 enclosure 装单一内容**（section + 子容器 + 内 pill + 内容 = "框里套框"）。人物 / 列表行 default 应透明，hover 才显 bg。完整 markup + 交互 见 Pattern 9 Flat People Row。**违规典型**：每个列表行都套独立白底 pill + 浅灰边 + 圆角—— 这是 SaaS table style，跟 cyc 的 prose-flow 哲学违背。
+
+### 🆕 v4.2 新增（23）
+
+23. ❌ `.cyc-time-morning / noon / dusk / night` 4 个 utility class 仅作 **活动海报缺失降级 fallback** 和**空状态背景**。不做 chrome（topbar / nav / button / pill / 装饰线）/ 不做始终可见装饰 / 不直接覆盖可读文字 / 不做 hero 主背景（仅缺图时）。绑定字段：`activity.time`（开始时间），跨夜活动按开始时间。完整 markup + 派发逻辑见 Pattern 10 Time Gradient Fallback。
 
 ## Output format
 

@@ -588,6 +588,21 @@ memoji-style 3D 头像保持彩色（identity 不限色）。容器 frame 用 `d
 - **Self-Mood**：5 态笑脸，单色绿 (`var(--cyc-green)`) on `var(--cyc-surface-pure)` 圆背景。位于 `/me`、journal、daily check-in
 - **Identity Avatar**：3D 彩色 memoji，每人不同。位于 `/community`、消息、协作视图
 
+### Time Gradient Fallback (🆕 v4.2 · 2026-05-08)
+
+活动卡片海报缺失时的时段渐变占位。`api/_activity.js` export `cycTimeClass(activity.time)` 把开始小时映射到 4 段大理日色 utility class（morning 5-11 / noon 11-15 / dusk 15-19 / night 19-5）。
+
+```css
+.cyc-time-morning { background: linear-gradient(180deg, #b3c5d4 0%, #e3d2b6 55%, #8a9876 100%); }
+.cyc-time-noon    { background: linear-gradient(180deg, #c5d4dd 0%, #ead7a8 50%, #d4b878 100%); }
+.cyc-time-dusk    { background: linear-gradient(180deg, #d97c46 0%, #d4b878 48%, #6f80a0 100%); }
+.cyc-time-night   { background: linear-gradient(180deg, var(--cyc-erhai-deep), var(--cyc-erhai) 60%, var(--cyc-erhai-light)); }
+```
+
+night 复用 v4.1 erhai token；morning/noon/dusk 用 dali 实景 hex 不进 token（避免膨胀）。
+
+**A 边界**：有海报永远优先 `<img>` 渲染；缺图才降级到 `.cyc-time-*`。当前应用：`.home-act-thumb-empty` / `.el-card-thumb-empty`。Hard rule #23 禁用 chrome / nav / button / pill / 始终可见装饰 / hero 主背景。完整决策路径见 [[08 dayrise-os v4.2 时段渐变占位提案]]。
+
 ## Iconography
 
 - **库**：Lucide outline（line stroke 1.75px）

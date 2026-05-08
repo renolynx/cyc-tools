@@ -5,6 +5,25 @@
 
 import { getAccessToken } from './_feishu.js';
 
+/**
+ * dayrise v4.2 时段渐变占位（[[08 dayrise-os v4.2 时段渐变占位提案]]）
+ * 把活动开始时间映射到 4 段大理日色 utility class：
+ *   morning 5-11 / noon 11-15 / dusk 15-19 / night 19-5
+ * 跨夜活动按开始时间。无时间或解析失败 → noon (中性 fallback)。
+ *
+ * 用法：renderCard 时如海报缺失，给容器加 cycTimeClass(act.time) 类。
+ */
+export function cycTimeClass(timeStr) {
+  const m = String(timeStr || '').match(/^(\d{1,2}):/);
+  const hour = m ? parseInt(m[1], 10) : null;
+  if (hour == null || isNaN(hour)) return 'cyc-time-noon';
+  if (hour < 5)  return 'cyc-time-night';
+  if (hour < 11) return 'cyc-time-morning';
+  if (hour < 15) return 'cyc-time-noon';
+  if (hour < 19) return 'cyc-time-dusk';
+  return 'cyc-time-night';
+}
+
 // ─────────── 纯解析函数（无 I/O）───────────
 
 function tsToDate(ts) {
