@@ -36,6 +36,13 @@ function getRelationIds(v) {
 
 // ─────────── 解析 ───────────
 
+// 飞书 SingleSelect 字段值取出（{text:'online'} 或 'online'）
+function getSelect(v) {
+  if (!v) return '';
+  if (typeof v === 'object' && v.text) return v.text;
+  return String(v);
+}
+
 export function parseRsvp(record) {
   const f = record.fields || {};
   return {
@@ -49,6 +56,10 @@ export function parseRsvp(record) {
     member_rec_id:    getText(f['关联成员ID']) || getText(f['关联成员 ID']),
     hubs:             getRelationIds(f['现在所在据点']),
     registered_at:    Number(f['注册时间']) || 0,
+    // 706 × muShanghai 扩展（国际开发者无微信，用 email；现场/线上 + 持票人门票）
+    email:            getText(f['email']),
+    attendance_mode:  getSelect(f['attendance_mode']),  // 'online' | 'offline' | ''
+    ticket_holder:    !!f['muShanghai持票人'],
   };
 }
 
@@ -165,26 +176,28 @@ export async function fetchRsvpsByMember(member_rec_id, opts = {}) {
   return filtered;
 }
 
-/** 同活动同微信号去重检查
+/** 同活动同标识符（wechat 或 email）去重检查
  * 双层 + self-heal：
  *   1. KV mark（强一致，规避飞书 search 索引延迟）
  *   2. 命中 mark → 验证 mark 指向的 record 还存在（飞书可能已被删）
  *      不存在 → 清 stale mark + fall through 到 search
- *   3. 飞书 search（最终一致）
+ *   3. 飞书 search（最终一致）—— 比对 wechat 和 email 两列
+ *
+ * @param identifier 大理用 wechat、上海国际开发者用 email；调用端按用户填的传一个
  */
-export async function findExistingRsvp(activity_rec_id, wechat) {
-  if (!activity_rec_id || !wechat) return null;
+export async function findExistingRsvp(activity_rec_id, identifier) {
+  if (!activity_rec_id || !identifier) return null;
 
   // 1. KV mark
   if (isKvConfigured()) {
     try {
-      const mark = await kvGet(seenKey(activity_rec_id, wechat));
+      const mark = await kvGet(seenKey(activity_rec_id, identifier));
       if (mark) {
         // 验证 mark 指向的 record 还在飞书表
         const record = await fetchRsvpByRecordId(mark);
         if (record) return record;
         // record 已被删 → 清 stale mark
-        try { await kvDel(seenKey(activity_rec_id, wechat)); } catch {}
+        try { await kvDel(seenKey(activity_rec_id, identifier)); } catch {}
         // 不 return，fall through 到 search
       }
     } catch (err) {
@@ -192,10 +205,13 @@ export async function findExistingRsvp(activity_rec_id, wechat) {
     }
   }
 
-  // 2. 飞书 search
+  // 2. 飞书 search —— 比对 wechat 和 email 两列（用户可能用任一身份重复报名）
   const list = await fetchRsvpsForActivity(activity_rec_id);
-  const target = normalizeWechat(wechat);
-  return list.find(r => normalizeWechat(r.wechat) === target) || null;
+  const target = normalizeIdent(identifier);
+  return list.find(r =>
+    normalizeIdent(r.wechat) === target ||
+    normalizeIdent(r.email)  === target
+  ) || null;
 }
 
 /** 按 record_id 拉单条 RSVP（用于自助取消验证身份）；找不到返回 null */
@@ -224,13 +240,15 @@ export async function fetchRsvpByRecordId(record_id) {
 export async function deleteRsvp(record_id) {
   if (!record_id) throw new Error('缺 record_id');
 
-  // 先 fetch 拿真实 wechat 和 activity_rec_id
+  // 先 fetch 拿真实 wechat / email / activity_rec_id（任一标识符都用过 KV mark）
   let recordWechat = '';
+  let recordEmail  = '';
   let recordActivityId = '';
   try {
     const r = await fetchRsvpByRecordId(record_id);
     if (r) {
-      recordWechat = r.wechat || '';
+      recordWechat     = r.wechat || '';
+      recordEmail      = r.email  || '';
       recordActivityId = r.activity_rec_id || '';
     }
   } catch (err) {
@@ -251,10 +269,11 @@ export async function deleteRsvp(record_id) {
 
   // 清缓存（通用 scope 一行解决；KV mark 是单独的防重逻辑，仍需手动清）
   await invalidate('rsvp', recordActivityId);
-  if (isKvConfigured() && recordActivityId && recordWechat) {
-    try { await kvDel(seenKey(recordActivityId, recordWechat)); } catch {}
+  if (isKvConfigured() && recordActivityId) {
+    if (recordWechat) { try { await kvDel(seenKey(recordActivityId, recordWechat)); } catch {} }
+    if (recordEmail)  { try { await kvDel(seenKey(recordActivityId, recordEmail)); } catch {} }
   }
-  return { success: true, cleared_wechat: !!recordWechat };
+  return { success: true, cleared_wechat: !!recordWechat, cleared_email: !!recordEmail };
 }
 
 /**
@@ -289,24 +308,32 @@ export async function updateRsvpMemberLink(record_id, payloadOrId) {
   return true;
 }
 
-/** wechat 归一化（大小写不敏感、去前后空格） */
-function normalizeWechat(wx) {
-  return (wx || '').trim().toLowerCase();
+/** 标识符（wechat / email）归一化（大小写不敏感、去前后空格） */
+function normalizeIdent(s) {
+  return (s || '').trim().toLowerCase();
 }
+// 别名保持向后兼容
+const normalizeWechat = normalizeIdent;
 
-/** KV 防重 key（用归一化后的 wechat） */
-function seenKey(activity_rec_id, wechat) {
-  return `rsvp_seen:${activity_rec_id}:${normalizeWechat(wechat)}`;
+/** KV 防重 key（用归一化后的标识符 —— wechat 或 email 任一） */
+function seenKey(activity_rec_id, identifier) {
+  return `rsvp_seen:${activity_rec_id}:${normalizeIdent(identifier)}`;
 }
 
 // ─────────── 写入 ───────────
 
 /**
  * 写入新 RSVP 记录
- * data: { name, activity_rec_id, activity_title?, roles?, wechat?, bio?, member_rec_id? }
+ * data: { name, activity_rec_id, activity_title?, roles?, wechat?, bio?, member_rec_id?,
+ *         email?, attendance_mode?, ticket_holder?, hubs? }
  *
- * wechat 可选：嘉宾联动写入时活动录入界面没有微信号字段；普通报名时由调用端保证非空
- * （/api/rsvp 端点自己校验）。wechat 为空时不写「微信号」字段，也不打去重 KV mark。
+ * wechat 可选：嘉宾联动写入时活动录入界面没有微信号字段；上海国际开发者无微信用 email
+ * 普通大理报名时由 /api/rsvp 端点强制 wechat 或 email 至少有一个。
+ *
+ * email 可选：上海 RSVP 用，国际开发者主联系方式，dedup key 之一。
+ * attendance_mode: 'online' | 'offline'，仅上海活动用
+ * ticket_holder: muShanghai 月票/day pass 持有者，决定免费 vs ¥30
+ * hubs: 现在所在据点（飞书据点表 record_id 数组）；上海活动可写 ['上海']
  */
 export async function addRsvp(data) {
   if (!data || !data.name || !data.activity_rec_id) {
@@ -321,6 +348,12 @@ export async function addRsvp(data) {
   if (data.wechat)         fields['微信号']      = data.wechat;
   if (data.bio)            fields['个人简介']     = data.bio;
   if (data.member_rec_id)  fields['关联成员ID']  = data.member_rec_id;
+  // 上海扩展字段（写入时为空就不带，避免污染大理记录）
+  if (data.email)               fields['email']            = data.email;
+  if (data.attendance_mode)     fields['attendance_mode']  = data.attendance_mode;
+  if (data.ticket_holder)       fields['muShanghai持票人'] = true;
+  // 据点是 multi-select 文本枚举（"大理" / "上海"），不是 link
+  if (Array.isArray(data.hubs) && data.hubs.length) fields['现在所在据点'] = data.hubs;
 
   const token = await getAccessToken();
   const res = await fetch(
@@ -338,9 +371,10 @@ export async function addRsvp(data) {
 
   // 1. 失效相关缓存（含 members:* 因为推断的城市/角色可能变）
   await invalidate('rsvp', data.activity_rec_id, data.member_rec_id);
-  // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）—— 仅当 wechat 非空时
-  if (data.wechat && isKvConfigured()) {
-    try { await kvSet(seenKey(data.activity_rec_id, data.wechat), newRecordId, 86400); } catch {}
+  // 2. 打 KV mark 防重（强一致，规避飞书 search 索引延迟）—— wechat 或 email 任一非空即可
+  const dedupKey = data.wechat || data.email;
+  if (dedupKey && isKvConfigured()) {
+    try { await kvSet(seenKey(data.activity_rec_id, dedupKey), newRecordId, 86400); } catch {}
   }
 
   return { success: true, record_id: newRecordId };

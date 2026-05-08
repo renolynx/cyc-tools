@@ -79,6 +79,13 @@ function getMultiSelect(v) {
   return [];
 }
 
+// 飞书 Url 字段格式：{ link: 'https://...', text: '显示文本' }
+function getUrl(v) {
+  if (!v) return '';
+  if (typeof v === 'object') return v.link || v.text || '';
+  return String(v);
+}
+
 function parseDesc(raw, activity) {
   if (!raw) return;
   const text = Array.isArray(raw) ? raw.map(s => s.text || '').join('') : String(raw);
@@ -131,6 +138,17 @@ export function parseRecord(record) {
       })
       .filter(s => s.name);
   }
+
+  // 706 × muShanghai 双城/双语扩展字段（大理活动这些字段为空，渲染端按 city 走条件分支）
+  act.city                = getSelect(f['city']) || '';
+  act.series              = getSelect(f['series']) || '';
+  act.title_en            = getText(f['title_en']) || '';
+  act.desc_en             = getText(f['desc_en']) || '';
+  act.location_en         = getText(f['location_en']) || '';
+  act.luma_url            = getUrl(f['luma_url']);
+  act.tencent_meeting_url = getUrl(f['tencent_meeting_url']);
+  act.onsite_fee          = Number(f['onsite_fee']) || 0;
+  act.attendance_modes    = getMultiSelect(f['attendance_modes']);
 
   parseDesc(f['活动/项目描述'], act);
   return act;

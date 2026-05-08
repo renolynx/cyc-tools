@@ -1,7 +1,13 @@
 /**
  * POST /api/get-activities
  * 读取飞书指定周内的活动
- * Body: { weekStart: 'YYYY-MM-DD', weekEnd: 'YYYY-MM-DD', include_rsvps?: boolean }
+ * Body: {
+ *   weekStart: 'YYYY-MM-DD',
+ *   weekEnd: 'YYYY-MM-DD',
+ *   include_rsvps?: boolean,
+ *   city?: '大理' | '上海',     // 706 × muShanghai：按 city 过滤；不传 = 全部
+ *   series?: string,            // 按 series 过滤（如 '706 x muShanghai'）；不传 = 全部
+ * }
  *
  * include_rsvps=true 时，每个活动附带：
  *   card_speakers       最多 5 条嘉宾头像数据
@@ -18,7 +24,7 @@ export default async function handler(req, res) {
   applyCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { weekStart, weekEnd, include_rsvps } = req.body || {};
+  const { weekStart, weekEnd, include_rsvps, city, series } = req.body || {};
   if (!weekStart || !weekEnd)
     return res.status(400).json({ error: '缺少 weekStart / weekEnd' });
 
@@ -33,7 +39,15 @@ export default async function handler(req, res) {
     const activities = all.filter(a => {
       if (!a.date) return false;
       const ts = new Date(a.date + 'T00:00:00+08:00').getTime();
-      return ts >= startTs && ts <= endTs;
+      if (ts < startTs || ts > endTs) return false;
+      // 706 × muShanghai：city 过滤（首页 大理/上海 tab 用）
+      // 大理活动 a.city 可能是空（旧数据）→ 视为大理，避免漏；明确是「上海」才排除
+      if (city) {
+        const actCity = a.city || '大理';
+        if (actCity !== city) return false;
+      }
+      if (series && a.series !== series) return false;
+      return true;
     });
 
     // 可选：附加 RSVP 头像数据（供首页卡片头像组用）

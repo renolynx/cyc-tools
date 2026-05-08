@@ -65,15 +65,25 @@
     <p class="home-cta-hint">CYC 工具站 · 活动通告生成器 · 一键发到微信群</p>
   </section>
 
-  <!-- 活动卡片流 -->
+  <!-- 活动卡片流（按城市分流：大理 / 上海 706 × muShanghai）-->
   <section class="home-activities">
     <header class="home-activities-head">
       <div class="home-activities-title">
-        <span class="cyc-eyebrow cyc-eyebrow--sm">EVENTS · 大理</span>
+        <span class="cyc-eyebrow cyc-eyebrow--sm" id="evEyebrow">EVENTS · 大理</span>
         <h3>近期活动</h3>
       </div>
-      <a href="/events">全部活动 →</a>
+      <a href="/events" id="evMoreLink">全部活动 →</a>
     </header>
+    <div class="home-zone-tabs" role="tablist" aria-label="城市切换">
+      <button class="home-zone-tab is-active" type="button" role="tab" data-zone="大理" data-track="home_zone_tab" data-track-meta='{"zone":"大理"}'>
+        <span class="home-zone-tab-zh">大理</span>
+        <span class="home-zone-tab-en">Dali</span>
+      </button>
+      <button class="home-zone-tab" type="button" role="tab" data-zone="上海" data-track="home_zone_tab" data-track-meta='{"zone":"上海"}'>
+        <span class="home-zone-tab-zh">上海</span>
+        <span class="home-zone-tab-en">Shanghai · 706 × muShanghai</span>
+      </button>
+    </div>
     <div id="actStream" class="home-act-grid">
       <div class="home-act-loading">加载中…</div>
     </div>
@@ -208,11 +218,60 @@
 // ── 活动卡片流：未来 4 周 + 最近 2 周历史（含 RSVP 头像数据）──
 //   未来活动按时间升序在前（最近的在最前面），最近过去活动倒序补在后（已结束 desaturate）
 //   总数限 12 张，避免首页过长
-(async function loadActivities() {
+//
+// 706 × muShanghai：城市分流
+//   localStorage cyc-home-zone = '大理' | '上海'，默认 '大理'
+//   tab 切换 → 重新拉对应 city，eyebrow 跟着切，"全部活动 →" 链接也跟着切
+const ZONE_KEY = 'cyc-home-zone';
+const ZONE_CONFIG = {
+  '大理': {
+    eyebrow: 'EVENTS · 大理',
+    moreHref: '/events',
+    moreLabel: '全部活动 →',
+    emptyHtml: '<div class="home-act-empty">本月还没活动 · <a href="/generator">发一场？</a></div>',
+    daysPast: 14,
+    daysFuture: 28,
+  },
+  '上海': {
+    eyebrow: 'EVENTS · 上海 · 706 × muShanghai',
+    moreHref: '/shanghai',
+    moreLabel: 'All Shanghai events →',
+    emptyHtml: '<div class="home-act-empty">No upcoming Shanghai events · <a href="/shanghai">see /shanghai</a></div>',
+    daysPast: 30,
+    daysFuture: 35,  // 覆盖到 6/6 文化周收官
+  },
+};
+
+function getCurrentZone() {
+  try {
+    const z = localStorage.getItem(ZONE_KEY);
+    if (z === '大理' || z === '上海') return z;
+  } catch {}
+  return '大理';
+}
+
+function setCurrentZone(zone) {
+  try { localStorage.setItem(ZONE_KEY, zone); } catch {}
+}
+
+async function loadActivities(zone) {
+  const cfg = ZONE_CONFIG[zone] || ZONE_CONFIG['大理'];
+  const stream = document.getElementById('actStream');
+  stream.innerHTML = '<div class="home-act-loading">加载中…</div>';
+
+  // 更新 eyebrow + "全部活动 →" 链接
+  const eyebrow = document.getElementById('evEyebrow');
+  const moreLink = document.getElementById('evMoreLink');
+  if (eyebrow)  eyebrow.textContent = cfg.eyebrow;
+  if (moreLink) {
+    moreLink.href = cfg.moreHref;
+    moreLink.textContent = cfg.moreLabel;
+  }
+
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
-  const past = new Date(today.getTime() - 14 * 86400000);
-  const future = new Date(today.getTime() + 28 * 86400000);
+  const past = new Date(today.getTime() - cfg.daysPast * 86400000);
+  const future = new Date(today.getTime() + cfg.daysFuture * 86400000);
   const start = past.toISOString().slice(0, 10);
   const end   = future.toISOString().slice(0, 10);
 
@@ -221,19 +280,17 @@
     const res = await fetch('/api/get-activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weekStart: start, weekEnd: end, include_rsvps: true }),
+      body: JSON.stringify({ weekStart: start, weekEnd: end, include_rsvps: true, city: zone }),
     });
     const data = await res.json();
     acts = (data.activities || []).filter(a => a.status !== '胎死腹中' && a.status !== '已归档');
   } catch (err) {
-    document.getElementById('actStream').innerHTML =
-      '<div class="home-act-empty">活动加载失败 · <a href="/events">看 /events</a></div>';
+    stream.innerHTML = '<div class="home-act-empty">活动加载失败 · <a href="/events">看 /events</a></div>';
     return;
   }
 
-  const stream = document.getElementById('actStream');
   if (!acts.length) {
-    stream.innerHTML = '<div class="home-act-empty">本月还没活动 · <a href="/generator">发一场？</a></div>';
+    stream.innerHTML = cfg.emptyHtml;
     return;
   }
 
@@ -243,6 +300,28 @@
   const ordered  = [...upcoming, ...recent].slice(0, 12);
 
   stream.innerHTML = ordered.map(renderCard).join('');
+}
+
+// 启动 + tab 切换
+(function initZoneTabs() {
+  const initialZone = getCurrentZone();
+  // 同步 active 态
+  document.querySelectorAll('.home-zone-tab').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.zone === initialZone);
+    btn.setAttribute('aria-selected', btn.dataset.zone === initialZone ? 'true' : 'false');
+    btn.addEventListener('click', function () {
+      const zone = this.dataset.zone;
+      if (!zone || zone === getCurrentZone()) return;
+      setCurrentZone(zone);
+      document.querySelectorAll('.home-zone-tab').forEach(b => {
+        const active = b.dataset.zone === zone;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      loadActivities(zone);
+    });
+  });
+  loadActivities(initialZone);
 })();
 
 function renderCard(a) {
@@ -272,6 +351,7 @@ function renderCard(a) {
               : '<span class="home-act-pill home-act-pill-open">🌿 对外开放</span>')}
       </div>
       <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
+      ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
       ${a.loc ? `<div class="home-act-loc">📍 ${escapeHtml(a.loc)}</div>` : ''}
       ${avatarHtml}
     </div>

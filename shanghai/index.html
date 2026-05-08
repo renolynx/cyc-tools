@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>706 × muShanghai · cyc.center · Shanghai</title>
+<meta name="description" content="706 × muShanghai (May 10 – June 6, 2026): Community OS Hackathon + Understanding China bilingual dialogues. Hosted at 706 Shanghai · 1358 W. Yan'an Rd. · Online via Tencent Meeting.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="706 × muShanghai · Community OS Hackathon">
+<meta property="og:description" content="28 days of building community public goods. Bilingual sessions every Tuesday & Wednesday in Shanghai.">
+<meta property="og:url" content="https://cyc.center/shanghai">
+<meta property="og:image" content="https://cyc.center/api/og-default">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+<link rel="canonical" href="https://cyc.center/shanghai">
+
+<!-- dayrise-os v4 fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/styles.css">
+
+<style>
+  /* ─── 706 × muShanghai · /shanghai 页样式（自包含，不污染全站）─── */
+  :root {
+    --sh-ink:        #1a1a1a;
+    --sh-ink-soft:   #4a4a4a;
+    --sh-ink-mute:   #8a8a8a;
+    --sh-line:       rgba(0,0,0,0.10);
+    --sh-line-soft:  rgba(0,0,0,0.06);
+    --sh-paper:      #fafaf7;
+    --sh-accent:     #1c3d2e;  /* dali green，叙事 register */
+    --sh-warm:       #d9652a;  /* atlas orange */
+    --sh-live:       #c3322a;  /* live red */
+  }
+  body.sh-page {
+    background: var(--sh-paper);
+    font-family: 'Source Serif 4', 'Source Han Serif SC', Georgia, serif;
+    color: var(--sh-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 双语切换：body.sh-lang-zh 显示 zh，sh-lang-en 显示 en */
+  body.sh-lang-zh .lang-en { display: none; }
+  body.sh-lang-en .lang-zh { display: none; }
+
+  /* 顶部 lang toggle */
+  .sh-topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px;
+    background: rgba(250,250,247,0.92);
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--sh-line-soft);
+  }
+  .sh-topbar a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    color: var(--sh-ink); text-decoration: none;
+    letter-spacing: 0.04em;
+  }
+  .sh-topbar-right { display: flex; gap: 14px; align-items: center; }
+  .sh-lang-toggle {
+    appearance: none; background: transparent; border: 1px solid var(--sh-line);
+    border-radius: 999px; padding: 4px 12px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+    color: var(--sh-ink); cursor: pointer; letter-spacing: 0.06em;
+  }
+  .sh-lang-toggle:hover { background: rgba(0,0,0,0.04); }
+
+  main.sh-main { max-width: 720px; margin: 0 auto; padding: 32px 22px 80px; }
+
+  /* Hero */
+  .sh-hero { padding: 36px 0 48px; border-bottom: 1px solid var(--sh-line-soft); }
+  .sh-hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--sh-ink-mute); margin-bottom: 16px;
+  }
+  .sh-hero-title {
+    font-size: clamp(38px, 7vw, 56px);
+    font-weight: 300; letter-spacing: -0.02em; line-height: 1.04;
+    margin: 0 0 12px;
+  }
+  .sh-hero-title em {
+    font-style: italic; font-weight: 400; color: var(--sh-warm);
+  }
+  .sh-hero-sub {
+    font-size: 17px; line-height: 1.55; color: var(--sh-ink-soft);
+    margin: 0 0 22px; font-weight: 300;
+  }
+  .sh-hero-live {
+    margin: 28px 0 22px; padding: 14px 18px;
+    background: #fff; border: 1px solid var(--sh-line);
+    border-left: 3px solid var(--sh-live);
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    color: var(--sh-ink); line-height: 1.5;
+  }
+  .sh-hero-live.is-live { border-left-color: var(--sh-live); }
+  .sh-hero-live.is-upcoming { border-left-color: var(--sh-accent); }
+  .sh-hero-live.is-done { border-left-color: var(--sh-line); color: var(--sh-ink-mute); }
+  .sh-hero-live-label {
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    font-size: 10.5px; margin-right: 8px;
+  }
+  .sh-hero-live.is-live .sh-hero-live-label { color: var(--sh-live); }
+  .sh-hero-live.is-upcoming .sh-hero-live-label { color: var(--sh-accent); }
+
+  .sh-hero-cta-row {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px;
+  }
+  .sh-hero-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border-radius: 999px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500;
+    text-decoration: none;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .sh-hero-cta-primary {
+    background: var(--sh-accent); color: #fff;
+  }
+  .sh-hero-cta-primary:hover { transform: translateY(-1px); }
+  .sh-hero-cta-secondary {
+    background: transparent; color: var(--sh-ink); border: 1px solid var(--sh-line);
+  }
+  .sh-hero-cta-secondary:hover { background: rgba(0,0,0,0.04); }
+
+  /* Two tracks */
+  .sh-tracks {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin: 36px 0;
+  }
+  @media (max-width: 600px) {
+    .sh-tracks { grid-template-columns: 1fr; }
+  }
+  .sh-track {
+    padding: 22px 20px; border-radius: 6px;
+    background: #fff; border: 1px solid var(--sh-line);
+  }
+  .sh-track-eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .sh-track-os .sh-track-eyebrow { color: var(--sh-accent); }
+  .sh-track-uc .sh-track-eyebrow { color: var(--sh-warm); }
+  .sh-track h2 {
+    font-size: 22px; font-weight: 400; letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+  .sh-track h2.en {
+    font-style: italic; font-weight: 300; color: var(--sh-ink-soft);
+    font-size: 16px; margin-bottom: 10px;
+  }
+  .sh-track p {
+    font-size: 14px; line-height: 1.55; color: var(--sh-ink-soft);
+    margin: 0;
+  }
+
+  /* Section heads */
+  .sh-section-head {
+    margin: 56px 0 20px;
+  }
+  .sh-section-head h3 {
+    font-size: 22px; font-weight: 400; letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+  .sh-section-head h3 em {
+    font-style: italic; font-weight: 300; color: var(--sh-ink-mute);
+    font-size: 16px;
+  }
+
+  /* Activity cards */
+  .sh-events { display: flex; flex-direction: column; gap: 1px; background: var(--sh-line-soft); border-radius: 6px; overflow: hidden; }
+  .sh-event {
+    background: #fff;
+    padding: 22px 22px;
+    display: grid; grid-template-columns: 100px 1fr auto; gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 600px) {
+    .sh-event { grid-template-columns: 1fr; gap: 14px; padding: 18px; }
+  }
+  .sh-event.is-past { opacity: 0.55; }
+  .sh-event.is-live { background: linear-gradient(to right, rgba(195,50,42,0.04) 0%, #fff 60%); }
+
+  .sh-event-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; line-height: 1.4; color: var(--sh-ink);
+  }
+  .sh-event-date-day {
+    font-weight: 600; font-size: 14px; letter-spacing: 0.02em;
+  }
+  .sh-event-date-time {
+    color: var(--sh-ink-mute); margin-top: 2px;
+  }
+  .sh-event-week-pill {
+    display: inline-block; margin-top: 6px;
+    padding: 2px 6px; font-size: 10px; letter-spacing: 0.06em;
+    background: rgba(0,0,0,0.04); border-radius: 3px;
+    color: var(--sh-ink-soft);
+  }
+
+  .sh-event-body { min-width: 0; }
+  .sh-event-type-row { margin-bottom: 6px; }
+  .sh-event-type-pill {
+    display: inline-block; padding: 2px 8px; font-size: 10.5px;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    border-radius: 3px;
+  }
+  .sh-event-type-pill.t-talk      { background: rgba(28,61,46,0.10); color: var(--sh-accent); }
+  .sh-event-type-pill.t-demo      { background: rgba(217,101,42,0.10); color: var(--sh-warm); }
+  .sh-event-type-pill.t-uc        { background: rgba(0,0,0,0.06); color: var(--sh-ink-soft); }
+
+  .sh-event-title {
+    font-size: 18px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.35;
+    margin: 0 0 4px;
+  }
+  .sh-event-title-en {
+    font-style: italic; font-weight: 300;
+    color: var(--sh-ink-soft); font-size: 14.5px; line-height: 1.4;
+    margin: 0 0 8px;
+  }
+  .sh-event-meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    color: var(--sh-ink-mute); line-height: 1.6;
+    margin-top: 6px;
+  }
+  .sh-event-meta span { margin-right: 12px; }
+
+  .sh-event-rsvp {
+    align-self: center;
+  }
+  @media (max-width: 600px) {
+    .sh-event-rsvp { align-self: stretch; }
+  }
+  .sh-rsvp-btn {
+    appearance: none; cursor: pointer;
+    padding: 9px 18px; border-radius: 999px;
+    background: var(--sh-accent); color: #fff;
+    border: 0;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .sh-rsvp-btn:hover { transform: translateY(-1px); }
+  .sh-rsvp-btn:disabled { background: var(--sh-line); color: var(--sh-ink-mute); cursor: not-allowed; transform: none; }
+  .sh-rsvp-btn.is-past { background: transparent; color: var(--sh-ink-mute); border: 1px solid var(--sh-line); }
+
+  /* Pricing footer */
+  .sh-pricing { margin-top: 56px; padding: 26px 22px; background: #fff; border: 1px solid var(--sh-line); border-radius: 6px; }
+  .sh-pricing h3 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+  .sh-pricing ul { margin: 0; padding: 0; list-style: none; }
+  .sh-pricing li {
+    padding: 8px 0; font-size: 13.5px; line-height: 1.5;
+    border-bottom: 1px solid var(--sh-line-soft);
+    display: flex; justify-content: space-between; gap: 12px;
+  }
+  .sh-pricing li:last-child { border-bottom: 0; }
+  .sh-pricing li strong { font-weight: 600; }
+  .sh-pricing li .free { color: var(--sh-accent); font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; }
+  .sh-pricing li .fee  { color: var(--sh-warm); font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; }
+
+  /* Page footer */
+  .sh-page-footer {
+    margin-top: 56px; padding-top: 28px;
+    border-top: 1px solid var(--sh-line-soft);
+    text-align: center; font-size: 12px; color: var(--sh-ink-mute);
+    line-height: 1.6;
+  }
+  .sh-page-footer a { color: var(--sh-ink-soft); }
+
+  /* RSVP modal */
+  .sh-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.42);
+    display: none; z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    overscroll-behavior: contain;
+  }
+  .sh-modal-overlay.open { display: flex; }
+  .sh-modal {
+    background: #fff; border-radius: 10px;
+    width: 100%; max-width: 460px;
+    max-height: 90vh; overflow-y: auto;
+    padding: 28px 26px;
+    position: relative;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+  }
+  .sh-modal-close {
+    position: absolute; top: 14px; right: 14px;
+    appearance: none; background: transparent; border: 0;
+    width: 32px; height: 32px; border-radius: 999px;
+    font-size: 22px; line-height: 1; color: var(--sh-ink-mute);
+    cursor: pointer;
+  }
+  .sh-modal-close:hover { background: rgba(0,0,0,0.06); }
+  .sh-modal h2 { margin: 0 0 4px; font-size: 20px; font-weight: 500; }
+  .sh-modal-subtitle { margin: 0 0 18px; font-size: 13px; color: var(--sh-ink-soft); font-style: italic; }
+
+  .sh-form-row { margin-bottom: 12px; }
+  .sh-form-label {
+    display: block; margin-bottom: 4px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--sh-ink-soft);
+  }
+  .sh-form-input {
+    width: 100%; box-sizing: border-box;
+    padding: 10px 12px; font-size: 14px;
+    border: 1px solid var(--sh-line); border-radius: 4px;
+    background: #fff; color: var(--sh-ink);
+    font-family: inherit;
+  }
+  .sh-form-input:focus { outline: 2px solid var(--sh-accent); outline-offset: -1px; border-color: var(--sh-accent); }
+  textarea.sh-form-input { resize: vertical; min-height: 60px; }
+
+  .sh-form-radio-row { display: flex; gap: 12px; }
+  .sh-form-radio-row label {
+    flex: 1; padding: 10px 12px; border: 1px solid var(--sh-line); border-radius: 4px;
+    font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  }
+  .sh-form-radio-row label.is-selected { border-color: var(--sh-accent); background: rgba(28,61,46,0.04); }
+  .sh-form-radio-row input { accent-color: var(--sh-accent); }
+
+  .sh-form-checkbox {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 10px 12px; border: 1px solid var(--sh-line); border-radius: 4px;
+    font-size: 13px; cursor: pointer;
+  }
+  .sh-form-checkbox.is-checked { border-color: var(--sh-warm); background: rgba(217,101,42,0.05); }
+  .sh-form-checkbox input { accent-color: var(--sh-warm); margin-top: 2px; }
+
+  .sh-form-submit {
+    width: 100%; margin-top: 16px;
+    padding: 12px; border: 0; border-radius: 999px;
+    background: var(--sh-accent); color: #fff;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.04em; cursor: pointer;
+  }
+  .sh-form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .sh-form-error { margin-top: 12px; color: var(--sh-live); font-size: 13px; }
+
+  .sh-confirm-icon { font-size: 36px; text-align: center; margin-bottom: 8px; }
+  .sh-confirm-fee {
+    margin: 14px 0; padding: 14px;
+    border-radius: 4px; font-size: 13.5px; line-height: 1.5;
+    background: rgba(28,61,46,0.06); color: var(--sh-accent);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sh-confirm-fee.is-paid {
+    background: rgba(217,101,42,0.08); color: var(--sh-warm);
+  }
+</style>
+</head>
+<body class="sh-page sh-lang-zh">
+
+<header class="sh-topbar">
+  <a href="/">CYC.center</a>
+  <div class="sh-topbar-right">
+    <a href="/">
+      <span class="lang-zh">← 大理</span>
+      <span class="lang-en">← Dali</span>
+    </a>
+    <button class="sh-lang-toggle" id="langToggle" type="button" aria-label="Toggle language">
+      <span class="lang-zh">EN</span>
+      <span class="lang-en">中</span>
+    </button>
+  </div>
+</header>
+
+<main class="sh-main">
+
+  <!-- ───────── Hero ───────── -->
+  <section class="sh-hero">
+    <div class="sh-hero-eyebrow" id="heroEyebrow">2026·05·10 → 06·06 · SHANGHAI</div>
+    <h1 class="sh-hero-title">
+      <span class="lang-zh">706 × <em>muShanghai</em></span>
+      <span class="lang-en">706 × <em>muShanghai</em></span>
+    </h1>
+    <p class="sh-hero-sub">
+      <span class="lang-zh">当下在发生什么 —— 在虹桥阿里中心 T2 与 706 上海空间，28 天为社区造基础设施。</span>
+      <span class="lang-en">What's happening now — 28 days of building community public goods, between Hongqiao Alibaba Center T2 and 706 Shanghai Space.</span>
+    </p>
+
+    <div id="heroLive" class="sh-hero-live is-upcoming">
+      <span class="sh-hero-live-label">
+        <span class="lang-zh">下一场</span>
+        <span class="lang-en">Next</span>
+      </span>
+      <span id="heroLiveText">…</span>
+    </div>
+
+    <div class="sh-hero-cta-row">
+      <a class="sh-hero-cta sh-hero-cta-primary"
+         href="https://wcnbuffhffle.feishu.cn/base/YPFmbJXyua0CTRscp0XcegWDnwh?from=from_copylink"
+         target="_blank" rel="noopener"
+         data-track="shanghai_hero_role_apply">
+        <span class="lang-zh">想做讲者 / 开发者 / 志愿者 ↗</span>
+        <span class="lang-en">Apply as speaker / dev / volunteer ↗</span>
+      </a>
+      <a class="sh-hero-cta sh-hero-cta-secondary" href="#events">
+        <span class="lang-zh">看 12 场活动 ↓</span>
+        <span class="lang-en">Browse 12 sessions ↓</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ───────── Two tracks ───────── -->
+  <section class="sh-tracks">
+    <div class="sh-track sh-track-os">
+      <div class="sh-track-eyebrow">TRACK 1 · 8 SESSIONS</div>
+      <h2 class="lang-zh">社区 OS 黑客松</h2>
+      <h2 class="lang-en">Community OS Hackathon</h2>
+      <h2 class="en lang-zh">Community OS Hackathon</h2>
+      <p>
+        <span class="lang-zh">用 vibe coding 为社区开发真正能用的工具。每周二分享 + 每周三 Demo Day，4 周从 idea 做到 demo。</span>
+        <span class="lang-en">Build community public goods with vibe coding. Tuesday talks + Wednesday Demo Days. From idea to demo in 4 weeks.</span>
+      </p>
+    </div>
+    <div class="sh-track sh-track-uc">
+      <div class="sh-track-eyebrow">TRACK 2 · 4 SESSIONS</div>
+      <h2 class="lang-zh">Understanding China</h2>
+      <h2 class="lang-en">Understanding China</h2>
+      <p>
+        <span class="lang-zh">面向 muShanghai 国际参与者的中英双语对谈。从制造业到 AI 生态，从城市更新到社区营造。</span>
+        <span class="lang-en">Bilingual dialogues for international muShanghai participants. From manufacturing to AI, urban renewal to community building.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────── Activity list ───────── -->
+  <section class="sh-section-head" id="events">
+    <h3>
+      <span class="lang-zh">12 场活动 · <em>All Sessions</em></span>
+      <span class="lang-en">12 Sessions · <em>所有活动</em></span>
+    </h3>
+  </section>
+  <div id="shEventStream" class="sh-events">
+    <div style="padding: 40px; text-align: center; color: var(--sh-ink-mute); font-size: 13px;">
+      <span class="lang-zh">加载中…</span>
+      <span class="lang-en">Loading…</span>
+    </div>
+  </div>
+
+  <!-- ───────── Pricing ───────── -->
+  <section class="sh-pricing">
+    <h3>
+      <span class="lang-zh">费用说明</span>
+      <span class="lang-en">Pricing</span>
+    </h3>
+    <ul>
+      <li>
+        <strong>
+          <span class="lang-zh">muShanghai 持票人 · 全部活动</span>
+          <span class="lang-en">muShanghai ticket holders · All events</span>
+        </strong>
+        <span class="free">FREE · 免费</span>
+      </li>
+      <li>
+        <strong>
+          <span class="lang-zh">线上参与 · 所有人</span>
+          <span class="lang-en">Online · Everyone</span>
+        </strong>
+        <span class="free">FREE · 免费</span>
+      </li>
+      <li>
+        <strong>
+          <span class="lang-zh">Demo Day 现场 · 所有人</span>
+          <span class="lang-en">Demo Days on-site · Everyone</span>
+        </strong>
+        <span class="free">FREE · 免费</span>
+      </li>
+      <li>
+        <strong>
+          <span class="lang-zh">分享会 / UC 现场 · 非持票人</span>
+          <span class="lang-en">Talks / UC on-site · Non ticket-holders</span>
+        </strong>
+        <span class="fee">¥30 · CASH/QR AT VENUE</span>
+      </li>
+    </ul>
+  </section>
+
+  <footer class="sh-page-footer">
+    <p>
+      <span class="lang-zh">706 上海空间 · 延安西路 1358 号 · 腾讯会议提供中英双语字幕</span>
+      <span class="lang-en">706 Shanghai · 1358 W. Yan'an Rd. · Bilingual subtitles via Tencent Meeting</span>
+    </p>
+    <p>
+      <span class="lang-zh">联系 Strayn / 706 社区 OS 小组</span>
+      <span class="lang-en">Contact Strayn / 706 Community OS team</span>
+      · <a href="/">CYC.center</a>
+    </p>
+  </footer>
+
+</main>
+
+<!-- ───────── RSVP Modal ───────── -->
+<div class="sh-modal-overlay" id="rsvpModal" onclick="if(event.target.id==='rsvpModal')closeRsvp()">
+  <div class="sh-modal" role="dialog" aria-labelledby="rsvpModalTitle">
+    <button class="sh-modal-close" type="button" onclick="closeRsvp()" aria-label="Close">×</button>
+    <h2 id="rsvpModalTitle">RSVP</h2>
+    <p class="sh-modal-subtitle" id="rsvpModalSubtitle"></p>
+
+    <form id="rsvpForm" novalidate>
+      <input type="hidden" name="activity_rec_id" id="rsvpActivityId">
+      <input type="hidden" name="activity_title"  id="rsvpActivityTitle">
+
+      <div class="sh-form-row">
+        <label class="sh-form-label">
+          <span class="lang-zh">姓名 *</span>
+          <span class="lang-en">Name *</span>
+        </label>
+        <input class="sh-form-input" type="text" name="name" required maxlength="30"
+               placeholder="Jane Doe" autocomplete="name">
+      </div>
+
+      <div class="sh-form-row">
+        <label class="sh-form-label">
+          <span class="lang-zh">邮箱 (留下让你能收到腾讯会议链接)</span>
+          <span class="lang-en">Email (so we can send you the Tencent Meeting link)</span>
+        </label>
+        <input class="sh-form-input" type="email" name="email" maxlength="100"
+               placeholder="you@example.com" autocomplete="email">
+      </div>
+
+      <div class="sh-form-row">
+        <label class="sh-form-label">
+          <span class="lang-zh">微信号（可选）</span>
+          <span class="lang-en">WeChat ID (optional)</span>
+        </label>
+        <input class="sh-form-input" type="text" name="wechat" maxlength="30"
+               placeholder="—">
+      </div>
+
+      <div class="sh-form-row">
+        <label class="sh-form-label">
+          <span class="lang-zh">怎么参加？</span>
+          <span class="lang-en">How will you join?</span>
+        </label>
+        <div class="sh-form-radio-row">
+          <label data-mode-label>
+            <input type="radio" name="attendance_mode" value="online" checked>
+            <span>
+              <span class="lang-zh">线上 · 腾讯会议</span>
+              <span class="lang-en">Online · Tencent Meeting</span>
+            </span>
+          </label>
+          <label data-mode-label>
+            <input type="radio" name="attendance_mode" value="offline">
+            <span>
+              <span class="lang-zh">现场 · 706 上海</span>
+              <span class="lang-en">Offline · 706 Shanghai</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="sh-form-row">
+        <label class="sh-form-checkbox" id="ticketHolderLabel">
+          <input type="checkbox" name="ticket_holder" id="ticketHolderInput">
+          <span>
+            <span class="lang-zh">我有 muShanghai 月票 / day pass（现场免费）</span>
+            <span class="lang-en">I have a muShanghai monthly / day pass (on-site free)</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="sh-form-row">
+        <label class="sh-form-label">
+          <span class="lang-zh">备注（可选）</span>
+          <span class="lang-en">Notes (optional)</span>
+        </label>
+        <textarea class="sh-form-input" name="notes" maxlength="200"
+                  placeholder=""></textarea>
+      </div>
+
+      <div id="rsvpError" class="sh-form-error" style="display:none;"></div>
+      <button type="submit" class="sh-form-submit" id="rsvpSubmitBtn">
+        <span class="lang-zh">RSVP · 我要报名</span>
+        <span class="lang-en">RSVP · Save my spot</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ───────── Confirmation Modal ───────── -->
+<div class="sh-modal-overlay" id="confirmModal" onclick="if(event.target.id==='confirmModal')closeConfirm()">
+  <div class="sh-modal" role="dialog">
+    <button class="sh-modal-close" type="button" onclick="closeConfirm()" aria-label="Close">×</button>
+    <div class="sh-confirm-icon">✨</div>
+    <h2 style="text-align:center;">
+      <span class="lang-zh">报名成功！</span>
+      <span class="lang-en">You're in!</span>
+    </h2>
+    <p class="sh-modal-subtitle" style="text-align:center;" id="confirmActivityTitle"></p>
+    <div id="confirmFeeBox" class="sh-confirm-fee"></div>
+    <p style="font-size: 13px; line-height: 1.6; color: var(--sh-ink-soft);">
+      <span class="lang-zh">活动开始前，Strayn 会通过你留的邮箱或微信发送腾讯会议链接和最终细节。</span>
+      <span class="lang-en">Strayn will message you the Tencent Meeting link and final details via the email or WeChat you provided, before the event.</span>
+    </p>
+    <button type="button" class="sh-form-submit" onclick="closeConfirm()">
+      <span class="lang-zh">好的</span>
+      <span class="lang-en">Got it</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ─────────── 双语 toggle ───────────
+const LANG_KEY = 'cyc-shanghai-lang';
+function getLang() {
+  // priority: URL ?lang=, localStorage, browser, default zh
+  try {
+    const u = new URLSearchParams(location.search).get('lang');
+    if (u === 'en' || u === 'zh') return u;
+    const s = localStorage.getItem(LANG_KEY);
+    if (s === 'en' || s === 'zh') return s;
+  } catch {}
+  if (navigator.language && navigator.language.toLowerCase().startsWith('en')) return 'en';
+  return 'zh';
+}
+function applyLang(lang) {
+  document.body.classList.toggle('sh-lang-zh', lang === 'zh');
+  document.body.classList.toggle('sh-lang-en', lang === 'en');
+  document.documentElement.lang = lang === 'en' ? 'en' : 'zh';
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  // re-render hero live since text depends on language
+  renderHeroLive(window.__shActivities || []);
+}
+applyLang(getLang());
+document.getElementById('langToggle').addEventListener('click', function () {
+  const next = document.body.classList.contains('sh-lang-zh') ? 'en' : 'zh';
+  applyLang(next);
+  if (typeof cycTrack === 'function') cycTrack('shanghai_lang_toggle', { to: next });
+});
+
+// ─────────── 周次计算（W1=5/10–5/16, ..., W4=5/31–6/6）───────────
+function muWeek(ts) {
+  const w1 = new Date('2026-05-10T00:00:00+08:00').getTime();
+  const days = Math.floor((ts - w1) / 86400000);
+  if (days < 0) return 0;
+  if (days < 7)  return 1;
+  if (days < 14) return 2;
+  if (days < 21) return 3;
+  if (days < 28) return 4;
+  return 5;
+}
+const WEEK_THEME_ZH = { 1: 'AI 周', 2: '生物科技 / 长寿周', 3: '机器人 / 硬件周', 4: '文化周' };
+const WEEK_THEME_EN = { 1: 'AI Week', 2: 'Biotech / Longevity Week', 3: 'Robotics / Hardware Week', 4: 'Culture Week' };
+
+// ─────────── Hero 当下逻辑 ───────────
+function relTimeText(ts, isEn) {
+  const diff = ts - Date.now();
+  const day = 86400000;
+  if (diff < 0) return isEn ? 'past' : '已过';
+  if (diff < day) {
+    const hours = Math.round(diff / 3600000);
+    if (hours <= 1) return isEn ? 'within an hour' : '1 小时内';
+    return isEn ? `in ${hours} hours` : `${hours} 小时后`;
+  }
+  const days = Math.round(diff / day);
+  if (days === 1) return isEn ? 'tomorrow' : '明天';
+  if (days < 7)   return isEn ? `in ${days} days` : `${days} 天后`;
+  return isEn ? `in ${Math.round(days/7)} weeks` : `${Math.round(days/7)} 周后`;
+}
+
+function renderHeroLive(events) {
+  const box = document.getElementById('heroLive');
+  const txt = document.getElementById('heroLiveText');
+  const labelEl = box.querySelector('.sh-hero-live-label');
+  const isEn = document.body.classList.contains('sh-lang-en');
+  const now = Date.now();
+
+  // sort events by date ascending
+  const sorted = [...events].sort((a,b) => (a._ts || 0) - (b._ts || 0));
+  const live = sorted.find(e => e._ts <= now && now < (e._ts + 90 * 60000));
+  const next = sorted.find(e => e._ts > now);
+
+  box.classList.remove('is-live', 'is-upcoming', 'is-done');
+
+  if (live) {
+    box.classList.add('is-live');
+    labelEl.innerHTML = isEn ? 'LIVE NOW' : '正在进行';
+    txt.textContent = (isEn ? live.title_en || live.title : live.title) || '';
+  } else if (next) {
+    box.classList.add('is-upcoming');
+    labelEl.innerHTML = isEn ? 'NEXT' : '下一场';
+    const title = isEn ? (next.title_en || next.title) : next.title;
+    txt.innerHTML = `${esc(title)} <span style="color:var(--sh-ink-mute)">· ${relTimeText(next._ts, isEn)}</span>`;
+  } else {
+    box.classList.add('is-done');
+    labelEl.innerHTML = isEn ? 'CONCLUDED' : '已结束';
+    txt.textContent = isEn ? 'Series concluded · See archive' : '本期已结束';
+  }
+
+  // update eyebrow with current week
+  const eb = document.getElementById('heroEyebrow');
+  const week = muWeek(now);
+  const range = '2026·05·10 → 06·06';
+  if (week >= 1 && week <= 4) {
+    const theme = isEn ? WEEK_THEME_EN[week] : WEEK_THEME_ZH[week];
+    eb.textContent = `${range} · W${week} · ${theme}`.toUpperCase();
+  } else if (week === 0) {
+    eb.textContent = `${range} · ${isEn ? 'STARTS SOON' : '即将开始'}`.toUpperCase();
+  } else {
+    eb.textContent = `${range} · ${isEn ? 'CONCLUDED' : '已结束'}`.toUpperCase();
+  }
+}
+
+// ─────────── 加载活动 ───────────
+function eventTimestamp(a) {
+  // a.date 是 'YYYY-MM-DD'，固定 20:00 北京时间（所有 706 × Mu 活动都晚 8 点）
+  if (!a.date) return 0;
+  return new Date(a.date + 'T20:00:00+08:00').getTime();
+}
+
+(async function loadShanghai() {
+  let acts = [];
+  try {
+    const res = await fetch('/api/get-activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        weekStart: '2026-05-01',
+        weekEnd:   '2026-06-30',
+        include_rsvps: true,
+        city: '上海',
+      }),
+    });
+    const data = await res.json();
+    acts = (data.activities || [])
+      .filter(a => a.status !== '胎死腹中' && a.status !== '已归档')
+      .map(a => ({ ...a, _ts: eventTimestamp(a) }))
+      .sort((a, b) => a._ts - b._ts);
+  } catch (err) {
+    document.getElementById('shEventStream').innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--sh-live);font-size:13px;">活动加载失败 / Failed to load events</div>';
+    return;
+  }
+  window.__shActivities = acts;
+  renderHeroLive(acts);
+  document.getElementById('shEventStream').innerHTML = acts.map(renderShanghaiEvent).join('');
+})();
+
+function eventTypePill(types) {
+  const t = (types && types[0]) || '';
+  if (t === 'Demo Day') return { cls: 't-demo', zh: 'DEMO DAY', en: 'DEMO DAY' };
+  if (t === 'Understanding China') return { cls: 't-uc', zh: 'UC 对谈', en: 'UC TALK' };
+  if (t === '社区OS分享会') return { cls: 't-talk', zh: '分享会', en: 'TALK' };
+  return { cls: 't-talk', zh: t || '分享', en: (t || 'Session').toUpperCase() };
+}
+
+function renderShanghaiEvent(a) {
+  const now = Date.now();
+  const isPast = a._ts < now;
+  const isLive = a._ts <= now && now < (a._ts + 90 * 60000);
+  const week = muWeek(a._ts);
+  const pill = eventTypePill(a.types);
+
+  // date label: e.g., "TUE · 5/12"
+  const d = new Date(a._ts);
+  const bj = new Date(d.getTime() + 8 * 3600 * 1000);
+  const dayNum = bj.getUTCDate();
+  const monNum = bj.getUTCMonth() + 1;
+  const dowEn = ['SUN','MON','TUE','WED','THU','FRI','SAT'][bj.getUTCDay()];
+  const dowZh = ['周日','周一','周二','周三','周四','周五','周六'][bj.getUTCDay()];
+
+  // attendees pill
+  const attCount = a.card_attendee_total || 0;
+
+  return `<article class="sh-event${isPast ? ' is-past' : ''}${isLive ? ' is-live' : ''}">
+    <div class="sh-event-date">
+      <div class="sh-event-date-day">
+        <span class="lang-zh">${monNum}/${dayNum} · ${dowZh}</span>
+        <span class="lang-en">${dowEn} · ${monNum}/${dayNum}</span>
+      </div>
+      <div class="sh-event-date-time">20:00 CST</div>
+      ${week ? `<span class="sh-event-week-pill">W${week}</span>` : ''}
+    </div>
+    <div class="sh-event-body">
+      <div class="sh-event-type-row">
+        <span class="sh-event-type-pill ${pill.cls}">
+          <span class="lang-zh">${esc(pill.zh)}</span>
+          <span class="lang-en">${esc(pill.en)}</span>
+        </span>
+      </div>
+      <h4 class="sh-event-title">
+        <span class="lang-zh">${esc(a.title || '')}</span>
+        <span class="lang-en">${esc(a.title_en || a.title || '')}</span>
+      </h4>
+      ${a.title_en && a.title !== a.title_en ? `
+        <div class="sh-event-title-en">
+          <span class="lang-zh">${esc(a.title_en)}</span>
+          <span class="lang-en">${esc(a.title)}</span>
+        </div>` : ''}
+      <div class="sh-event-meta">
+        ${a.card_speakers && a.card_speakers.length ? `
+          <span>
+            <span class="lang-zh">嘉宾</span><span class="lang-en">Speakers</span>:
+            ${esc(a.card_speakers.map(s => s.name).join(' · '))}
+          </span>` : ''}
+        ${a.attendance_modes && a.attendance_modes.length ? `<span>${esc(a.attendance_modes.join(' / '))}</span>` : ''}
+        ${attCount ? `<span>${attCount} ${attCount === 1 ? 'RSVP' : 'RSVPs'}</span>` : ''}
+      </div>
+    </div>
+    <div class="sh-event-rsvp">
+      ${isPast
+        ? `<button class="sh-rsvp-btn is-past" disabled>
+             <span class="lang-zh">已结束</span>
+             <span class="lang-en">Past</span>
+           </button>`
+        : `<button class="sh-rsvp-btn js-rsvp-btn" type="button" data-rec-id="${esc(a.record_id)}" data-fee="${Number(a.onsite_fee) || 0}" data-type="${esc(pill.cls)}">
+             RSVP
+           </button>`
+      }
+    </div>
+  </article>`;
+}
+
+// event delegation for RSVP buttons
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.js-rsvp-btn');
+  if (!btn) return;
+  const recId = btn.dataset.recId;
+  const acts = window.__shActivities || [];
+  const a = acts.find(x => x.record_id === recId);
+  if (!a) return;
+  openRsvp(recId, a.title || '', a.title_en || '', Number(btn.dataset.fee) || 0, btn.dataset.type || 't-talk');
+});
+
+// ─────────── RSVP modal ───────────
+let _rsvpContext = null;  // { activity_rec_id, title, title_en, onsite_fee, type_class }
+
+window.openRsvp = function (rec_id, title, title_en, onsite_fee, type_class) {
+  _rsvpContext = { activity_rec_id: rec_id, title, title_en, onsite_fee, type_class };
+  document.getElementById('rsvpActivityId').value = rec_id;
+  document.getElementById('rsvpActivityTitle').value = title;
+  document.getElementById('rsvpModalTitle').textContent = title;
+  const sub = document.getElementById('rsvpModalSubtitle');
+  sub.textContent = title_en && title_en !== title ? title_en : '';
+  document.getElementById('rsvpError').style.display = 'none';
+  document.getElementById('rsvpForm').reset();
+  document.getElementById('rsvpModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (typeof cycTrack === 'function') cycTrack('shanghai_rsvp_open', { record_id: rec_id });
+};
+window.closeRsvp = function () {
+  document.getElementById('rsvpModal').classList.remove('open');
+  document.body.style.overflow = '';
+};
+window.closeConfirm = function () {
+  document.getElementById('confirmModal').classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+// radio / checkbox visual feedback
+document.querySelectorAll('[data-mode-label] input').forEach(input => {
+  input.addEventListener('change', () => {
+    document.querySelectorAll('[data-mode-label]').forEach(l => {
+      l.classList.toggle('is-selected', l.querySelector('input').checked);
+    });
+  });
+});
+// initialize
+setTimeout(() => {
+  document.querySelectorAll('[data-mode-label]').forEach(l => {
+    l.classList.toggle('is-selected', l.querySelector('input').checked);
+  });
+}, 0);
+
+document.getElementById('ticketHolderInput').addEventListener('change', function () {
+  document.getElementById('ticketHolderLabel').classList.toggle('is-checked', this.checked);
+});
+
+// ─────────── Submit ───────────
+document.getElementById('rsvpForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const isEn = document.body.classList.contains('sh-lang-en');
+  const errBox = document.getElementById('rsvpError');
+  const submitBtn = document.getElementById('rsvpSubmitBtn');
+
+  const fd = new FormData(this);
+  const payload = {
+    activity_rec_id: fd.get('activity_rec_id'),
+    activity_title:  fd.get('activity_title'),
+    name:            (fd.get('name') || '').toString().trim(),
+    email:           (fd.get('email') || '').toString().trim(),
+    wechat:          (fd.get('wechat') || '').toString().trim(),
+    attendance_mode: fd.get('attendance_mode') || 'online',
+    ticket_holder:   !!fd.get('ticket_holder'),
+    bio:             (fd.get('notes') || '').toString().trim(),
+    hubs:            ['上海'],
+  };
+
+  // basic client-side validate
+  if (!payload.name) {
+    errBox.textContent = isEn ? 'Please enter your name.' : '请填写姓名。';
+    errBox.style.display = '';
+    return;
+  }
+  if (!payload.email && !payload.wechat) {
+    errBox.textContent = isEn ? 'Please provide either email or WeChat so we can reach you.' : '请填写邮箱或微信号（用于通知）。';
+    errBox.style.display = '';
+    return;
+  }
+  if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+    errBox.textContent = isEn ? 'Email format looks off.' : '邮箱格式不对。';
+    errBox.style.display = '';
+    return;
+  }
+
+  errBox.style.display = 'none';
+  submitBtn.disabled = true;
+  const originalLabel = submitBtn.innerHTML;
+  submitBtn.textContent = isEn ? 'Saving…' : '提交中…';
+
+  try {
+    const res = await fetch('/api/rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `${res.status}`);
+    }
+    // confirmation
+    closeRsvp();
+    showConfirm(payload, _rsvpContext, !!data.already_registered);
+    if (typeof cycTrack === 'function') {
+      cycTrack('shanghai_rsvp_submit', {
+        record_id: payload.activity_rec_id,
+        already: !!data.already_registered,
+        mode: payload.attendance_mode,
+        ticket: payload.ticket_holder,
+      });
+    }
+  } catch (err) {
+    errBox.textContent = (isEn ? 'Submit failed: ' : '提交失败: ') + err.message;
+    errBox.style.display = '';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalLabel;
+  }
+});
+
+function showConfirm(payload, ctx, already) {
+  const isEn = document.body.classList.contains('sh-lang-en');
+  document.getElementById('confirmActivityTitle').textContent =
+    (isEn ? (ctx.title_en || ctx.title) : ctx.title) + (already ? (isEn ? ' · already on the list' : ' · 你已在名单上') : '');
+
+  // fee logic
+  const isDemo = ctx.type_class === 't-demo';
+  const isFree = payload.ticket_holder || payload.attendance_mode === 'online' || isDemo || ctx.onsite_fee === 0;
+  const feeBox = document.getElementById('confirmFeeBox');
+  feeBox.classList.toggle('is-paid', !isFree);
+  if (isFree) {
+    if (payload.ticket_holder) {
+      feeBox.innerHTML = isEn
+        ? '✓ Free for muShanghai ticket holders.'
+        : '✓ muShanghai 持票人，免费参加。';
+    } else if (payload.attendance_mode === 'online') {
+      feeBox.innerHTML = isEn
+        ? '✓ Online attendance is free. Tencent Meeting link will be sent before the event.'
+        : '✓ 线上免费。腾讯会议链接活动前会发到你留的联系方式。';
+    } else if (isDemo) {
+      feeBox.innerHTML = isEn
+        ? '✓ Demo Day on-site is free. See you at 706 Shanghai.'
+        : '✓ Demo Day 现场免费。706 上海见。';
+    } else {
+      feeBox.innerHTML = isEn
+        ? '✓ Free entry. See you there.'
+        : '✓ 免费参加。';
+    }
+  } else {
+    feeBox.innerHTML = isEn
+      ? '¥30 on-site fee · Pay at venue (cash or QR code).'
+      : '¥30 现场费 · 到场用现金或扫码付。';
+  }
+
+  document.getElementById('confirmModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// ESC closes modals
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    closeRsvp();
+    closeConfirm();
+  }
+});
+
+// helpers
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+<script src="/cyc-track.js" defer></script>
+</body>
+</html>
