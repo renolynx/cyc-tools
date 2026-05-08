@@ -327,6 +327,7 @@ async function loadActivities(zone) {
 function renderCard(a) {
   const isPast = a.date && a.date < new Date().toISOString().slice(0, 10);
   const dateStr = formatDate(a.date);
+  const dowStr  = a.date ? cnDayOfWeek(a.date) : '';
   const thumbHtml = a.poster?.file_token
     ? `<img class="home-act-thumb" data-zoomable src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="${escapeHtml(a.title || '海报')}" loading="lazy" onclick="openPosterLightbox(event, '${escapeAttr(a.poster.file_token)}', '${escapeAttr(a.title || '')}')">`
     : `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(a.time)}" aria-hidden="true"></div>`;
@@ -336,27 +337,59 @@ function renderCard(a) {
     a.card_attendee_total || 0
   );
   const expandHtml = renderExpand(a, isPast);
-  // ⚠️ 外层用 <article> 而非 <a>：避免与内层"📝 详情"<a>嵌套（HTML 不允许 <a> 套 <a>，
-  // 浏览器解析器会自动 close 外层 → 卡片被劈成两半）。SEO + 分享靠展开区里的 <a>。
+
+  // v4.2.6: stamp（mono 日期·DOW·时间·状态）替代旧 pill 行 — 层次靠字号字重不靠框
+  const stampParts = [];
+  if (dateStr) stampParts.push(`<span class="home-act-stamp-date">${dateStr}</span>`);
+  if (dowStr)  stampParts.push(`<span>${dowStr}</span>`);
+  if (a.time)  stampParts.push(`<span>${escapeHtml(a.time)}</span>`);
+  const statusTag = isPast
+    ? '<span class="home-act-stamp-tag is-past">已结束</span>'
+    : (a.is_public === false
+        ? '<span class="home-act-stamp-tag is-closed">🔒 仅成员</span>'
+        : '<span class="home-act-stamp-tag is-open">🌿 对外</span>');
+  const stampInner = stampParts.map((p, i) => i ? '<span class="home-act-stamp-sep">·</span>' + p : p).join('');
+  const stampHtml = `<div class="home-act-stamp">${stampInner}${stampParts.length ? '<span class="home-act-stamp-sep">·</span>' : ''}${statusTag}</div>`;
+
+  // 类型 pill：取首个有效 type
+  const primaryType = (a.types || []).filter(Boolean)[0] || '';
+  const typepillHtml = primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '';
+
+  // 单行 meta：📍 loc · 嘉宾 names · n RSVPs
+  const metaItems = [];
+  if (a.loc) metaItems.push(`<span class="home-act-meta-item">📍 ${escapeHtml(a.loc)}</span>`);
+  if (a.card_speakers && a.card_speakers.length) {
+    metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(a.card_speakers.map(s => s.name).join(' · '))}</span>`);
+  }
+  if (a.card_attendee_total) {
+    metaItems.push(`<span class="home-act-meta-item">${a.card_attendee_total} ${a.card_attendee_total === 1 ? 'RSVP' : 'RSVPs'}</span>`);
+  }
+  const metaLineHtml = metaItems.length
+    ? `<div class="home-act-meta-line">${metaItems.map((m, i) => i ? '<span class="home-act-meta-sep">·</span>' + m : m).join('')}</div>`
+    : '';
+
+  // ⚠️ 外层用 <article> 而非 <a>：避免与内层"📝 详情"<a>嵌套
   return `<article class="home-act-card${isPast ? ' is-past' : ''}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' data-href="/events/${escapeAttr(a.record_id)}" onclick="toggleCardExpand(event, this)">
     ${thumbHtml}
     <div class="home-act-body">
-      <div class="home-act-meta">
-        ${dateStr ? `<span class="home-act-pill home-act-pill-date">${dateStr}</span>` : ''}
-        ${a.time ? `<span class="home-act-pill home-act-pill-time">⏰ ${escapeHtml(a.time)}</span>` : ''}
-        ${isPast
-          ? '<span class="home-act-pill home-act-pill-past">已结束</span>'
-          : (a.is_public === false
-              ? '<span class="home-act-pill home-act-pill-closed">🔒 仅成员</span>'
-              : '<span class="home-act-pill home-act-pill-open">🌿 对外开放</span>')}
-      </div>
+      ${stampHtml}
+      ${typepillHtml}
       <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
-      ${a.loc ? `<div class="home-act-loc">📍 ${escapeHtml(a.loc)}</div>` : ''}
+      ${metaLineHtml}
       ${avatarHtml}
     </div>
     ${expandHtml}
   </article>`;
+}
+
+// 北京时间 YYYY-MM-DD → "周X"
+function cnDayOfWeek(dateStr) {
+  if (!dateStr) return '';
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const dow = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay();
+  return ['周日','周一','周二','周三','周四','周五','周六'][dow];
 }
 
 // 卡片展开区：描述 + 流程 + 费用 / 报名 + 类型 chips + 详情 CTA
