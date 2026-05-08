@@ -7,20 +7,33 @@ import { getAccessToken } from './_feishu.js';
 
 /**
  * dayrise v4.2 时段渐变占位（[[08 dayrise-os v4.2 时段渐变占位提案]]）
- * 把活动开始时间映射到 4 段大理日色 utility class：
- *   morning 5-11 / noon 11-15 / dusk 15-19 / night 19-5
+ * v4.2.5 调整（2026-05-09）：4 段 → 5 段 + 修 full-width colon bug
+ *
+ * 把活动开始时间映射到 5 段大理日色 utility class：
+ *   < 11:30      morning   清晨（暖金日光 + 蓝灰天）
+ *   11:30-15:00  noon      中午头（清亮金顶 + 浅天蓝）
+ *   15:00-17:00  dusk      下午夕阳（暖金光 + 浅暖蓝灰）
+ *   17:00-20:00  evening   夕阳到浅夜（强落日橙 → 深暮蓝紫）
+ *   ≥ 20:00 / < 5:00  night 深夜（月光 → 深 erhai 水底）
+ *
+ * regex 同时认半角 `:` 和全角 `：` 冒号。
  * 跨夜活动按开始时间。无时间或解析失败 → noon (中性 fallback)。
  *
  * 用法：renderCard 时如海报缺失，给容器加 cycTimeClass(act.time) 类。
  */
 export function cycTimeClass(timeStr) {
-  const m = String(timeStr || '').match(/^(\d{1,2}):/);
-  const hour = m ? parseInt(m[1], 10) : null;
-  if (hour == null || isNaN(hour)) return 'cyc-time-noon';
-  if (hour < 5)  return 'cyc-time-night';
-  if (hour < 11) return 'cyc-time-morning';
-  if (hour < 15) return 'cyc-time-noon';
-  if (hour < 19) return 'cyc-time-dusk';
+  // 兼容半角 / 全角冒号 + 可选 minute
+  const m = String(timeStr || '').match(/^(\d{1,2})\s*[：:](\d{1,2})?/);
+  if (!m) return 'cyc-time-noon';
+  const h = parseInt(m[1], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
+  if (isNaN(h)) return 'cyc-time-noon';
+  const t = h + (isNaN(min) ? 0 : min) / 60;
+  if (t < 5)    return 'cyc-time-night';
+  if (t < 11.5) return 'cyc-time-morning';
+  if (t < 15)   return 'cyc-time-noon';
+  if (t < 17)   return 'cyc-time-dusk';
+  if (t < 20)   return 'cyc-time-evening';
   return 'cyc-time-night';
 }
 
