@@ -24,6 +24,17 @@
   --cyc-sand:         #f2ede6;
   --cyc-tan:          #c8a96e;
 
+  /* ─── dayrise-os v4.1 (2026-05-08) · 洱海三色 ───
+   * Environment base (不是 accent · 不下沉 brand identity)
+   * 用途：hero overlay 暗化 / dusk 末端 / night 主体 / 月色场景
+   * 不替代：logo / 主 CTA / admin tint / 装饰线 / pill / button shadow
+   * 触发：demo 验证发现 cyc-green 大面积铺墨绿丑 — 漏了"洱海月"
+   * 详见 .claude/skills/dayrise-os/SKILL.md hard rule #21
+   */
+  --cyc-erhai-deep:   #2a3f5f;   /* 洱海深 · 月光下水色 */
+  --cyc-erhai:        #5a6e8a;   /* 洱海中 · 暮色水色 */
+  --cyc-erhai-light:  #aab5c4;   /* 洱海浅 · 雾色水色 */
+
   /* Neutral system — AAA-passing on sand */
   --cyc-text:         #1a1a1a;   /* 11.8:1 ✅ AAA */
   --cyc-text-strong:  #0d0d0d;   /* 14:1   ✅ AAA */

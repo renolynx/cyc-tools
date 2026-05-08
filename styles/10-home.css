@@ -41,10 +41,13 @@
 }
 
 /* poster A —— 介绍社区入口 */
+/* dayrise-os v4.1 (2026-05-08)：从 cyc-green 暗化（用户反馈"墨绿丑爆了"）       */
+/*   换成 cyc-erhai-deep / erhai 渐变 — 洱海月色 atmosphere base                 */
+/*   poster A (深蓝/夜) + poster B (浅 sand+暖橙/昼) = 大理"日夜"双面对比          */
 .hero-poster-a {
   background: linear-gradient(135deg,
-    rgba(28, 61, 46, 0.85) 0%,
-    rgba(42, 87, 64, 0.75) 100%);
+    rgba(42, 63, 95, 0.88) 0%,    /* --cyc-erhai-deep */
+    rgba(90, 110, 138, 0.78) 100%); /* --cyc-erhai */
   color: rgba(255,255,255,0.96);
 }
 .hero-poster-a h2 { color: #fff; }
