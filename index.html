@@ -333,29 +333,26 @@ function renderCard(a) {
     : `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(a.time)}" aria-hidden="true"></div>`;
   const expandHtml = renderExpand(a, isPast);
 
-  // v4.2.7: 左 datestack（日期+周X / 时间 / 📍 loc · 周次） + 右 thumbnail
+  // v4.2.8: 左 datestack 三行 mono（日期·周X / 时间 / W{n} 或城市短标）
+  // 完整地址不塞这里，挪展开。loc 长内容在 mobile 会撑爆 → 第三行只放短标
   const dateLineHtml = (dateStr || dowStr)
     ? `<div class="home-act-dateline">${dateStr ? dateStr : ''}${dateStr && dowStr ? ' · ' : ''}${dowStr}</div>`
     : '';
   const timeLineHtml = a.time
     ? `<div class="home-act-timeline">${escapeHtml(a.time)}</div>`
     : '';
-  // loc + week 第三行：上海卡片有 W1-W4，大理卡片只有 loc
   const wkn = a.city === '上海' && a.date ? muWeekIndex(a.date) : 0;
-  const locParts = [];
-  if (a.loc) locParts.push(`<span>📍 ${escapeHtml(a.loc)}</span>`);
-  if (wkn) locParts.push(`<span class="home-act-locline-week">W${wkn}</span>`);
-  if (isPast)            locParts.push('<span>· 已结束</span>');
-  else if (a.is_public === false) locParts.push('<span>· 🔒</span>');
-  const locLineHtml = locParts.length
-    ? `<div class="home-act-locline">${locParts.join(' · ')}</div>`
-    : '';
+  const locLineHtml = wkn
+    ? `<div class="home-act-locline"><span class="home-act-locline-week">W${wkn}</span>${a.city ? ' · ' + escapeHtml(a.city) : ''}</div>`
+    : (a.city
+        ? `<div class="home-act-locline">${escapeHtml(a.city)}</div>`
+        : (isPast ? '<div class="home-act-locline">已结束</div>' : ''));
 
   // 类型 pill：取首个有效 type
   const primaryType = (a.types || []).filter(Boolean)[0] || '';
   const typepillHtml = primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '';
 
-  // 嘉宾 + RSVP count meta（loc 已经在 datestack 里了）
+  // 嘉宾 meta（speakers 名字一行，attendees 头像挪到展开）
   const metaItems = [];
   if (a.card_speakers && a.card_speakers.length) {
     metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(a.card_speakers.map(s => s.name).join(' · '))}</span>`);
@@ -364,16 +361,17 @@ function renderCard(a) {
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // CTA 行：我要报名按钮 + 已报名头像组（仅 attendees，speakers 在 meta 里以名字呈现）
-  const attendees = a.card_attendees || [];
+  // CTA 行：我要报名按钮 + 已报名 N（小文字；头像挪到展开区，避免拥挤）
   const attendeesTotal = a.card_attendee_total || 0;
-  const attendeeStackHtml = attendees.length ? renderAttendeeStack(attendees, attendeesTotal) : '';
+  const attendeeCountHtml = attendeesTotal
+    ? `<span class="home-act-cta-attendees">${attendeesTotal} 已报名</span>`
+    : '';
   const rsvpHref = `/events/${escapeAttr(a.record_id)}`;
   const ctaHtml = `<div class="home-act-cta-row">
     ${isPast
       ? '<span class="home-act-rsvp is-past">已结束</span>'
       : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()">我要报名 →</a>`}
-    ${attendeeStackHtml}
+    ${attendeeCountHtml}
   </div>`;
 
   // ⚠️ 外层用 <article>（避免 <a> 套 <a>）；click → toggleCardExpand
@@ -445,24 +443,48 @@ function muWeekIndex(dateStr) {
   return 0;
 }
 
-// 卡片展开区：描述 + 流程 + 费用 / 报名 + 类型 chips + 详情 CTA
+// 卡片展开区（v4.2.8）：跟卡片头部不重复
+//   卡片头已经有：日期/时间/W{n} · 类型 pill · 标题 · 嘉宾名字 · 报名按钮 · 已报名 N
+//   展开补充：完整地址 / 是否对外 / 描述 / 流程 / 费用 / 已报名头像 + 名字
 function renderExpand(a, isPast) {
-  const typesHtml = a.types?.length
-    ? `<div class="home-act-expand-types">${a.types.slice(0, 6).map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>`
-    : '';
+  const lines = [];
+  // 完整地址（可能很长，在展开里全显示）
+  if (a.loc) {
+    lines.push(`<div class="home-act-expand-line"><strong>📍 地点</strong> ${escapeHtml(a.loc)}${a.location_en ? ' · <em>' + escapeHtml(a.location_en) + '</em>' : ''}</div>`);
+  }
+  // 是否对外开放
+  const accessLabel = a.is_public === false ? '🔒 仅成员' : '🌿 对外开放';
+  lines.push(`<div class="home-act-expand-line"><strong>访问</strong> ${accessLabel}</div>`);
+  // 费用 / 报名通道（旧 generator 数据走这个）
+  if (a.fee)    lines.push(`<div class="home-act-expand-line"><strong>💰 费用</strong> ${escapeHtml(a.fee)}</div>`);
+  if (a.signup) lines.push(`<div class="home-act-expand-line"><strong>🙋 报名</strong> ${escapeHtml(a.signup)}</div>`);
+  // onsite_fee（上海活动 schema）
+  if (a.onsite_fee && a.onsite_fee > 0) {
+    lines.push(`<div class="home-act-expand-line"><strong>💰 现场</strong> ¥${a.onsite_fee} · 持票人/线上免费</div>`);
+  }
+  // 腾讯会议链接（上海活动）
+  if (a.tencent_meeting_url) {
+    lines.push(`<div class="home-act-expand-line"><strong>🎥 腾讯会议</strong> <a href="${escapeAttr(a.tencent_meeting_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(a.tencent_meeting_url)}</a></div>`);
+  }
+  const metaHtml = lines.length ? `<div class="home-act-expand-meta">${lines.join('')}</div>` : '';
+
+  // 描述 + 流程
   const descHtml = a.desc
     ? `<p class="home-act-expand-desc">${escapeHtml(a.desc)}</p>`
     : '';
   const flowHtml = (a.flow && a.flow.length)
     ? `<div class="home-act-expand-flow"><div class="home-act-expand-h">🗓️ 流程</div><ul>${a.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`
     : '';
-  const metaParts = [];
-  if (a.fee)    metaParts.push(`<div><strong>💰 费用</strong> ${escapeHtml(a.fee)}</div>`);
-  if (a.signup) metaParts.push(`<div><strong>🙋 报名</strong> ${escapeHtml(a.signup)}</div>`);
-  const metaHtml = metaParts.length ? `<div class="home-act-expand-meta">${metaParts.join('')}</div>` : '';
-  const ctaLabel = isPast ? '查看完整页 →' : '📝 详情 / 报名 →';
-  const ctaHtml = `<a class="home-act-expand-cta" href="/events/${escapeAttr(a.record_id)}" onclick="event.stopPropagation()">${ctaLabel}</a>`;
-  return `<div class="home-act-expand"><div class="home-act-expand-inner">${typesHtml}${descHtml}${flowHtml}${metaHtml}${ctaHtml}</div></div>`;
+
+  // 报名人员详情：嘉宾 + 已报名 全头像组
+  const speakers  = a.card_speakers  || [];
+  const attendees = a.card_attendees || [];
+  const attendeesTotal = a.card_attendee_total || 0;
+  const peopleHtml = (speakers.length || attendees.length)
+    ? renderAvatarGroups(speakers, attendees, attendeesTotal)
+    : '';
+
+  return `<div class="home-act-expand"><div class="home-act-expand-inner">${metaHtml}${descHtml}${flowHtml}${peopleHtml}</div></div>`;
 }
 
 // 卡片整体 click → toggle 展开（按钮/内嵌 link/修饰键不触发）

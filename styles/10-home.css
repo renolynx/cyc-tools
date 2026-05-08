@@ -155,9 +155,11 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 .home-act-card {
-  /* v4.2.7（2026-05-09 玖玖二轮反馈）：列式布局 —— 左信息栏 + 右海报 header，
-   * 下面分别是 类型 pill / 标题 / EN 副标题 / meta / CTA 行（按钮 + 头像）
-   * 保留玻璃感（半透 + backdrop blur），砍硬边框、thumb 边框、pill 框 */
+  /* v4.2.8（2026-05-09 玖玖三轮反馈）：列式布局修 mobile 截断 + 字体层次
+   * - datestack 固定 88px 高，与 thumb 对齐；3 行 mono space-between
+   * - 第三行收紧为 W{n} 或城市短标，不塞详细地址（详细挪展开）
+   * - 标题显式 serif；datestack mono；视觉层次靠字族对比
+   * - 卡片本身 overflow:hidden 兜底防溢出 */
   display: flex; flex-direction: column;
   gap: 8px;
   padding: 16px;
@@ -170,6 +172,8 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4);
   transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  min-width: 0;
 }
 .home-act-card:hover {
   background: rgba(255, 255, 255, 0.60);
@@ -177,39 +181,43 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 .home-act-card:active { transform: scale(0.99); }
 
-/* 列式 header：左 datestack + 右海报 */
+/* 列式 header：左 datestack（88px 高，3 行 space-between）+ 右海报（88x88） */
 .home-act-header {
-  display: flex; gap: 14px; align-items: flex-start;
+  display: flex; gap: 14px; align-items: stretch;
   justify-content: space-between;
+  min-width: 0;
 }
 .home-act-datestack {
-  display: flex; flex-direction: column; gap: 3px;
+  display: flex; flex-direction: column;
+  justify-content: space-between;  /* 3 行均匀撑开到 88px */
   font-family: var(--cyc-font-mono);
   flex: 1; min-width: 0;
+  height: 88px;
 }
 .home-act-dateline {
   font-size: 16px; font-weight: 600;
   color: var(--cyc-green);
   letter-spacing: 0;
   line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .home-act-timeline {
   font-size: 13px; line-height: 1.3;
   color: var(--cyc-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .home-act-locline {
   font-size: 11.5px; line-height: 1.4;
   color: var(--cyc-text-muted);
   letter-spacing: 0.02em;
-  display: flex; gap: 4px; align-items: center;
-  /* 截断长地点 */
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* 不用 flex，让 text-overflow 真正生效 */
 }
 .home-act-locline-week {
   color: var(--cyc-green); font-weight: 600;
 }
 
-/* CTA 行：我要报名按钮 + 已报名头像组 */
+/* CTA 行：我要报名按钮 + 已报名 N（小文字，不塞头像） */
 .home-act-cta-row {
   display: flex; align-items: center; gap: 10px;
   margin-top: 4px;
@@ -298,12 +306,24 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   color: var(--cyc-green); font-weight: 700;
 }
 .home-act-expand-meta {
-  font-size: 12px; color: var(--cyc-text-muted);
-  display: flex; flex-direction: column; gap: 3px;
+  font-size: 12.5px; color: var(--cyc-text-muted);
+  display: flex; flex-direction: column; gap: 6px;
 }
 .home-act-expand-meta strong {
   color: var(--cyc-text); font-weight: 600;
-  margin-right: 4px;
+  margin-right: 6px;
+  font-family: var(--cyc-font-mono);
+  font-size: 11px; letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.home-act-expand-line { line-height: 1.5; }
+.home-act-expand-line a {
+  color: var(--cyc-green); text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-all;
+}
+.home-act-expand-line em {
+  font-style: italic; color: var(--cyc-text-muted);
 }
 .home-act-expand-cta {
   display: inline-block;
@@ -358,15 +378,18 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 .home-act-title {
-  font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em;
+  /* v4.2.8: 显式 serif（dayrise-os display register）—— 跟上面 mono datestack 形成字族对比 */
+  font-family: 'Source Serif 4', 'Source Han Serif SC', 'Source Han Serif', 'Songti SC', 'STSong', SimSun, serif;
+  font-size: 17px; font-weight: 500; letter-spacing: -0.01em;
   color: var(--cyc-text-strong); line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 0;
 }
 .home-act-title-en {
+  font-family: 'Source Serif 4', serif;
   font-style: italic; font-weight: 300;
-  font-size: 13px; line-height: 1.4;
+  font-size: 13.5px; line-height: 1.4;
   color: var(--cyc-text-muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
