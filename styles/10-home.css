@@ -155,30 +155,86 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 .home-act-card {
-  /* dayrise v4.2.3 透明化（2026-05-08）+ v4.2.6 扁平化（2026-05-09，向 /shanghai 学层次后回灌）：
-   * - 砍硬边框 (1px solid → 0) 让 backdrop blur 接管"卡片感"
-   * - 砍 inset shine + 软化 shadow（0 2 8 → 0 1 3）
-   * - 砍 thumb border、stamp border、pill border —— 层次靠 typography 而非框
-   * - 内边距 12 → 14 给排版呼吸空间 */
-  display: flex; flex-direction: row; flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.40);
+  /* v4.2.7（2026-05-09 玖玖二轮反馈）：列式布局 —— 左信息栏 + 右海报 header，
+   * 下面分别是 类型 pill / 标题 / EN 副标题 / meta / CTA 行（按钮 + 头像）
+   * 保留玻璃感（半透 + backdrop blur），砍硬边框、thumb 边框、pill 框 */
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
   border: 0;
   border-radius: var(--cyc-r-card);
   text-decoration: none; color: var(--cyc-text);
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4);
   transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
 .home-act-card:hover {
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  background: rgba(255, 255, 255, 0.60);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5);
 }
 .home-act-card:active { transform: scale(0.99); }
+
+/* 列式 header：左 datestack + 右海报 */
+.home-act-header {
+  display: flex; gap: 14px; align-items: flex-start;
+  justify-content: space-between;
+}
+.home-act-datestack {
+  display: flex; flex-direction: column; gap: 3px;
+  font-family: var(--cyc-font-mono);
+  flex: 1; min-width: 0;
+}
+.home-act-dateline {
+  font-size: 16px; font-weight: 600;
+  color: var(--cyc-green);
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+.home-act-timeline {
+  font-size: 13px; line-height: 1.3;
+  color: var(--cyc-text);
+}
+.home-act-locline {
+  font-size: 11.5px; line-height: 1.4;
+  color: var(--cyc-text-muted);
+  letter-spacing: 0.02em;
+  display: flex; gap: 4px; align-items: center;
+  /* 截断长地点 */
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.home-act-locline-week {
+  color: var(--cyc-green); font-weight: 600;
+}
+
+/* CTA 行：我要报名按钮 + 已报名头像组 */
+.home-act-cta-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 4px;
+}
+.home-act-rsvp {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 7px 14px;
+  background: var(--cyc-green); color: rgba(255,255,255,0.96);
+  border-radius: 100px;
+  font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s, transform 0.10s;
+  white-space: nowrap;
+}
+.home-act-rsvp:hover { opacity: 0.90; }
+.home-act-rsvp:active { transform: scale(0.96); }
+.home-act-rsvp.is-past {
+  background: rgba(0,0,0,0.10); color: var(--cyc-text-muted);
+  pointer-events: none;
+}
+.home-act-cta-attendees {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--cyc-text-muted);
+}
 
 /* 已结束卡片 desaturate（保持可读但视觉次级）*/
 .home-act-card.is-past { opacity: 0.62; }
@@ -288,28 +344,8 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   display: flex; flex-direction: column; gap: 4px;
 }
 
-/* v4.2.6: 新结构（向 /shanghai 学习）——
-   STAMP（mono 日期·星期·时间·状态）→ TYPEPILL（subtle）→ TITLE → TITLE-EN（italic）→ META-LINE（loc · spkr · n RSVPs）
-   层次靠字号字重 + mono/serif 对比，不靠框 */
-
-.home-act-stamp {
-  font-family: var(--cyc-font-mono);
-  font-size: 11.5px; letter-spacing: 0.02em;
-  color: var(--cyc-text-muted);
-  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-  margin-bottom: 2px;
-}
-.home-act-stamp-date {
-  color: var(--cyc-green); font-weight: 600;
-}
-.home-act-stamp-sep { color: var(--cyc-text-muted); opacity: 0.5; }
-.home-act-stamp-tag {
-  font-size: 10.5px; letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.home-act-stamp-tag.is-open  { color: #8a6a2c; }
-.home-act-stamp-tag.is-closed { color: var(--cyc-text-muted); }
-.home-act-stamp-tag.is-past   { color: var(--cyc-text-muted); }
+/* v4.2.7: 列式布局取代 stamp —— 上面 datestack + 海报 header
+   下面 typepill / title / title_en / meta-line / cta-row */
 
 .home-act-typepill {
   display: inline-block; align-self: flex-start;

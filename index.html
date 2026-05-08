@@ -326,61 +326,98 @@ async function loadActivities(zone) {
 
 function renderCard(a) {
   const isPast = a.date && a.date < new Date().toISOString().slice(0, 10);
-  const dateStr = formatDate(a.date);
-  const dowStr  = a.date ? cnDayOfWeek(a.date) : '';
+  const dateStr = formatDate(a.date);   // M/D
+  const dowStr  = a.date ? cnDayOfWeek(a.date) : '';   // 周X
   const thumbHtml = a.poster?.file_token
     ? `<img class="home-act-thumb" data-zoomable src="/api/poster?token=${encodeURIComponent(a.poster.file_token)}" alt="${escapeHtml(a.title || '海报')}" loading="lazy" onclick="openPosterLightbox(event, '${escapeAttr(a.poster.file_token)}', '${escapeAttr(a.title || '')}')">`
     : `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(a.time)}" aria-hidden="true"></div>`;
-  const avatarHtml = renderAvatarGroups(
-    a.card_speakers || [],
-    a.card_attendees || [],
-    a.card_attendee_total || 0
-  );
   const expandHtml = renderExpand(a, isPast);
 
-  // v4.2.6: stamp（mono 日期·DOW·时间·状态）替代旧 pill 行 — 层次靠字号字重不靠框
-  const stampParts = [];
-  if (dateStr) stampParts.push(`<span class="home-act-stamp-date">${dateStr}</span>`);
-  if (dowStr)  stampParts.push(`<span>${dowStr}</span>`);
-  if (a.time)  stampParts.push(`<span>${escapeHtml(a.time)}</span>`);
-  const statusTag = isPast
-    ? '<span class="home-act-stamp-tag is-past">已结束</span>'
-    : (a.is_public === false
-        ? '<span class="home-act-stamp-tag is-closed">🔒 仅成员</span>'
-        : '<span class="home-act-stamp-tag is-open">🌿 对外</span>');
-  const stampInner = stampParts.map((p, i) => i ? '<span class="home-act-stamp-sep">·</span>' + p : p).join('');
-  const stampHtml = `<div class="home-act-stamp">${stampInner}${stampParts.length ? '<span class="home-act-stamp-sep">·</span>' : ''}${statusTag}</div>`;
+  // v4.2.7: 左 datestack（日期+周X / 时间 / 📍 loc · 周次） + 右 thumbnail
+  const dateLineHtml = (dateStr || dowStr)
+    ? `<div class="home-act-dateline">${dateStr ? dateStr : ''}${dateStr && dowStr ? ' · ' : ''}${dowStr}</div>`
+    : '';
+  const timeLineHtml = a.time
+    ? `<div class="home-act-timeline">${escapeHtml(a.time)}</div>`
+    : '';
+  // loc + week 第三行：上海卡片有 W1-W4，大理卡片只有 loc
+  const wkn = a.city === '上海' && a.date ? muWeekIndex(a.date) : 0;
+  const locParts = [];
+  if (a.loc) locParts.push(`<span>📍 ${escapeHtml(a.loc)}</span>`);
+  if (wkn) locParts.push(`<span class="home-act-locline-week">W${wkn}</span>`);
+  if (isPast)            locParts.push('<span>· 已结束</span>');
+  else if (a.is_public === false) locParts.push('<span>· 🔒</span>');
+  const locLineHtml = locParts.length
+    ? `<div class="home-act-locline">${locParts.join(' · ')}</div>`
+    : '';
 
   // 类型 pill：取首个有效 type
   const primaryType = (a.types || []).filter(Boolean)[0] || '';
   const typepillHtml = primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '';
 
-  // 单行 meta：📍 loc · 嘉宾 names · n RSVPs
+  // 嘉宾 + RSVP count meta（loc 已经在 datestack 里了）
   const metaItems = [];
-  if (a.loc) metaItems.push(`<span class="home-act-meta-item">📍 ${escapeHtml(a.loc)}</span>`);
   if (a.card_speakers && a.card_speakers.length) {
     metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(a.card_speakers.map(s => s.name).join(' · '))}</span>`);
   }
-  if (a.card_attendee_total) {
-    metaItems.push(`<span class="home-act-meta-item">${a.card_attendee_total} ${a.card_attendee_total === 1 ? 'RSVP' : 'RSVPs'}</span>`);
-  }
   const metaLineHtml = metaItems.length
-    ? `<div class="home-act-meta-line">${metaItems.map((m, i) => i ? '<span class="home-act-meta-sep">·</span>' + m : m).join('')}</div>`
+    ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // ⚠️ 外层用 <article> 而非 <a>：避免与内层"📝 详情"<a>嵌套
-  return `<article class="home-act-card${isPast ? ' is-past' : ''}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' data-href="/events/${escapeAttr(a.record_id)}" onclick="toggleCardExpand(event, this)">
-    ${thumbHtml}
-    <div class="home-act-body">
-      ${stampHtml}
-      ${typepillHtml}
-      <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
-      ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
-      ${metaLineHtml}
-      ${avatarHtml}
+  // CTA 行：我要报名按钮 + 已报名头像组（仅 attendees，speakers 在 meta 里以名字呈现）
+  const attendees = a.card_attendees || [];
+  const attendeesTotal = a.card_attendee_total || 0;
+  const attendeeStackHtml = attendees.length ? renderAttendeeStack(attendees, attendeesTotal) : '';
+  const rsvpHref = `/events/${escapeAttr(a.record_id)}`;
+  const ctaHtml = `<div class="home-act-cta-row">
+    ${isPast
+      ? '<span class="home-act-rsvp is-past">已结束</span>'
+      : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()">我要报名 →</a>`}
+    ${attendeeStackHtml}
+  </div>`;
+
+  // ⚠️ 外层用 <article>（避免 <a> 套 <a>）；click → toggleCardExpand
+  return `<article class="home-act-card${isPast ? ' is-past' : ''}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' data-href="${rsvpHref}" onclick="toggleCardExpand(event, this)">
+    <div class="home-act-header">
+      <div class="home-act-datestack">
+        ${dateLineHtml}
+        ${timeLineHtml}
+        ${locLineHtml}
+      </div>
+      ${thumbHtml}
     </div>
+    ${typepillHtml}
+    <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
+    ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
+    ${metaLineHtml}
+    ${ctaHtml}
     ${expandHtml}
   </article>`;
+}
+
+// 已报名小头像组（最多 5 个堆叠 + "+N" 数）—— 不重复 speakers
+function renderAttendeeStack(attendees, total) {
+  const visible = attendees.slice(0, 5);
+  const more = total > visible.length ? total - visible.length : 0;
+  const stack = visible.map(p => {
+    const initials = escapeHtml((p.name || '?')[0]);
+    const imgSrc = p.avatar_url
+      ? p.avatar_url
+      : (p.avatar_token ? '/api/poster?token=' + encodeURIComponent(p.avatar_token) : '');
+    const content = imgSrc
+      ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" loading="lazy">`
+      : `<span class="card-avatar-initials">${initials}</span>`;
+    return `<button class="card-avatar" type="button"` +
+      ` data-name="${escapeHtml(p.name)}"` +
+      ` data-bio="${escapeHtml(p.bio || '')}"` +
+      ` data-url="${escapeHtml(p.avatar_url || '')}"` +
+      ` data-token="${escapeHtml(p.avatar_token || '')}"` +
+      ` data-mid="${escapeHtml(p.member_rec_id || '')}"` +
+      ` onclick="event.preventDefault();event.stopPropagation();openPersonModal(this)"` +
+      ` aria-label="${escapeHtml(p.name)}">${content}</button>`;
+  }).join('');
+  const moreHtml = more > 0 ? `<span class="card-avatar-more">+${more}</span>` : '';
+  return `<div class="home-act-cta-attendees"><div class="card-avatar-stack">${stack}${moreHtml}</div></div>`;
 }
 
 // 北京时间 YYYY-MM-DD → "周X"
@@ -390,6 +427,22 @@ function cnDayOfWeek(dateStr) {
   if (!m) return '';
   const dow = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay();
   return ['周日','周一','周二','周三','周四','周五','周六'][dow];
+}
+
+// muShanghai 周次（W1=5/10–5/16, ..., W4=5/31–6/6）；输入 YYYY-MM-DD
+function muWeekIndex(dateStr) {
+  if (!dateStr) return 0;
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return 0;
+  const ts = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  const w1 = Date.UTC(2026, 4, 10);  // 2026-05-10
+  const days = Math.floor((ts - w1) / 86400000);
+  if (days < 0) return 0;
+  if (days < 7)  return 1;
+  if (days < 14) return 2;
+  if (days < 21) return 3;
+  if (days < 28) return 4;
+  return 0;
 }
 
 // 卡片展开区：描述 + 流程 + 费用 / 报名 + 类型 chips + 详情 CTA
