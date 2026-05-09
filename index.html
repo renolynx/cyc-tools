@@ -34,7 +34,10 @@
 <div class="blob b3"></div>
 
 <header class="home-topbar">
-  <a href="/" class="home-topbar-brand">CYC.center</a>
+  <button type="button" class="home-topbar-lang" id="homeLangToggle" aria-label="切换语言 / Toggle language">
+    <span class="lang-zh-only">中 · EN</span>
+    <span class="lang-en-only">EN · 中</span>
+  </button>
   <nav class="home-topbar-nav">
     <a href="/community/memories">照片</a>
     <a href="/community">成员</a>
@@ -48,9 +51,18 @@
   <section class="home-hero">
     <a class="hero-poster hero-poster-a" href="/about" data-track="hero_path_a_click" data-track-meta='{"target":"about"}'>
       <div class="hero-poster-content">
-        <h2 class="cyc-display">在大理</h2>
-        <p class="hero-poster-tagline">有这样一群人在认真做事 —— 做独立项目、做创作、做社区</p>
-        <span class="hero-poster-cta">了解 CYC →</span>
+        <h2 class="cyc-display">
+          <span class="lang-zh-only">在大理</span>
+          <span class="lang-en-only">In Dali</span>
+        </h2>
+        <p class="hero-poster-tagline">
+          <span class="lang-zh-only">有这样一群人在认真做事 —— 做独立项目、做创作、做社区</span>
+          <span class="lang-en-only">A community of independent makers, artists, and builders</span>
+        </p>
+        <span class="hero-poster-cta">
+          <span class="lang-zh-only">了解 CYC →</span>
+          <span class="lang-en-only">About CYC →</span>
+        </span>
       </div>
     </a>
   </section>
@@ -59,10 +71,10 @@
   <section class="home-cta-section">
     <a class="home-cta-create" href="/generator" data-track="cta_create_event">
       <span class="home-cta-icon">✏️</span>
-      <span>创建活动通告</span>
+      <span class="lang-zh-only">编辑活动通告</span>
+      <span class="lang-en-only">Edit event announcement</span>
       <span class="home-cta-arrow">→</span>
     </a>
-    <p class="home-cta-hint">CYC 工具站 · 活动通告生成器 · 一键发到微信群</p>
   </section>
 
   <!-- 活动卡片流（按城市分流：大理 / 上海 706 × muShanghai）-->
@@ -476,15 +488,34 @@ function renderExpand(a, isPast) {
     ? `<div class="home-act-expand-flow"><div class="home-act-expand-h">🗓️ 流程</div><ul>${a.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`
     : '';
 
-  // 报名人员详情：嘉宾 + 已报名 全头像组
-  const speakers  = a.card_speakers  || [];
+  // v4.2.9: 嘉宾不再头像化（卡片头已有名字），展开只显示已报名头像
   const attendees = a.card_attendees || [];
   const attendeesTotal = a.card_attendee_total || 0;
-  const peopleHtml = (speakers.length || attendees.length)
-    ? renderAvatarGroups(speakers, attendees, attendeesTotal)
+  const attendeesHtml = attendees.length
+    ? `<div class="home-act-expand-attendees"><div class="home-act-expand-h">已报名 (${attendeesTotal})</div><div class="card-avatar-stack">${attendees.map(p => avatarBtn(p)).join('')}${attendeesTotal > attendees.length ? `<span class="card-avatar-more">+${attendeesTotal - attendees.length}</span>` : ''}</div></div>`
     : '';
 
-  return `<div class="home-act-expand"><div class="home-act-expand-inner">${metaHtml}${descHtml}${flowHtml}${peopleHtml}</div></div>`;
+  // 详情链接（SEO 友好，独立 url 单页）—— 不重复"我要报名"按钮，措辞改"查看完整页"
+  const detailHtml = `<a class="home-act-expand-detail" href="/events/${escapeAttr(a.record_id)}" onclick="event.stopPropagation()">📝 查看完整页 →</a>`;
+
+  return `<div class="home-act-expand"><div class="home-act-expand-inner">${metaHtml}${descHtml}${flowHtml}${attendeesHtml}${detailHtml}</div></div>`;
+}
+
+// 单个 avatar button（复用，给 expand 用）
+function avatarBtn(p) {
+  const initials = escapeHtml((p.name || '?')[0]);
+  const imgSrc = p.avatar_url ? p.avatar_url : (p.avatar_token ? '/api/poster?token=' + encodeURIComponent(p.avatar_token) : '');
+  const content = imgSrc
+    ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" loading="lazy">`
+    : `<span class="card-avatar-initials">${initials}</span>`;
+  return `<button class="card-avatar" type="button"` +
+    ` data-name="${escapeHtml(p.name)}"` +
+    ` data-bio="${escapeHtml(p.bio || '')}"` +
+    ` data-url="${escapeHtml(p.avatar_url || '')}"` +
+    ` data-token="${escapeHtml(p.avatar_token || '')}"` +
+    ` data-mid="${escapeHtml(p.member_rec_id || '')}"` +
+    ` onclick="event.preventDefault();event.stopPropagation();openPersonModal(this)"` +
+    ` aria-label="${escapeHtml(p.name)}">${content}</button>`;
 }
 
 // 卡片整体 click → toggle 展开（按钮/内嵌 link/修饰键不触发）
@@ -582,6 +613,36 @@ function cycTimeClass(timeStr) {
   if (t < 20)   return 'cyc-time-evening';
   return 'cyc-time-night';
 }
+</script>
+<script>
+// v4.2.9: home page zh/en lang toggle
+(function () {
+  const KEY = 'cyc-home-lang';
+  function getLang() {
+    try {
+      const u = new URLSearchParams(location.search).get('lang');
+      if (u === 'en' || u === 'zh') return u;
+      const s = localStorage.getItem(KEY);
+      if (s === 'en' || s === 'zh') return s;
+    } catch {}
+    if (navigator.language && navigator.language.toLowerCase().startsWith('en')) return 'en';
+    return 'zh';
+  }
+  function applyLang(lang) {
+    document.body.classList.toggle('cyc-lang-en', lang === 'en');
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh';
+    try { localStorage.setItem(KEY, lang); } catch {}
+  }
+  applyLang(getLang());
+  const btn = document.getElementById('homeLangToggle');
+  if (btn) {
+    btn.addEventListener('click', function () {
+      const next = document.body.classList.contains('cyc-lang-en') ? 'zh' : 'en';
+      applyLang(next);
+      if (typeof cycTrack === 'function') cycTrack('home_lang_toggle', { to: next });
+    });
+  }
+})();
 </script>
 <script src="/cyc-track.js" defer></script>
 

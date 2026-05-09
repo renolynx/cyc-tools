@@ -45,11 +45,13 @@
  *   月光从左上漫射 → 深水底边缘，跟 .cyc-time-night 同语言但保留 brand 视觉锚点
  *   （活动卡 night thumb 是缺图占位通透 / hero 是 brand 入口饱满，层级清晰）*/
 .hero-poster-a {
+  /* v4.2.9: alpha 整体 -0.20 让蓝色更通透（玖玖反馈"太实"） */
   background: radial-gradient(ellipse 130% 100% at 25% 20%,
-    rgba(135, 155, 180, 0.78) 0%,
-    rgba(85, 108, 138, 0.86) 38%,
-    rgba(52, 75, 108, 0.92) 72%,
-    rgba(38, 58, 90, 0.95) 100%);
+    rgba(135, 155, 180, 0.58) 0%,
+    rgba(85, 108, 138, 0.66) 38%,
+    rgba(52, 75, 108, 0.72) 72%,
+    rgba(38, 58, 90, 0.78) 100%);
+  backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
   color: rgba(255,255,255,0.96);
 }
 .hero-poster-a h2 { color: #fff; }
@@ -155,13 +157,12 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 .home-act-card {
-  /* v4.2.8（2026-05-09 玖玖三轮反馈）：列式布局修 mobile 截断 + 字体层次
-   * - datestack 固定 88px 高，与 thumb 对齐；3 行 mono space-between
-   * - 第三行收紧为 W{n} 或城市短标，不塞详细地址（详细挪展开）
-   * - 标题显式 serif；datestack mono；视觉层次靠字族对比
-   * - 卡片本身 overflow:hidden 兜底防溢出 */
+  /* v4.2.9（2026-05-09 玖玖四轮）：紧凑排版 —— gap 8 → 4，header 单独 margin
+   * - datestack 不再强制 88px 跟 thumb 对齐（不必要的视觉束缚）
+   * - 类型 pill 真正成为 header 与 title 之间的薄分隔，上下贴紧
+   * - 标题 / EN / 嘉宾 紧密堆，CTA 行单独留间距 */
   display: flex; flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
@@ -189,11 +190,12 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 .home-act-datestack {
   display: flex; flex-direction: column;
-  justify-content: space-between;  /* 3 行均匀撑开到 88px */
+  gap: 3px;
   font-family: var(--cyc-font-mono);
   flex: 1; min-width: 0;
-  height: 88px;
 }
+/* header 跟下方 typepill 之间留呼吸（不让 datestack 强行匹配 thumb 高度）*/
+.home-act-header { margin-bottom: 6px; }
 .home-act-dateline {
   font-size: 16px; font-weight: 600;
   color: var(--cyc-green);
@@ -325,6 +327,21 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 .home-act-expand-line em {
   font-style: italic; color: var(--cyc-text-muted);
 }
+
+/* v4.2.9: 展开区已报名头像组（仅 attendees，无 speakers） */
+.home-act-expand-attendees {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.home-act-expand-attendees .card-avatar-stack { padding-left: 7px; }
+
+/* v4.2.9: 详情链接（SEO 单页入口） */
+.home-act-expand-detail {
+  display: inline-block; align-self: flex-start;
+  margin-top: 4px;
+  font-size: 12px; color: var(--cyc-text-muted);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.home-act-expand-detail:hover { color: var(--cyc-green); }
 .home-act-expand-cta {
   display: inline-block;
   align-self: flex-start;
@@ -374,8 +391,10 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   background: rgba(28,61,46,0.08); color: var(--cyc-green);
   border-radius: 3px;
-  margin-bottom: 2px;
+  margin: 0 0 2px 0;  /* 紧贴下方标题 */
 }
+/* CTA 行额外上间距，跟前面 meta 拉开 */
+.home-act-cta-row { margin-top: 8px; }
 
 .home-act-title {
   /* v4.2.8: 显式 serif（dayrise-os display register）—— 跟上面 mono datestack 形成字族对比 */
@@ -443,6 +462,21 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   color: var(--cyc-green);
   text-decoration: none;
 }
+/* v4.2.9: zh/en lang toggle 替代 brand link */
+.home-topbar-lang {
+  appearance: none; background: transparent; border: 0;
+  padding: 6px 12px; border-radius: 100px;
+  font-family: var(--cyc-font-mono); font-size: 13px; font-weight: 600;
+  color: var(--cyc-green); cursor: pointer;
+  letter-spacing: 0.06em;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-topbar-lang:hover { background: rgba(28,61,46,0.08); }
+.home-topbar-lang:active { opacity: 0.7; }
+
+/* v4.2.9: 双语单显（默认 zh） */
+body:not(.cyc-lang-en) .lang-en-only { display: none !important; }
+body.cyc-lang-en .lang-zh-only { display: none !important; }
 .home-topbar-nav {
   display: flex; gap: 4px;
 }

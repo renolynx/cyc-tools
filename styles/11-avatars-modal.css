@@ -30,12 +30,12 @@
   align-items: center;
 }
 
-/* ── 嘉宾头像（30px）── */
+/* ── 嘉宾头像（30px）—— v4.2.9 玖玖反馈：去白边 + 右覆盖左 ── */
 .card-avatar {
   position: relative;
   width: 30px; height: 30px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.85);
+  border: 0;  /* v4.2.9: 去白边，让头像融入卡片背景 */
   margin-left: -7px;
   cursor: pointer;
   overflow: hidden;
@@ -45,11 +45,22 @@
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  /* 默认所有 avatar 同 z-index，DOM 顺序应让后面的覆盖前面的，但部分浏览器在 flex
+   * + position:relative 下 paint 顺序会反，显式 z-index 升序兜底 */
+  z-index: 1;
 }
 .card-avatar:first-child { margin-left: 0; }
+/* 显式右覆盖左：后面的 nth-child z-index 更大 */
+.card-avatar-stack > .card-avatar:nth-child(2)  { z-index: 2; }
+.card-avatar-stack > .card-avatar:nth-child(3)  { z-index: 3; }
+.card-avatar-stack > .card-avatar:nth-child(4)  { z-index: 4; }
+.card-avatar-stack > .card-avatar:nth-child(5)  { z-index: 5; }
+.card-avatar-stack > .card-avatar:nth-child(6)  { z-index: 6; }
+.card-avatar-stack > .card-avatar:nth-child(7)  { z-index: 7; }
+.card-avatar-stack > .card-avatar:nth-child(8)  { z-index: 8; }
 .card-avatar:hover {
   transform: scale(1.15);
-  z-index: 2;
+  z-index: 20 !important;  /* 高过所有 nth-child */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 .card-avatar:active { transform: scale(1.05); }
