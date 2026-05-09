@@ -246,6 +246,15 @@
   .sh-event-date-time {
     color: var(--sh-ink-mute); margin-top: 2px;
   }
+  /* v4.2.15: 时区小 pill (跟在时间后面) */
+  .sh-event-tz {
+    display: inline-block; margin-left: 6px;
+    font-size: 9.5px; letter-spacing: 0.04em;
+    color: var(--sh-ink-mute); opacity: 0.75;
+    padding: 1px 5px; border-radius: 3px;
+    background: rgba(0,0,0,0.04);
+    vertical-align: middle;
+  }
   .sh-event-week-pill {
     display: inline-block; margin-top: 6px;
     padding: 2px 6px; font-size: 10px; letter-spacing: 0.06em;
@@ -875,6 +884,22 @@ function eventTypePill(types) {
   return { cls: 't-talk', zh: t || '分享', en: (t || 'Session').toUpperCase() };
 }
 
+// v4.2.15: 5 段时段渐变 —— 复刻 _activity.js cycTimeClass，跟首页/events 一致
+function shTimeClass(timeStr) {
+  const m = String(timeStr || '').match(/^(\d{1,2})\s*[：:](\d{1,2})?/);
+  if (!m) return 'cyc-time-noon';
+  const h = parseInt(m[1], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
+  if (isNaN(h)) return 'cyc-time-noon';
+  const t = h + (isNaN(min) ? 0 : min) / 60;
+  if (t < 5)    return 'cyc-time-night';
+  if (t < 11.5) return 'cyc-time-morning';
+  if (t < 15)   return 'cyc-time-noon';
+  if (t < 17)   return 'cyc-time-dusk';
+  if (t < 20)   return 'cyc-time-evening';
+  return 'cyc-time-night';
+}
+
 function renderShanghaiEvent(a) {
   // v4.2.10 Phase B commit 3: 用通用 home-act-card 结构（CSS 复用全站，视觉与首页/events 一致）
   // 保留 /shanghai 独有：RSVP modal (不跳详情)、bilingual via .lang-zh/.lang-en、W{n} 周次
@@ -929,7 +954,10 @@ function renderShanghaiEvent(a) {
       </div>
     </div>` : '';
 
-  const timeStr = a.time ? `${esc(a.time)} CST` : '20:00 CST';
+  // v4.2.15: CST 歧义（美国 CST 也是这缩写）→ 改写「+08 北京」/ "+08 Beijing"
+  const timeStr = a.time ? `${esc(a.time)}` : '20:00';
+  const tzZh = ' <span class="sh-event-tz">+08 北京</span>';
+  const tzEn = ' <span class="sh-event-tz">+08 Beijing</span>';
   const posterToken = a.poster?.file_token || '';
   const posterHtml = posterToken ? `
     <div class="sh-event-poster">
@@ -939,12 +967,11 @@ function renderShanghaiEvent(a) {
            onclick="event.stopPropagation(); openPosterLightbox && openPosterLightbox(event, '${esc(posterToken)}', ${JSON.stringify(a.title || '')})">
     </div>` : '';
 
-  // 用通用 home-act-card 结构（CSS 复用），but bilingual via .lang-zh/.lang-en (matching /shanghai's sh-lang-zh body class)
-  // RSVP 按钮调 openRsvp modal（不跳详情页）—— /shanghai 独有的体验
-  // thumb：海报或时段渐变占位
+  // 用通用 home-act-card 结构（CSS 复用）
+  // thumb：海报或时段渐变占位（v4.2.15: 复刻 _activity.js 5 段 cycTimeClass）
   const thumbInnerHtml = posterToken
     ? `<img class="home-act-thumb" src="/api/poster?token=${encodeURIComponent(posterToken)}" alt="${esc(a.title || '')}" loading="lazy" onclick="event.stopPropagation(); openPosterLightbox && openPosterLightbox(event, '${esc(posterToken)}', ${JSON.stringify(a.title || '')})">`
-    : `<div class="home-act-thumb home-act-thumb-empty cyc-time-${a.time && a.time.match(/^(\d{1,2})/) ? (parseInt(RegExp.$1) >= 17 ? 'evening' : 'noon') : 'noon'}" aria-hidden="true"></div>`;
+    : `<div class="home-act-thumb home-act-thumb-empty ${shTimeClass(a.time)}" aria-hidden="true"></div>`;
 
   // 类型 pill（筹备中时 pill + 提示同行；正常时 pill 单独一行）
   const typepillHtml = isPlanning
@@ -988,13 +1015,15 @@ function renderShanghaiEvent(a) {
          </div>` : ''}
        ${metaLineHtml}`;
 
-  // CTA 行：保留 /shanghai 独有 — 点 RSVP 弹 modal（不跳详情）
+  // CTA 行：v4.2.15 直接调 openRsvp（之前 stopPropagation 阻止了 document delegation）
   const editHref = `/generator?edit=${esc(a.record_id)}`;
+  const titleAttr = esc(a.title || '').replace(/'/g, '&#39;');
+  const titleEnAttr = esc(a.title_en || '').replace(/'/g, '&#39;');
   const ctaButtonHtml = isPlanning
     ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()"><span class="lang-zh">编辑 →</span><span class="lang-en">Edit →</span></a>`
     : (isPast
         ? '<span class="home-act-rsvp is-past"><span class="lang-zh">已结束</span><span class="lang-en">Past</span></span>'
-        : `<button type="button" class="home-act-rsvp js-rsvp-btn" data-rec-id="${esc(a.record_id)}" data-fee="${fee}" data-type="${esc(pill.cls)}" onclick="event.stopPropagation()">
+        : `<button type="button" class="home-act-rsvp" data-rec-id="${esc(a.record_id)}" onclick="event.stopPropagation();openRsvp('${esc(a.record_id)}','${titleAttr}','${titleEnAttr}',${fee},'${esc(pill.cls)}')">
              <span class="lang-zh">我要报名 →</span>
              <span class="lang-en">RSVP →</span>
            </button>`);
@@ -1009,7 +1038,7 @@ function renderShanghaiEvent(a) {
           <span class="lang-zh">${monNum}/${dayNum} · ${dowZh}</span>
           <span class="lang-en">${dowEn} · ${monNum}/${dayNum}</span>
         </div>
-        <div class="home-act-timeline">${timeStr}</div>
+        <div class="home-act-timeline">${timeStr}<span class="lang-zh">${tzZh}</span><span class="lang-en">${tzEn}</span></div>
         ${week ? `<div class="home-act-locline"><span class="home-act-locline-week">W${week}</span> · <span class="lang-zh">上海</span><span class="lang-en">Shanghai</span></div>` : ''}
       </div>
       ${thumbInnerHtml}
