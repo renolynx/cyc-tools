@@ -460,8 +460,9 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 
 .home-act-title {
   /* v4.2.8: 显式 serif（dayrise-os display register）—— 跟上面 mono datestack 形成字族对比 */
+  /* 2026-05-09 audit closure: weight 500 → 600（dayrise-os hard rule #7：禁止 500，迁移 600）*/
   font-family: 'Source Serif 4', 'Source Han Serif SC', 'Source Han Serif', 'Songti SC', 'STSong', SimSun, serif;
-  font-size: 17px; font-weight: 500; letter-spacing: -0.01em;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
   color: var(--cyc-text-strong); line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
