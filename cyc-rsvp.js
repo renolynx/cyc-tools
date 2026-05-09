@@ -117,6 +117,11 @@
        data-en="The organizer will message you the meeting link and final details before the event."></p>
     <button type="button" class="cyc-rsvp-submit" onclick="cycCloseConfirm()"
             data-zh="好的" data-en="Got it"></button>
+    <button type="button" class="cyc-rsvp-toggle" id="cycRsvpCancelBtn"
+            style="margin-top:14px;display:block;text-align:center;width:100%;color:#888;"
+            data-zh="↩ 取消刚刚的报名"
+            data-en="↩ Cancel that RSVP"></button>
+    <div id="cycRsvpCancelStatus" style="margin-top:8px;font-size:12px;text-align:center;color:#6a6c66;"></div>
   </div>
 </div>`;
     document.body.appendChild(wrap);
@@ -152,6 +157,7 @@
     }, 0);
 
     document.getElementById('cycRsvpForm').addEventListener('submit', onSubmit);
+    document.getElementById('cycRsvpCancelBtn').addEventListener('click', onCancel);
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
@@ -159,6 +165,52 @@
         cycCloseConfirm();
       }
     });
+  }
+
+  // v4.2.13 Task 4: 身份持久化 + 取消刚刚报名
+  function saveIdentity(payload) {
+    try {
+      localStorage.setItem('cyc-me', JSON.stringify({
+        name:   payload.name   || '',
+        wechat: payload.wechat || '',
+        email:  payload.email  || '',
+        savedAt: Date.now(),
+      }));
+    } catch {}
+  }
+  function getIdentity() {
+    try { return JSON.parse(localStorage.getItem('cyc-me') || 'null'); } catch { return null; }
+  }
+  async function onCancel() {
+    const en = isEn();
+    const me = getIdentity();
+    const status = document.getElementById('cycRsvpCancelStatus');
+    if (!me || (!me.wechat && !me.email)) {
+      status.textContent = en ? 'No saved identity to cancel with.' : '没找到你的报名身份。';
+      return;
+    }
+    if (!_ctx || !_ctx.record_id) return;
+    const btn = document.getElementById('cycRsvpCancelBtn');
+    btn.disabled = true;
+    status.textContent = en ? 'Canceling…' : '取消中…';
+    try {
+      const res = await fetch('/api/rsvp?action=delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activity_rec_id: _ctx.record_id,
+          auth: me.wechat || me.email,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `${res.status}`);
+      status.textContent = en ? '✓ Canceled.' : '✓ 已取消。';
+      btn.style.display = 'none';
+      if (typeof cycTrack === 'function') cycTrack('rsvp_cancel_ok', { record_id: _ctx.record_id });
+    } catch (err) {
+      status.textContent = (en ? 'Cancel failed: ' : '取消失败：') + err.message;
+      btn.disabled = false;
+    }
   }
 
   let _userOverrideMode = false;
@@ -263,6 +315,9 @@
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || `${res.status}`);
 
+      // 保存身份用于后续取消（仅本浏览器；不发服务器额外字段）
+      saveIdentity(payload);
+
       // success or already_registered → show confirm
       cycCloseRsvp();
       const confirmTitle = document.getElementById('cycRsvpConfirmTitle');
@@ -273,6 +328,11 @@
       if (payload.attendance_mode === 'offline' && !payload.ticket_holder && _ctx.onsite_fee > 0) {
         feeBox.classList.add('is-paid');
       }
+      // 重置 cancel 按钮（如果上次已经被点过隐藏了）
+      const cancelBtn = document.getElementById('cycRsvpCancelBtn');
+      const cancelStatus = document.getElementById('cycRsvpCancelStatus');
+      if (cancelBtn) { cancelBtn.style.display = ''; cancelBtn.disabled = false; }
+      if (cancelStatus) cancelStatus.textContent = '';
       document.getElementById('cycRsvpConfirmOverlay').classList.add('open');
       document.body.style.overflow = 'hidden';
       if (typeof cycTrack === 'function') cycTrack('rsvp_submit_ok', { record_id: payload.activity_rec_id, already: !!data.already_registered });

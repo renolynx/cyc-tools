@@ -160,34 +160,51 @@ async function handlePost(req, res) {
 //   activity_rec_id 用于清相关 KV mark（选填）
 
 async function handleDelete(req, res) {
-  const { record_id, auth, password, wechat, activity_rec_id } = req.body || {};
-  if (!record_id) return res.status(400).json({ error: '缺 record_id' });
+  let { record_id, auth, password, wechat, email, activity_rec_id } = req.body || {};
 
-  // 兼容老调用：传单独的 password / wechat 也认；新调用统一传 auth
-  const credential = (auth || password || wechat || '').trim();
-  if (!credential) return res.status(400).json({ error: '请输入微信号或管理密码' });
+  // v4.2.13 Task 4: 支持 by-activity 自助取消 —— 给定 activity_rec_id + credential，
+  // 服务端找到本人 RSVP 自动取消（前端不用知道 record_id）
+  // credential 可以是 wechat 或 email；先用全 RSVP 列表 lookup
+  const credential = (auth || password || wechat || email || '').trim();
+  if (!credential && !record_id) return res.status(400).json({ error: '缺 record_id 或凭证' });
+  if (!credential) return res.status(400).json({ error: '请输入微信号 / 邮箱 / 管理密码' });
 
-  // 先按 admin 密码试
   let mode = null;
-  if (await verifyPassword(credential)) {
-    mode = 'admin';
-  } else {
-    // 不是密码 → 按微信号自助取消试
-    try {
-      const record = await fetchRsvpByRecordId(record_id);
-      if (record) {
-        const norm = s => (s || '').trim().toLowerCase();
-        if (norm(credential) === norm(record.wechat) && norm(credential) !== '') {
-          mode = 'self';
+
+  // Path A: by record_id（旧 admin 流程兼容）
+  if (record_id) {
+    if (await verifyPassword(credential)) {
+      mode = 'admin';
+    } else {
+      try {
+        const record = await fetchRsvpByRecordId(record_id);
+        if (record) {
+          const norm = s => (s || '').trim().toLowerCase();
+          if (norm(credential) === norm(record.wechat) && norm(record.wechat) !== '') mode = 'self';
+          else if (norm(credential) === norm(record.email) && norm(record.email) !== '') mode = 'self';
         }
+      } catch (err) {
+        console.error('[rsvp delete] fetch verify failed:', err.message);
+      }
+    }
+  } else if (activity_rec_id) {
+    // Path B: by activity_rec_id —— 服务端 lookup 用户的 RSVP 记录
+    try {
+      const list = await (await import('./_rsvp.js')).fetchRsvpsForActivity(activity_rec_id);
+      const norm = s => (s || '').trim().toLowerCase();
+      const c = norm(credential);
+      const hit = list.find(r => (r.wechat && norm(r.wechat) === c) || (r.email && norm(r.email) === c));
+      if (hit) {
+        record_id = hit.record_id;
+        mode = 'self';
       }
     } catch (err) {
-      console.error('[rsvp delete] fetch verify failed:', err.message);
+      console.error('[rsvp delete by activity] lookup failed:', err.message);
     }
   }
 
-  if (!mode) {
-    return res.status(401).json({ error: '验证失败：本人请输微信号，管理员请输同步密码' });
+  if (!mode || !record_id) {
+    return res.status(401).json({ error: '验证失败：找不到对应的报名记录' });
   }
 
   try {
