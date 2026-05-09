@@ -418,7 +418,13 @@ const CYC_TEMPLATES = {
   },
 };
 let previewCity = (function() {
-  try { const c = localStorage.getItem('cyc-gen-city'); if (c === '大理' || c === '上海') return c; } catch {}
+  // 优先级：?city= URL 参数 > localStorage > 默认大理
+  try {
+    const urlCity = new URLSearchParams(location.search).get('city');
+    if (urlCity === '大理' || urlCity === '上海') return urlCity;
+    const c = localStorage.getItem('cyc-gen-city');
+    if (c === '大理' || c === '上海') return c;
+  } catch {}
   return '大理';
 })();
 function setPreviewCity(city) {
@@ -601,8 +607,13 @@ async function initEditMode() {
   }
 }
 // 入口：DOM ready 后跑一次
-if (document.readyState !== 'loading') initEditMode();
-else document.addEventListener('DOMContentLoaded', initEditMode);
+function initOnDomReady() {
+  // sync topbar 城市 tab UI 跟初始 previewCity（来自 URL ?city= 或 localStorage）
+  if (typeof setPreviewCity === 'function') setPreviewCity(previewCity);
+  initEditMode();
+}
+if (document.readyState !== 'loading') initOnDomReady();
+else document.addEventListener('DOMContentLoaded', initOnDomReady);
 
 // ── ?edit=<rec_id> 编辑模式：从首页/详情页/筹备中卡跳过来直接加载该活动 ──
 //    Phase B (2026-05-09): 让"编辑"按钮真正能 deep-link 到具体活动
@@ -1197,10 +1208,14 @@ async function doSync(id, password) {
   label.textContent = '录入中…';
 
   try {
+    // v4.2.13: 把 topbar 选择的城市透传到飞书 city 字段
+    // 编辑现有上海活动时已经有 a.city；新建活动要带上当前 previewCity
+    const payload = Object.assign({}, a);
+    if (!payload.city) payload.city = previewCity;
     const res = await fetch('/api/add-activity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ activity: a, date, password }),
+      body: JSON.stringify({ activity: payload, date, password }),
     });
     const json = await res.json();
 

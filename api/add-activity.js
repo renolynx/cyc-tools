@@ -114,6 +114,24 @@ export default async function handler(req, res) {
       fields['活动类型'] = activity.types;
     }
 
+    // v4.2.13: 城市标签（generator topbar 城市切换 → 写入 city 字段）
+    // 大理 / 上海 / 其他；空字符串不写（让飞书保持原值）
+    if (activity.city === '大理' || activity.city === '上海') {
+      fields['city'] = activity.city;
+    }
+    // 上海活动自动打 series 标签 + 双语字段透传（如果填了）
+    if (activity.city === '上海') {
+      fields['series'] = '706 x muShanghai';
+    }
+    if (activity.title_en)            fields['title_en']            = activity.title_en;
+    if (activity.desc_en)             fields['desc_en']             = activity.desc_en;
+    if (activity.location_en)         fields['location_en']         = activity.location_en;
+    if (activity.tencent_meeting_url) fields['tencent_meeting_url'] = { link: activity.tencent_meeting_url, text: activity.tencent_meeting_url };
+    if (typeof activity.onsite_fee === 'number') fields['onsite_fee'] = activity.onsite_fee;
+    if (Array.isArray(activity.attendance_modes) && activity.attendance_modes.length) {
+      fields['attendance_modes'] = activity.attendance_modes;
+    }
+
     // 来源标记
     fields['SourceID'] = 'cyc-tools';
 
