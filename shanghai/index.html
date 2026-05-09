@@ -162,15 +162,35 @@
   /* Section heads */
   .sh-section-head {
     margin: 56px 0 20px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
   }
   .sh-section-head h3 {
     font-size: 22px; font-weight: 400; letter-spacing: -0.01em;
     margin: 0 0 4px;
+    flex: 1; min-width: 0;
   }
   .sh-section-head h3 em {
     font-style: italic; font-weight: 300; color: var(--sh-ink-mute);
     font-size: 16px;
   }
+  /* CTA "+ 编辑活动通告" —— glass morphism 跟首页一致 */
+  .sh-add-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(217, 101, 42, 0.16);
+    backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border: 1px solid rgba(217, 101, 42, 0.30);
+    color: var(--sh-warm);
+    font-size: 13px; font-weight: 600; letter-spacing: -0.01em;
+    padding: 8px 16px; border-radius: 100px;
+    text-decoration: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    transition: background 0.15s, transform 0.10s;
+    flex-shrink: 0;
+  }
+  .sh-add-cta:hover { background: rgba(217, 101, 42, 0.24); }
+  .sh-add-cta:active { transform: scale(0.97); }
+  .sh-add-cta-icon { font-size: 18px; font-weight: 200; line-height: 1; opacity: 0.9; }
 
   /* Activity cards —— v4.2.10 Phase B 用通用 home-act-card；改 gap 12px 不要 line separator */
   .sh-events { display: flex; flex-direction: column; gap: 12px; }
@@ -394,7 +414,8 @@
     transition: max-height .28s ease;
     border-top: 1px solid transparent;
   }
-  .sh-event.is-expanded .sh-event-expand {
+  .sh-event.is-expanded .sh-event-expand,
+  .home-act-card.is-expanded .sh-event-expand {
     max-height: 600px;
     border-top-color: var(--sh-line-soft);
   }
@@ -506,9 +527,14 @@
   <!-- ───────── Activity list ───────── -->
   <section class="sh-section-head" id="events">
     <h3>
-      <span class="lang-zh">12 场活动 · <em>All Sessions</em></span>
-      <span class="lang-en">12 Sessions · <em>所有活动</em></span>
+      <span class="lang-zh"><span id="shCount">12</span> 场活动 · <em>All Sessions</em></span>
+      <span class="lang-en"><span id="shCountEn">12</span> Sessions · <em>所有活动</em></span>
     </h3>
+    <a class="sh-add-cta" href="/generator?city=上海" data-track="shanghai_add_event">
+      <span class="sh-add-cta-icon" aria-hidden="true">+</span>
+      <span class="lang-zh">编辑活动通告</span>
+      <span class="lang-en">Edit event announcement</span>
+    </a>
   </section>
   <div id="shEventStream" class="sh-events">
     <div style="padding: 40px; text-align: center; color: var(--sh-ink-mute); font-size: 13px;">
@@ -834,6 +860,11 @@ function eventTimestamp(a) {
   window.__shActivities = acts;
   renderHeroLive(acts);
   document.getElementById('shEventStream').innerHTML = acts.map(renderShanghaiEvent).join('');
+  // v4.2.12: 动态活动数（不再硬编码 12，可能更多）
+  const cntEl = document.getElementById('shCount');
+  const cntEnEl = document.getElementById('shCountEn');
+  if (cntEl) cntEl.textContent = acts.length;
+  if (cntEnEl) cntEnEl.textContent = acts.length;
 })();
 
 function eventTypePill(types) {
@@ -915,9 +946,15 @@ function renderShanghaiEvent(a) {
     ? `<img class="home-act-thumb" src="/api/poster?token=${encodeURIComponent(posterToken)}" alt="${esc(a.title || '')}" loading="lazy" onclick="event.stopPropagation(); openPosterLightbox && openPosterLightbox(event, '${esc(posterToken)}', ${JSON.stringify(a.title || '')})">`
     : `<div class="home-act-thumb home-act-thumb-empty cyc-time-${a.time && a.time.match(/^(\d{1,2})/) ? (parseInt(RegExp.$1) >= 17 ? 'evening' : 'noon') : 'noon'}" aria-hidden="true"></div>`;
 
-  // 类型 pill（筹备中 → 暖橙）
+  // 类型 pill（筹备中时 pill + 提示同行；正常时 pill 单独一行）
   const typepillHtml = isPlanning
-    ? '<span class="home-act-typepill is-planning"><span class="lang-zh">筹备中</span><span class="lang-en">Planning</span></span>'
+    ? `<div class="home-act-pill-row">
+         <span class="home-act-typepill is-planning"><span class="lang-zh">筹备中</span><span class="lang-en">Planning</span></span>
+         <span class="home-act-planning-hint">
+           <span class="lang-zh">时间槽已占位，活动详情仍在编辑确认中。</span>
+           <span class="lang-en">Slot reserved — details still being confirmed.</span>
+         </span>
+       </div>`
     : `<span class="home-act-typepill"><span class="lang-zh">${esc(pill.zh)}</span><span class="lang-en">${esc(pill.en)}</span></span>`;
 
   // 嘉宾 meta
@@ -929,7 +966,7 @@ function renderShanghaiEvent(a) {
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // 标题块：筹备中 → 标题用横线划掉表示占位 + 小提示；正常 → 完整显示
+  // 标题块：筹备中 → 标题划掉（提示已在 pill 行）；正常 → 完整显示
   const titleBlockHtml = isPlanning
     ? `<h4 class="home-act-title is-planning-strike">
          <span class="lang-zh">${esc(a.title || '')}</span>
@@ -939,11 +976,7 @@ function renderShanghaiEvent(a) {
          <div class="home-act-title-en is-planning-strike">
            <span class="lang-zh">${esc(a.title_en)}</span>
            <span class="lang-en">${esc(a.title)}</span>
-         </div>` : ''}
-       <div class="home-act-planning-hint">
-         <span class="lang-zh">这是占位时间槽，点编辑认领并替换标题</span>
-         <span class="lang-en">Placeholder slot — click edit to claim and replace the title</span>
-       </div>`
+         </div>` : ''}`
     : `<h4 class="home-act-title">
          <span class="lang-zh">${esc(a.title || '')}</span>
          <span class="lang-en">${esc(a.title_en || a.title || '')}</span>
@@ -969,7 +1002,7 @@ function renderShanghaiEvent(a) {
     ? `<span class="home-act-cta-attendees">${attCount} ${attCount === 1 ? 'RSVP' : 'RSVPs'}</span>`
     : '';
 
-  return `<article class="home-act-card sh-event${isPast ? ' is-past' : ''}${isPlanning ? ' is-planning' : ''}${isLive ? ' is-live-now' : ''}" data-rec-id="${esc(a.record_id)}" onclick="toggleShCardExpand(event, this)">
+  return `<article class="home-act-card${isPast ? ' is-past' : ''}${isPlanning ? ' is-planning' : ''}${isLive ? ' is-live-now' : ''}" data-rec-id="${esc(a.record_id)}" onclick="toggleShCardExpand(event, this)">
     <div class="home-act-header">
       <div class="home-act-datestack">
         <div class="home-act-dateline">

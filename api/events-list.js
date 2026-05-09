@@ -165,10 +165,16 @@ function renderCard(a, isPast, avatarData) {
         ? `<div class="home-act-locline">${escapeHtml(a.city)}</div>`
         : (isPast ? '<div class="home-act-locline">已结束</div>' : ''));
 
-  // 类型 pill：筹备中 → 暖橙 "筹备中"；否则 act.types[0]
+  // 类型 pill：筹备中时 pill + 占位提示同行；正常时只 pill
   const primaryType = (a.types || []).filter(Boolean)[0] || '';
   const typepillHtml = isPlanning
-    ? '<span class="home-act-typepill is-planning">筹备中</span>'
+    ? `<div class="home-act-pill-row">
+        <span class="home-act-typepill is-planning"><span class="lang-zh-only">筹备中</span><span class="lang-en-only">Planning</span></span>
+        <span class="home-act-planning-hint">
+          <span class="lang-zh-only">时间槽已占位，活动详情仍在编辑确认中。</span>
+          <span class="lang-en-only">Slot reserved — details still being confirmed.</span>
+        </span>
+       </div>`
     : (primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '');
 
   // 嘉宾 meta（筹备中不显示嘉宾占位）—— 双语 spans
@@ -184,11 +190,10 @@ function renderCard(a, isPast, avatarData) {
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // 标题块：筹备中 → 标题横线划掉表示占位；否则正常显示
+  // 标题块：筹备中 → 标题划掉（提示已在 pill 行）；否则正常显示
   const titleBlockHtml = isPlanning
     ? `<h4 class="home-act-title is-planning-strike">${escapeHtml(a.title || '未命名活动')}</h4>
-       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en is-planning-strike">${escapeHtml(a.title_en)}</div>` : ''}
-       <div class="home-act-planning-hint"><span class="lang-zh-only">这是占位时间槽，点编辑认领并替换标题</span><span class="lang-en-only">Placeholder slot — click edit to claim and replace the title</span></div>`
+       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en is-planning-strike">${escapeHtml(a.title_en)}</div>` : ''}`
     : `<h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
        ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
        ${metaLineHtml}`;

@@ -272,11 +272,24 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   color: var(--cyc-text-muted);
   opacity: 0.78;
 }
+/* v4.2.12: 筹备中 pill + 提示同行（pill 在前，提示 italic 跟在后面） */
+.home-act-pill-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+  min-width: 0;
+}
+.home-act-pill-row .home-act-typepill {
+  margin: 0;
+  flex-shrink: 0;
+}
+.home-act-pill-row .home-act-planning-hint {
+  flex: 1; min-width: 0;
+  padding: 0;
+}
 .home-act-planning-hint {
-  font-size: 12px; line-height: 1.5;
+  font-size: 12px; line-height: 1.4;
   color: var(--cyc-orange);
   font-style: italic;
-  padding: 6px 0 0;
   letter-spacing: 0.01em;
 }
 .home-act-card.is-planning .home-act-thumb-empty {
