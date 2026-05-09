@@ -566,10 +566,74 @@ async function fetchFromFeishu() {
   }
 }
 
+// ── ?edit=<rec_id> 编辑模式：从首页/详情页/筹备中卡跳过来直接加载该活动 ──
+//    Phase B (2026-05-09): 让"编辑"按钮真正能 deep-link 到具体活动
+async function loadEditTarget() {
+  const params = new URLSearchParams(location.search);
+  const editId = params.get('edit');
+  if (!editId) return false;
+
+  // 拉宽日期范围（-60 ~ +60）找目标活动
+  try {
+    const today = new Date();
+    const pastD   = new Date(today.getTime() - 60 * 86400000);
+    const futureD = new Date(today.getTime() + 60 * 86400000);
+    const res = await fetch('/api/get-activities', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekStart: fmt(pastD), weekEnd: fmt(futureD) }),
+    });
+    const json = await res.json();
+    if (!json.success || !json.activities) return false;
+
+    const target = json.activities.find(a => a.record_id === editId);
+    if (!target || !target.date) {
+      console.warn('[edit mode] record_id 找不到:', editId);
+      const status = document.getElementById('fetchStatus');
+      if (status) status.textContent = '⚠️ 找不到要编辑的活动 (' + editId + ')';
+      return false;
+    }
+
+    // 把目标日期所在周设为当前 wkOffset
+    const targetDate = new Date(target.date + 'T00:00:00');
+    const ms = getMonStart(0);
+    const diffDays = Math.round((targetDate - ms) / 86400000);
+    wkOffset = Math.floor(diffDays / 7);
+
+    // 注入活动到 data 并渲染
+    if (!data[target.date]) data[target.date] = [];
+    target.id = 'a' + (uid++);
+    data[target.date].push(target);
+
+    selDate = target.date;
+    renderWeek();
+    renderActs();
+
+    // 高亮 + 滚动
+    setTimeout(() => jumpToAct(target.date, target.id), 100);
+
+    // 编辑模式 banner
+    const status = document.getElementById('fetchStatus');
+    if (status) {
+      status.innerHTML = '📝 编辑模式 · ' + escapeHtml(target.title || '(无标题)');
+      status.style.color = 'var(--cyc-orange, #d9652a)';
+    }
+    return true;
+  } catch (err) {
+    console.error('[edit mode] failed:', err);
+    return false;
+  }
+}
+
+// helper for edit-mode banner
+function escapeHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
 // ── 进页面后自动拉一次本周飞书活动 ──
-// 之前用户必须手动点「☁️ 从飞书读取本周活动」，反直觉；改成首次加载就抓
+// edit 模式优先：?edit=<rec_id> 在则进编辑模式，否则常规加载本周
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => fetchFromFeishu(), 200);
+  setTimeout(async () => {
+    const editLoaded = await loadEditTarget();
+    if (!editLoaded) fetchFromFeishu();
+  }, 200);
 });
 
 // ── Status pills ──
