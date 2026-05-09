@@ -99,18 +99,30 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   text-align: center;
 }
 .home-cta-create {
-  display: inline-flex; align-items: center; gap: 10px;
-  background: var(--cyc-orange); color: #fff;
+  /* v4.2.10: glass morphism —— 半透 + backdrop blur + inset highlight */
+  display: inline-flex; align-items: center; gap: 12px;
+  background: rgba(217, 101, 42, 0.16);
+  backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(217, 101, 42, 0.30);
+  color: var(--cyc-orange);
   font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
-  padding: 14px 28px; border-radius: 100px;
+  padding: 13px 28px; border-radius: 100px;
   text-decoration: none;
-  box-shadow: 0 4px 16px rgba(217,101,42,0.25);
+  box-shadow: 0 2px 12px rgba(217,101,42,0.10), inset 0 1px 0 rgba(255,255,255,0.55);
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s, box-shadow 0.15s;
+  transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
 }
-.home-cta-create:hover { box-shadow: 0 6px 20px rgba(217,101,42,0.32); }
+.home-cta-create:hover {
+  background: rgba(217, 101, 42, 0.24);
+  box-shadow: 0 4px 18px rgba(217,101,42,0.18), inset 0 1px 0 rgba(255,255,255,0.65);
+}
 .home-cta-create:active { transform: scale(0.97); }
-.home-cta-icon { font-size: 17px; }
+/* v4.2.10: + icon —— 透明 thin 字符代替 ✏️ emoji */
+.home-cta-icon {
+  font-size: 22px; font-weight: 200; line-height: 1;
+  opacity: 0.85;
+  margin-top: -1px;
+}
 .home-cta-arrow { font-size: 14px; opacity: 0.85; }
 
 .home-cta-hint {
@@ -157,12 +169,14 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 }
 
 .home-act-card {
-  /* v4.2.9（2026-05-09 玖玖四轮）：紧凑排版 —— gap 8 → 4，header 单独 margin
-   * - datestack 不再强制 88px 跟 thumb 对齐（不必要的视觉束缚）
-   * - 类型 pill 真正成为 header 与 title 之间的薄分隔，上下贴紧
-   * - 标题 / EN / 嘉宾 紧密堆，CTA 行单独留间距 */
+  /* v4.2.10（2026-05-09 玖玖五轮）：3 区块结构
+   * Block 1: header (datestack + thumb)
+   * Block 2: pill + title + title_en + speakers (信息密集，内部紧凑)
+   * Block 3: cta-row
+   * pill 上下都有呼吸（14/10），让 3 区块清楚分隔
+   * 筹备中状态：隐藏 title block，CTA 改"编辑"链到 generator */
   display: flex; flex-direction: column;
-  gap: 4px;
+  gap: 0;
   padding: 16px;
   background: rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
@@ -194,8 +208,8 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   font-family: var(--cyc-font-mono);
   flex: 1; min-width: 0;
 }
-/* header 跟下方 typepill 之间留呼吸（不让 datestack 强行匹配 thumb 高度）*/
-.home-act-header { margin-bottom: 6px; }
+/* v4.2.10: 3 区块间距 —— header → pill → title → cta */
+.home-act-header { margin-bottom: 14px; }
 .home-act-dateline {
   font-size: 16px; font-weight: 600;
   color: var(--cyc-green);
@@ -240,6 +254,24 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
 .home-act-rsvp.is-past {
   background: rgba(0,0,0,0.10); color: var(--cyc-text-muted);
   pointer-events: none;
+}
+/* v4.2.10: 筹备中"编辑"按钮 —— 暖橙 outline */
+.home-act-rsvp.is-edit {
+  background: rgba(217,101,42,0.14);
+  color: var(--cyc-orange);
+  border: 1px solid rgba(217,101,42,0.30);
+  padding: 6px 13px;  /* border 占了 1px，paddng 减 1 保持高度 */
+}
+.home-act-rsvp.is-edit:hover { background: rgba(217,101,42,0.22); opacity: 1; }
+/* v4.2.10: 筹备中提示（隐藏标题/嘉宾/EN，给个友好引导） */
+.home-act-planning-hint {
+  font-size: 13px; line-height: 1.5;
+  color: var(--cyc-text-muted);
+  font-style: italic;
+  padding: 4px 0 2px;
+}
+.home-act-card.is-planning .home-act-thumb-empty {
+  /* 筹备中卡片的占位 thumb 用更弱化的颜色（如果想加，但 cyc-time-* 已 ok）*/
 }
 .home-act-cta-attendees {
   display: flex; align-items: center; gap: 6px;
@@ -391,10 +423,18 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   background: rgba(28,61,46,0.08); color: var(--cyc-green);
   border-radius: 3px;
-  margin: 0 0 2px 0;  /* 紧贴下方标题 */
+  margin: 0 0 10px 0;  /* v4.2.10: 跟下方标题块留出呼吸（10px） */
 }
+/* 筹备中：暖橙色 pill */
+.home-act-typepill.is-planning {
+  background: rgba(217,101,42,0.14); color: var(--cyc-orange);
+}
+/* 标题 / EN / meta 内部紧凑（同一区块）*/
+.home-act-title { margin-bottom: 3px; }
+.home-act-title-en { margin-bottom: 6px; }
+.home-act-meta-line { margin-bottom: 0; }
 /* CTA 行额外上间距，跟前面 meta 拉开 */
-.home-act-cta-row { margin-top: 8px; }
+.home-act-cta-row { margin-top: 14px; }
 
 .home-act-title {
   /* v4.2.8: 显式 serif（dayrise-os display register）—— 跟上面 mono datestack 形成字族对比 */

@@ -70,7 +70,7 @@
   <!-- 创建活动 CTA（玖玖型用户的核心入口）-->
   <section class="home-cta-section">
     <a class="home-cta-create" href="/generator" data-track="cta_create_event">
-      <span class="home-cta-icon">✏️</span>
+      <span class="home-cta-icon" aria-hidden="true">+</span>
       <span class="lang-zh-only">编辑活动通告</span>
       <span class="lang-en-only">Edit event announcement</span>
       <span class="home-cta-arrow">→</span>
@@ -81,19 +81,28 @@
   <section class="home-activities">
     <header class="home-activities-head">
       <div class="home-activities-title">
-        <span class="cyc-eyebrow cyc-eyebrow--sm" id="evEyebrow">EVENTS · 大理</span>
-        <h3>近期活动</h3>
+        <span class="cyc-eyebrow cyc-eyebrow--sm" id="evEyebrow">
+          <span class="lang-zh-only" id="evEyebrowZh">EVENTS · 大理</span>
+          <span class="lang-en-only" id="evEyebrowEn">EVENTS · DALI</span>
+        </span>
+        <h3>
+          <span class="lang-zh-only">近期活动</span>
+          <span class="lang-en-only">Upcoming</span>
+        </h3>
       </div>
-      <a href="/events" id="evMoreLink">全部活动 →</a>
+      <a href="/events" id="evMoreLink">
+        <span class="lang-zh-only" id="evMoreLinkZh">全部活动 →</span>
+        <span class="lang-en-only" id="evMoreLinkEn">All events →</span>
+      </a>
     </header>
-    <div class="home-zone-tabs" role="tablist" aria-label="城市切换">
+    <div class="home-zone-tabs" role="tablist" aria-label="城市切换 / Toggle city">
       <button class="home-zone-tab is-active" type="button" role="tab" data-zone="大理" data-track="home_zone_tab" data-track-meta='{"zone":"大理"}'>
-        <span class="home-zone-tab-zh">大理</span>
-        <span class="home-zone-tab-en">Dali</span>
+        <span class="lang-zh-only">大理</span>
+        <span class="lang-en-only">Dali</span>
       </button>
       <button class="home-zone-tab" type="button" role="tab" data-zone="上海" data-track="home_zone_tab" data-track-meta='{"zone":"上海"}'>
-        <span class="home-zone-tab-zh">上海</span>
-        <span class="home-zone-tab-en">Shanghai · 706 × muShanghai</span>
+        <span class="lang-zh-only">上海</span>
+        <span class="lang-en-only">Shanghai · 706 × muShanghai</span>
       </button>
     </div>
     <div id="actStream" class="home-act-grid">
@@ -237,17 +246,21 @@
 const ZONE_KEY = 'cyc-home-zone';
 const ZONE_CONFIG = {
   '大理': {
-    eyebrow: 'EVENTS · 大理',
+    eyebrowZh: 'EVENTS · 大理',
+    eyebrowEn: 'EVENTS · DALI',
     moreHref: '/events',
-    moreLabel: '全部活动 →',
+    moreLabelZh: '全部活动 →',
+    moreLabelEn: 'All events →',
     emptyHtml: '<div class="home-act-empty">本月还没活动 · <a href="/generator">发一场？</a></div>',
     daysPast: 14,
     daysFuture: 28,
   },
   '上海': {
-    eyebrow: 'EVENTS · 上海 · 706 × muShanghai',
+    eyebrowZh: 'EVENTS · 上海 · 706 × muShanghai',
+    eyebrowEn: 'EVENTS · SHANGHAI · 706 × muShanghai',
     moreHref: '/shanghai',
-    moreLabel: 'All Shanghai events →',
+    moreLabelZh: '全部上海活动 →',
+    moreLabelEn: 'All Shanghai events →',
     emptyHtml: '<div class="home-act-empty">No upcoming Shanghai events · <a href="/shanghai">see /shanghai</a></div>',
     daysPast: 30,
     daysFuture: 35,  // 覆盖到 6/6 文化周收官
@@ -271,14 +284,17 @@ async function loadActivities(zone) {
   const stream = document.getElementById('actStream');
   stream.innerHTML = '<div class="home-act-loading">加载中…</div>';
 
-  // 更新 eyebrow + "全部活动 →" 链接
-  const eyebrow = document.getElementById('evEyebrow');
-  const moreLink = document.getElementById('evMoreLink');
-  if (eyebrow)  eyebrow.textContent = cfg.eyebrow;
-  if (moreLink) {
-    moreLink.href = cfg.moreHref;
-    moreLink.textContent = cfg.moreLabel;
-  }
+  // 更新 eyebrow + "全部活动 →" 链接（双语：分别 set zh / en span 的 textContent）
+  const eyebrowZh = document.getElementById('evEyebrowZh');
+  const eyebrowEn = document.getElementById('evEyebrowEn');
+  if (eyebrowZh) eyebrowZh.textContent = cfg.eyebrowZh;
+  if (eyebrowEn) eyebrowEn.textContent = cfg.eyebrowEn;
+  const moreLink   = document.getElementById('evMoreLink');
+  const moreLinkZh = document.getElementById('evMoreLinkZh');
+  const moreLinkEn = document.getElementById('evMoreLinkEn');
+  if (moreLink) moreLink.href = cfg.moreHref;
+  if (moreLinkZh) moreLinkZh.textContent = cfg.moreLabelZh;
+  if (moreLinkEn) moreLinkEn.textContent = cfg.moreLabelEn;
 
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
@@ -360,34 +376,50 @@ function renderCard(a) {
         ? `<div class="home-act-locline">${escapeHtml(a.city)}</div>`
         : (isPast ? '<div class="home-act-locline">已结束</div>' : ''));
 
-  // 类型 pill：取首个有效 type
-  const primaryType = (a.types || []).filter(Boolean)[0] || '';
-  const typepillHtml = primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '';
+  // v4.2.10: 筹备中状态特殊渲染 —— 时间块正常 / pill 改"筹备中" / 隐藏标题块 / CTA 改"编辑"
+  const isPlanning = a.status === '筹备酝酿中';
 
-  // 嘉宾 meta（speakers 名字一行，attendees 头像挪到展开）
+  // 类型 pill：筹备中 → 暖橙 "筹备中" pill；否则 act.types[0]
+  const primaryType = (a.types || []).filter(Boolean)[0] || '';
+  const typepillHtml = isPlanning
+    ? '<span class="home-act-typepill is-planning"><span class="lang-zh-only">筹备中</span><span class="lang-en-only">Planning</span></span>'
+    : (primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '');
+
+  // 嘉宾 meta（speakers 名字一行；筹备中时不显示嘉宾占位）
   const metaItems = [];
-  if (a.card_speakers && a.card_speakers.length) {
+  if (!isPlanning && a.card_speakers && a.card_speakers.length) {
     metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(a.card_speakers.map(s => s.name).join(' · '))}</span>`);
   }
   const metaLineHtml = metaItems.length
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // CTA 行：我要报名按钮 + 已报名 N（小文字；头像挪到展开区，避免拥挤）
+  // 标题块：筹备中 → 隐藏（占位标题/嘉宾不应让真讲者疑惑）；否则正常
+  const titleBlockHtml = isPlanning
+    ? `<div class="home-act-planning-hint">
+        <span class="lang-zh-only">这个时间槽还在筹备中。如果你想做讲者 / Demo，点编辑认领。</span>
+        <span class="lang-en-only">This slot is still planning. Click edit if you'd like to claim it.</span>
+      </div>`
+    : `<h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
+       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
+       ${metaLineHtml}`;
+
+  // CTA 行：筹备中 → "编辑 →" 跳 generator；正常 → "我要报名" 跳 events 详情
   const attendeesTotal = a.card_attendee_total || 0;
-  const attendeeCountHtml = attendeesTotal
+  const attendeeCountHtml = (!isPlanning && attendeesTotal)
     ? `<span class="home-act-cta-attendees">${attendeesTotal} 已报名</span>`
     : '';
   const rsvpHref = `/events/${escapeAttr(a.record_id)}`;
-  const ctaHtml = `<div class="home-act-cta-row">
-    ${isPast
-      ? '<span class="home-act-rsvp is-past">已结束</span>'
-      : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()">我要报名 →</a>`}
-    ${attendeeCountHtml}
-  </div>`;
+  const editHref = `/generator?edit=${escapeAttr(a.record_id)}`;
+  const ctaButtonHtml = isPlanning
+    ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()"><span class="lang-zh-only">编辑 →</span><span class="lang-en-only">Edit →</span></a>`
+    : (isPast
+        ? '<span class="home-act-rsvp is-past"><span class="lang-zh-only">已结束</span><span class="lang-en-only">Past</span></span>'
+        : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()"><span class="lang-zh-only">我要报名 →</span><span class="lang-en-only">RSVP →</span></a>`);
+  const ctaHtml = `<div class="home-act-cta-row">${ctaButtonHtml}${attendeeCountHtml}</div>`;
 
   // ⚠️ 外层用 <article>（避免 <a> 套 <a>）；click → toggleCardExpand
-  return `<article class="home-act-card${isPast ? ' is-past' : ''}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' data-href="${rsvpHref}" onclick="toggleCardExpand(event, this)">
+  return `<article class="home-act-card${isPast ? ' is-past' : ''}${isPlanning ? ' is-planning' : ''}" data-track="event_card_click" data-track-meta='${escapeAttr(JSON.stringify({record_id: a.record_id}))}' data-href="${rsvpHref}" onclick="toggleCardExpand(event, this)">
     <div class="home-act-header">
       <div class="home-act-datestack">
         ${dateLineHtml}
@@ -397,9 +429,7 @@ function renderCard(a) {
       ${thumbHtml}
     </div>
     ${typepillHtml}
-    <h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
-    ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
-    ${metaLineHtml}
+    ${titleBlockHtml}
     ${ctaHtml}
     ${expandHtml}
   </article>`;
