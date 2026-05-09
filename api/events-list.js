@@ -204,11 +204,13 @@ function renderCard(a, isPast, avatarData) {
     : '';
   const rsvpHref = `/events/${a.record_id}`;
   const editHref = `/generator?edit=${a.record_id}`;
+  // v4.2.13 Task 2: "我要报名" → 弹全局 RSVP modal（不跳详情页）
+  const rsvpDataAttrs = `data-rec-id="${escapeHtml(a.record_id)}" data-title="${escapeHtml(a.title || '')}" data-title-en="${escapeHtml(a.title_en || '')}" data-city="${escapeHtml(a.city || '大理')}" data-fee="${Number(a.onsite_fee) || 0}"`;
   const ctaButtonHtml = isPlanning
     ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()"><span class="lang-zh-only">编辑 →</span><span class="lang-en-only">Edit →</span></a>`
     : (isPast
         ? '<span class="home-act-rsvp is-past"><span class="lang-zh-only">已结束</span><span class="lang-en-only">Past</span></span>'
-        : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()"><span class="lang-zh-only">我要报名 →</span><span class="lang-en-only">RSVP →</span></a>`);
+        : `<button type="button" class="home-act-rsvp js-cyc-rsvp" ${rsvpDataAttrs} onclick="event.stopPropagation();cycOpenRsvpFromBtn(this)"><span class="lang-zh-only">我要报名 →</span><span class="lang-en-only">RSVP →</span></button>`);
   const ctaHtml = `<div class="home-act-cta-row">${ctaButtonHtml}${attendeeCountHtml}</div>`;
 
   // 展开区
@@ -597,6 +599,19 @@ ${itemListLd}
 </script>
 
 <script src="/cyc-track.js" defer></script>
+<script src="/cyc-rsvp.js" defer></script>
+<script>
+window.cycOpenRsvpFromBtn = function (btn) {
+  if (typeof window.cycOpenRsvp !== 'function') return;
+  window.cycOpenRsvp({
+    record_id:  btn.dataset.recId,
+    title:      btn.dataset.title,
+    title_en:   btn.dataset.titleEn,
+    city:       btn.dataset.city,
+    onsite_fee: Number(btn.dataset.fee) || 0,
+  });
+};
+</script>
 </body>
 </html>`;
 }

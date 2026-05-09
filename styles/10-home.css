@@ -612,3 +612,101 @@ body.cyc-lang-en .lang-zh-only { display: none !important; }
   color: var(--cyc-text-muted);
   letter-spacing: 0.01em;
 }
+
+/* ═══════════════════════════════════════════════
+ * cyc-rsvp 全局 RSVP modal (v4.2.13 Task 2)
+ * Hoist 自 /shanghai 的 modal —— home / events / shanghai 共用
+ * ═══════════════════════════════════════════════ */
+.cyc-rsvp-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.42);
+  display: none; z-index: 100;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  overscroll-behavior: contain;
+}
+.cyc-rsvp-overlay.open { display: flex; }
+.cyc-rsvp-modal {
+  background: #fff; border-radius: 10px;
+  width: 100%; max-width: 460px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 28px 26px;
+  position: relative;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+}
+.cyc-rsvp-close {
+  position: absolute; top: 14px; right: 14px;
+  appearance: none; background: transparent; border: 0;
+  width: 32px; height: 32px; border-radius: 999px;
+  font-size: 22px; line-height: 1; color: var(--cyc-text-muted);
+  cursor: pointer;
+}
+.cyc-rsvp-close:hover { background: rgba(0,0,0,0.06); }
+.cyc-rsvp-modal h2 { margin: 0 0 4px; font-size: 20px; font-weight: 500; }
+.cyc-rsvp-subtitle { margin: 0 0 18px; font-size: 13px; color: var(--cyc-text-muted); font-style: italic; }
+
+.cyc-rsvp-row { margin-bottom: 12px; }
+.cyc-rsvp-label {
+  display: block; margin-bottom: 4px;
+  font-family: var(--cyc-font-mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--cyc-text-muted);
+}
+.cyc-rsvp-input {
+  width: 100%; box-sizing: border-box;
+  padding: 10px 12px; font-size: 14px;
+  border: 1px solid var(--cyc-stroke, rgba(0,0,0,0.12)); border-radius: 4px;
+  background: #fff; color: var(--cyc-text);
+  font-family: inherit;
+}
+.cyc-rsvp-input:focus { outline: 2px solid var(--cyc-green); outline-offset: -1px; border-color: var(--cyc-green); }
+textarea.cyc-rsvp-input { resize: vertical; min-height: 60px; }
+
+.cyc-rsvp-radio-row { display: flex; gap: 12px; }
+.cyc-rsvp-radio-row label {
+  flex: 1; padding: 10px 12px; border: 1px solid var(--cyc-stroke, rgba(0,0,0,0.12)); border-radius: 4px;
+  font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.cyc-rsvp-radio-row label.is-selected { border-color: var(--cyc-green); background: rgba(28,61,46,0.04); }
+.cyc-rsvp-radio-row input { accent-color: var(--cyc-green); }
+
+.cyc-rsvp-checkbox {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 10px 12px; border: 1px solid var(--cyc-stroke, rgba(0,0,0,0.12)); border-radius: 4px;
+  font-size: 13px; cursor: pointer;
+}
+.cyc-rsvp-checkbox.is-checked { border-color: var(--cyc-orange); background: rgba(217,101,42,0.05); }
+.cyc-rsvp-checkbox input { accent-color: var(--cyc-orange); margin-top: 2px; }
+
+.cyc-rsvp-toggle {
+  margin-top: 4px; font-size: 12px;
+  color: var(--cyc-green); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+  background: none; border: 0; padding: 0;
+  font-family: inherit;
+}
+.cyc-rsvp-toggle:hover { color: var(--cyc-orange); }
+
+.cyc-rsvp-hint {
+  margin-top: 4px; font-size: 11.5px;
+  color: var(--cyc-text-muted); line-height: 1.5; font-style: italic;
+}
+
+.cyc-rsvp-submit {
+  width: 100%; margin-top: 16px;
+  padding: 12px; border: 0; border-radius: 999px;
+  background: var(--cyc-green); color: #fff;
+  font-family: var(--cyc-font-mono); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.04em; cursor: pointer;
+}
+.cyc-rsvp-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.cyc-rsvp-error { margin-top: 12px; color: #c0392b; font-size: 13px; }
+
+.cyc-rsvp-confirm-icon { font-size: 36px; text-align: center; margin-bottom: 8px; }
+.cyc-rsvp-fee {
+  margin: 14px 0; padding: 14px;
+  border-radius: 4px; font-size: 13.5px; line-height: 1.5;
+  background: rgba(28,61,46,0.06); color: var(--cyc-green);
+  font-family: var(--cyc-font-mono);
+}
+.cyc-rsvp-fee.is-paid { background: rgba(217,101,42,0.08); color: var(--cyc-orange); }
