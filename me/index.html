@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>我 · CYC.center</title>
+<meta name="description" content="你的 CYC 个人中心 · 我的报名 · 我的 timeline · 个人 profile">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  body.cyc-brand { padding-bottom: 80px; min-height: 100vh; position: relative; overflow-x: hidden; }
+
+  /* face-blurred 人形背景 —— SVG silhouette + heavy blur，"这可能是你" */
+  .me-bg {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .me-bg svg {
+    position: absolute; top: 50%; left: 50%;
+    width: 800px; height: 1200px;
+    transform: translate(-50%, -42%);
+    opacity: 0.55;
+  }
+  /* 已识别身份时 —— bg 减弱（用户已有自己的 identity 卡了，不抢镜） */
+  body.is-known-user .me-bg svg { opacity: 0.32; }
+
+  /* topbar */
+  .me-page {
+    position: relative; z-index: 1;
+    max-width: 720px; margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  .me-topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 40px;
+  }
+  .me-topbar a, .me-topbar button {
+    font-size: 13px; font-weight: 600; color: var(--cyc-green);
+    text-decoration: none; padding: 6px 12px; border-radius: 8px;
+    background: transparent; border: 0; cursor: pointer;
+    font-family: inherit;
+  }
+  .me-topbar a:hover, .me-topbar button:hover { background: rgba(28,61,46,0.06); }
+  .me-lang {
+    font-family: 'IBM Plex Mono', monospace !important;
+    letter-spacing: 0.06em;
+    border-radius: 100px !important;
+  }
+
+  /* hero */
+  .me-hero {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .me-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--cyc-text-muted); margin-bottom: 8px;
+  }
+  .me-hero h1 {
+    font-family: 'Source Serif 4', 'Source Han Serif SC', serif;
+    font-size: 36px; font-weight: 400; letter-spacing: -0.01em;
+    margin: 0 0 10px; color: var(--cyc-text-strong);
+  }
+  .me-hero p {
+    margin: 0; color: var(--cyc-text-muted); font-size: 14.5px;
+    line-height: 1.6; font-style: italic;
+    max-width: 420px; margin: 0 auto;
+  }
+
+  /* glass cards */
+  .me-card {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border-radius: var(--cyc-r-card);
+    padding: 22px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.55);
+    margin-bottom: 16px;
+  }
+
+  /* identity card (known user) */
+  .me-id-card {
+    display: flex; gap: 16px; align-items: center;
+  }
+  .me-id-avatar {
+    width: 64px; height: 64px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(28,61,46,0.12); color: var(--cyc-green);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 24px; font-family: 'Source Serif 4', serif; font-weight: 500;
+    overflow: hidden;
+  }
+  .me-id-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .me-id-info { flex: 1; min-width: 0; }
+  .me-id-name {
+    font-family: 'Source Serif 4', 'Source Han Serif SC', serif;
+    font-size: 19px; font-weight: 500;
+    color: var(--cyc-text-strong);
+    margin: 0 0 3px;
+  }
+  .me-id-cred {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--cyc-text-muted);
+  }
+  .me-id-actions {
+    display: flex; gap: 6px;
+  }
+  .me-id-clear {
+    appearance: none; background: transparent; border: 0;
+    color: var(--cyc-text-muted); font-size: 11.5px; cursor: pointer;
+    text-decoration: underline; padding: 4px 6px;
+  }
+  .me-id-clear:hover { color: #c0392b; }
+
+  /* cards grid (known user) */
+  .me-actions-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  @media (max-width: 480px) {
+    .me-actions-grid { grid-template-columns: 1fr; }
+  }
+  .me-action {
+    display: flex; flex-direction: column; gap: 2px;
+    background: rgba(255,255,255,0.50);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-radius: var(--cyc-r-card);
+    padding: 18px 18px;
+    text-decoration: none; color: var(--cyc-text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: transform 0.12s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .me-action:hover {
+    background: rgba(255,255,255,0.70);
+    transform: translateY(-2px);
+  }
+  .me-action-icon { font-size: 20px; line-height: 1; margin-bottom: 6px; }
+  .me-action-name {
+    font-family: 'Source Serif 4', 'Source Han Serif SC', serif;
+    font-size: 15px; font-weight: 500;
+    color: var(--cyc-text-strong);
+  }
+  .me-action-desc {
+    font-size: 12px; color: var(--cyc-text-muted);
+    line-height: 1.45; margin-top: 2px;
+  }
+  .me-action-count {
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; color: var(--cyc-green);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* onboard CTA (unknown user) */
+  .me-onboard-cta {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(217, 101, 42, 0.16);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border: 1px solid rgba(217, 101, 42, 0.30);
+    color: var(--cyc-orange);
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    padding: 13px 26px; border-radius: 100px;
+    text-decoration: none;
+    box-shadow: 0 2px 12px rgba(217,101,42,0.10), inset 0 1px 0 rgba(255,255,255,0.55);
+    cursor: pointer; appearance: none; font-family: inherit;
+  }
+  .me-onboard-cta:hover { background: rgba(217, 101, 42, 0.24); }
+  .me-onboard-cta-icon { font-size: 22px; font-weight: 200; line-height: 1; }
+
+  .me-onboard-card-content { text-align: center; padding: 8px 0; }
+  .me-onboard-card-content > p {
+    margin: 0 0 18px; color: var(--cyc-text-muted);
+    font-size: 13.5px; line-height: 1.55;
+  }
+
+  .me-divider {
+    margin: 22px 0 14px;
+    text-align: center;
+    font-size: 11.5px; color: var(--cyc-text-muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* find form (unknown user) */
+  .me-find-form {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .me-find-form label {
+    font-size: 12px; color: var(--cyc-text-muted); margin-bottom: -2px;
+  }
+  .me-find-form input {
+    padding: 10px 14px; font-size: 14px;
+    border: 1px solid rgba(0,0,0,0.10); border-radius: 6px;
+    background: rgba(255,255,255,0.7);
+    font-family: inherit;
+  }
+  .me-find-form input:focus { outline: 2px solid var(--cyc-green); outline-offset: -1px; border-color: var(--cyc-green); }
+  .me-find-form button {
+    padding: 10px; border: 0; border-radius: 100px;
+    background: var(--cyc-green); color: #fff;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600;
+    letter-spacing: 0.04em; cursor: pointer;
+  }
+  .me-find-form button:disabled { opacity: 0.5; }
+  .me-find-msg {
+    margin-top: 8px; font-size: 12px;
+    color: var(--cyc-text-muted); line-height: 1.5;
+  }
+  .me-find-msg.is-error { color: #c0392b; }
+  .me-find-msg.is-success { color: var(--cyc-green); }
+
+  /* lang spans */
+  body:not(.cyc-lang-en) .lang-en-only { display: none !important; }
+  body.cyc-lang-en .lang-zh-only { display: none !important; }
+</style>
+</head>
+<body class="cyc-brand">
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<!-- 模糊人形 SVG 背景：head + shoulders silhouette -->
+<div class="me-bg" aria-hidden="true">
+  <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="meBlur" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="38"/>
+      </filter>
+      <radialGradient id="meSkin" cx="50%" cy="40%" r="55%">
+        <stop offset="0%" stop-color="rgba(180,170,160,0.55)"/>
+        <stop offset="60%" stop-color="rgba(140,135,140,0.42)"/>
+        <stop offset="100%" stop-color="rgba(105,105,120,0.25)"/>
+      </radialGradient>
+      <linearGradient id="meShirt" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="rgba(70,90,110,0.55)"/>
+        <stop offset="100%" stop-color="rgba(40,55,80,0.30)"/>
+      </linearGradient>
+    </defs>
+    <g filter="url(#meBlur)">
+      <!-- head -->
+      <circle cx="200" cy="220" r="105" fill="url(#meSkin)"/>
+      <!-- neck -->
+      <rect x="160" y="295" width="80" height="55" fill="url(#meSkin)" rx="20"/>
+      <!-- shoulders + body -->
+      <path d="M 60 600 Q 60 400 140 360 Q 200 340 260 360 Q 340 400 340 600 Z" fill="url(#meShirt)"/>
+    </g>
+  </svg>
+</div>
+
+<div class="me-page">
+  <div class="me-topbar">
+    <a href="/">← <span class="lang-zh-only">主页</span><span class="lang-en-only">Home</span></a>
+    <button type="button" class="me-lang" id="meLang">
+      <span class="lang-zh-only">中 · EN</span>
+      <span class="lang-en-only">EN · 中</span>
+    </button>
+  </div>
+
+  <div class="me-hero">
+    <div class="me-eyebrow">
+      <span class="lang-zh-only">个人中心</span>
+      <span class="lang-en-only">My Space</span>
+    </div>
+    <h1>
+      <span class="lang-zh-only" id="meH1Zh">这可能是你</span>
+      <span class="lang-en-only" id="meH1En">This could be you</span>
+    </h1>
+    <p>
+      <span class="lang-zh-only" id="meSubZh">让 CYC 认识你 —— 加入活动、留下你的故事</span>
+      <span class="lang-en-only" id="meSubEn">Let CYC see you — join events, leave a trace</span>
+    </p>
+  </div>
+
+  <!-- 已识别身份 视图 -->
+  <div id="meKnownView" style="display:none;">
+    <div class="me-card me-id-card">
+      <div class="me-id-avatar" id="meIdAvatar">?</div>
+      <div class="me-id-info">
+        <div class="me-id-name" id="meIdName"></div>
+        <div class="me-id-cred" id="meIdCred"></div>
+      </div>
+      <div class="me-id-actions">
+        <button type="button" class="me-id-clear" id="meIdClear">
+          <span class="lang-zh-only">不是我？切换</span>
+          <span class="lang-en-only">Not me? Switch</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="me-actions-grid">
+      <a class="me-action" href="/me/rsvps">
+        <div class="me-action-icon">📋</div>
+        <div class="me-action-name">
+          <span class="lang-zh-only">我的报名</span>
+          <span class="lang-en-only">My RSVPs</span>
+        </div>
+        <div class="me-action-desc">
+          <span class="lang-zh-only">所有报名活动 · 可取消</span>
+          <span class="lang-en-only">All events you've RSVP'd to · cancel anytime</span>
+        </div>
+        <div class="me-action-count" id="meRsvpCount"></div>
+      </a>
+
+      <a class="me-action" href="#" id="meProfileLink">
+        <div class="me-action-icon">👤</div>
+        <div class="me-action-name">
+          <span class="lang-zh-only">我的公开 profile</span>
+          <span class="lang-en-only">My public profile</span>
+        </div>
+        <div class="me-action-desc">
+          <span class="lang-zh-only">其他成员看到你的页面</span>
+          <span class="lang-en-only">How other members find you</span>
+        </div>
+      </a>
+
+      <a class="me-action" href="/me/timeline">
+        <div class="me-action-icon">🗓️</div>
+        <div class="me-action-name">
+          <span class="lang-zh-only">我的 timeline</span>
+          <span class="lang-en-only">My timeline</span>
+        </div>
+        <div class="me-action-desc">
+          <span class="lang-zh-only">在 CYC 的足迹 · 活动 / 据点</span>
+          <span class="lang-en-only">Your footprint · events / hubs</span>
+        </div>
+      </a>
+
+      <a class="me-action" href="https://lqmkb0ekbll.feishu.cn/share/base/form/shrcn2Bc79UfHG2MPVPvgQper6r" target="_blank" rel="noopener">
+        <div class="me-action-icon">✏️</div>
+        <div class="me-action-name">
+          <span class="lang-zh-only">编辑成员资料</span>
+          <span class="lang-en-only">Edit member profile</span>
+        </div>
+        <div class="me-action-desc">
+          <span class="lang-zh-only">介绍 / 照片 / 社群身份 →</span>
+          <span class="lang-en-only">Bio / photo / role →</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 未识别 onboard 视图 -->
+  <div id="meUnknownView" style="display:none;">
+    <div class="me-card me-onboard-card-content">
+      <p>
+        <span class="lang-zh-only">还没在 CYC 留下你的脸 —— 报个名或填个资料就成员了</span>
+        <span class="lang-en-only">Haven't shown your face on CYC yet — RSVP or fill your profile to be seen</span>
+      </p>
+      <a class="me-onboard-cta" href="https://lqmkb0ekbll.feishu.cn/share/base/form/shrcn2Bc79UfHG2MPVPvgQper6r" target="_blank" rel="noopener">
+        <span class="me-onboard-cta-icon" aria-hidden="true">+</span>
+        <span class="lang-zh-only">填写我的成员资料</span>
+        <span class="lang-en-only">Fill in my member profile</span>
+        <span style="font-size:14px;opacity:0.85;">→</span>
+      </a>
+    </div>
+
+    <div class="me-divider">
+      <span class="lang-zh-only">— 或者 —</span>
+      <span class="lang-en-only">— or —</span>
+    </div>
+
+    <div class="me-card">
+      <form class="me-find-form" id="meFindForm">
+        <label>
+          <span class="lang-zh-only">已经报名过 CYC 活动？输你当时填的微信 / 邮箱找回身份</span>
+          <span class="lang-en-only">RSVP'd before? Enter your WeChat / email to recover identity</span>
+        </label>
+        <input type="text" id="meFindInput" placeholder="wechat / email" autocomplete="off">
+        <button type="submit">
+          <span class="lang-zh-only">找回我的报名记录</span>
+          <span class="lang-en-only">Find my RSVPs</span>
+        </button>
+        <div id="meFindMsg" class="me-find-msg"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── 双语 toggle ───
+(function () {
+  const KEY = 'cyc-lang';
+  function getLang() {
+    try {
+      const u = new URLSearchParams(location.search).get('lang');
+      if (u === 'en' || u === 'zh') return u;
+      const s = localStorage.getItem(KEY);
+      if (s === 'en' || s === 'zh') return s;
+    } catch {}
+    if (navigator.language && navigator.language.toLowerCase().startsWith('en')) return 'en';
+    return 'zh';
+  }
+  function applyLang(lang) {
+    document.body.classList.toggle('cyc-lang-en', lang === 'en');
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh';
+    try { localStorage.setItem(KEY, lang); } catch {}
+  }
+  applyLang(getLang());
+  document.getElementById('meLang').addEventListener('click', () => {
+    const next = document.body.classList.contains('cyc-lang-en') ? 'zh' : 'en';
+    applyLang(next);
+  });
+})();
+
+// ─── 身份 ───
+function getMe() {
+  try { return JSON.parse(localStorage.getItem('cyc-me') || 'null'); } catch { return null; }
+}
+function setMe(me) {
+  try { localStorage.setItem('cyc-me', JSON.stringify(me)); } catch {}
+}
+function clearMe() {
+  try { localStorage.removeItem('cyc-me'); } catch {}
+}
+
+const knownView   = document.getElementById('meKnownView');
+const unknownView = document.getElementById('meUnknownView');
+
+document.getElementById('meIdClear').addEventListener('click', () => {
+  if (!confirm('退出当前身份？')) return;
+  clearMe();
+  init();
+});
+
+document.getElementById('meFindForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const cred = document.getElementById('meFindInput').value.trim();
+  if (!cred) return;
+  const msg = document.getElementById('meFindMsg');
+  const isEn = document.body.classList.contains('cyc-lang-en');
+  msg.className = 'me-find-msg';
+  msg.textContent = isEn ? 'Searching…' : '查找中…';
+  try {
+    const res = await fetch('/api/me-rsvps?credential=' + encodeURIComponent(cred));
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || `${res.status}`);
+    if (data.count === 0) {
+      msg.className = 'me-find-msg is-error';
+      msg.textContent = isEn ? `No RSVPs found for "${cred}". Maybe try another?` : `没找到 "${cred}" 的报名记录。换一个试试？`;
+      return;
+    }
+    // 存身份 + 跳到已识别视图
+    setMe({
+      name: '',
+      wechat: cred.includes('@') ? '' : cred,
+      email: cred.includes('@') ? cred : '',
+      savedAt: Date.now(),
+    });
+    msg.className = 'me-find-msg is-success';
+    msg.textContent = isEn ? `Found ${data.count} RSVP(s). Loading…` : `找到 ${data.count} 条报名。加载中…`;
+    setTimeout(init, 600);
+  } catch (err) {
+    msg.className = 'me-find-msg is-error';
+    msg.textContent = (isEn ? 'Failed: ' : '查找失败：') + err.message;
+  }
+});
+
+async function init() {
+  const me = getMe();
+  if (!me || (!me.wechat && !me.email)) {
+    document.body.classList.remove('is-known-user');
+    knownView.style.display = 'none';
+    unknownView.style.display = '';
+    return;
+  }
+
+  document.body.classList.add('is-known-user');
+  knownView.style.display = '';
+  unknownView.style.display = 'none';
+
+  const cred = me.wechat || me.email;
+  const display = me.name || cred;
+  document.getElementById('meIdAvatar').textContent = (display[0] || '?').toUpperCase();
+  document.getElementById('meIdName').textContent = display;
+  document.getElementById('meIdCred').textContent = cred;
+
+  // hero 切换文案：已识别就显欢迎
+  const h1Zh = document.getElementById('meH1Zh');
+  const h1En = document.getElementById('meH1En');
+  const subZh = document.getElementById('meSubZh');
+  const subEn = document.getElementById('meSubEn');
+  if (h1Zh) h1Zh.textContent = '你好，' + display;
+  if (h1En) h1En.textContent = 'Hi, ' + display;
+  if (subZh) subZh.textContent = '你的 CYC 个人中心 · 报名 / timeline / profile';
+  if (subEn) subEn.textContent = 'Your CYC space · RSVPs / timeline / profile';
+
+  // 拉报名数 + 头像
+  try {
+    const res = await fetch('/api/me-rsvps?credential=' + encodeURIComponent(cred));
+    const data = await res.json();
+    if (data.success) {
+      const cnt = document.getElementById('meRsvpCount');
+      const isEn = document.body.classList.contains('cyc-lang-en');
+      cnt.textContent = isEn
+        ? `${data.upcoming.length} upcoming · ${data.past.length} past`
+        : `${data.upcoming.length} 即将 · ${data.past.length} 已结束`;
+      // 找 member_rec_id（任一 RSVP 都行）
+      const anyRsvp = (data.upcoming[0] || data.past[0]);
+      // anyRsvp 没直接给 member_rec_id；profile 用 cred 作 fallback
+      // (如果服务端将来加上，这里能 link 到 /community/{id})
+      // for now: link to community 列表页
+      document.getElementById('meProfileLink').href = '/community';
+    }
+  } catch {}
+}
+
+init();
+</script>
+
+</body>
+</html>

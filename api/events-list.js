@@ -392,10 +392,15 @@ ${itemListLd}
 
 <header class="event-topbar">
   <a href="${SITE_URL}" class="event-back">‹ <span class="lang-zh-only">主页</span><span class="lang-en-only">Home</span></a>
-  <button type="button" class="home-topbar-lang" id="evLangToggle" aria-label="切换语言 / Toggle language">
-    <span class="lang-zh-only">中 · EN</span>
-    <span class="lang-en-only">EN · 中</span>
-  </button>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <a href="/me" class="event-back" style="background:rgba(28,61,46,0.08);border:1px solid rgba(28,61,46,0.20);">
+      <span class="lang-zh-only">我</span><span class="lang-en-only">Me</span>
+    </a>
+    <button type="button" class="home-topbar-lang" id="evLangToggle" aria-label="切换语言 / Toggle language">
+      <span class="lang-zh-only">中 · EN</span>
+      <span class="lang-en-only">EN · 中</span>
+    </button>
+  </div>
 </header>
 
 <main class="el-main">

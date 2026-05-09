@@ -560,6 +560,15 @@ body.cyc-lang-en .lang-zh-only { display: none !important; }
 }
 .home-topbar-nav a:hover { color: var(--cyc-green); background: rgba(28,61,46,0.06); }
 .home-topbar-nav a:active { opacity: 0.6; }
+/* v4.2.16: 「我」link 略突出 (绿色 outline pill 区别于其他 nav) */
+.home-topbar-nav a.home-topbar-me {
+  color: var(--cyc-green);
+  background: rgba(28,61,46,0.08);
+  border: 1px solid rgba(28,61,46,0.20);
+}
+.home-topbar-nav a.home-topbar-me:hover {
+  background: rgba(28,61,46,0.14);
+}
 
 /* ── footer ── */
 .home-footer {
