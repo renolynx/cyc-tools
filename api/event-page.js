@@ -189,7 +189,10 @@ ${jsonLd}
 
 <header class="event-topbar">
   <a href="${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? `/community/${fromMemberId}` : '/events'}" class="event-back" onclick="smartBack(event)">${fromMemberId && /^rec[a-zA-Z0-9]+$/.test(fromMemberId) ? '‹ 返回成员主页' : '‹ 返回'}</a>
-  <a href="${SITE_URL}" class="event-site">CYC.center</a>
+  <a href="/generator?edit=${escapeHtml(act.record_id)}" class="event-edit-btn" data-track="event_detail_edit_click">
+    <span class="event-edit-icon" aria-hidden="true">✏️</span>
+    <span class="event-edit-label">编辑</span>
+  </a>
 </header>
 
 <main class="event-detail">

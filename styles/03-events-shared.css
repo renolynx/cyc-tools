@@ -24,6 +24,21 @@ body.event-page {
 }
 .event-back:active, .event-site:active { background: rgba(28,61,46,0.08); }
 .event-site { font-weight: 700; letter-spacing: -0.01em; }
+/* v4.2.13 Task 3: detail 页右上角"编辑"按钮 → /generator?edit=<rec_id> */
+.event-edit-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--cyc-orange, #d9652a);
+  text-decoration: none;
+  padding: 6px 12px; border-radius: 100px;
+  background: rgba(217,101,42,0.12);
+  border: 1px solid rgba(217,101,42,0.26);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s;
+}
+.event-edit-btn:hover  { background: rgba(217,101,42,0.20); }
+.event-edit-btn:active { background: rgba(217,101,42,0.28); transform: scale(0.97); }
+.event-edit-icon { font-size: 13px; line-height: 1; }
+.event-edit-label { line-height: 1; }
 
 /* admin 入口（topbar 右侧，仅在 /community 列表页等可见） */
 .event-admin-link {
