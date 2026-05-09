@@ -511,6 +511,15 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   color: var(--cyc-green);
   text-decoration: none;
 }
+/* v4.2.11 batch B: /events 城市 tab 过滤 */
+body.zone-shanghai .home-act-card.is-city-dali { display: none; }
+body.zone-dali .home-act-card.is-city-shanghai { display: none; }
+/* 隐藏没有匹配卡的日期分组 / 已结束分隔（modern :has()） */
+body.zone-shanghai .el-day-group:not(:has(.is-city-shanghai)) { display: none; }
+body.zone-dali     .el-day-group:not(:has(.is-city-dali))     { display: none; }
+body.zone-shanghai .el-past-section:not(:has(.is-city-shanghai)) { display: none; }
+body.zone-dali     .el-past-section:not(:has(.is-city-dali))     { display: none; }
+
 /* v4.2.9: zh/en lang toggle 替代 brand link */
 .home-topbar-lang {
   appearance: none; background: transparent; border: 0;

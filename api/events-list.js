@@ -209,7 +209,8 @@ function renderCard(a, isPast, avatarData) {
   // 展开区
   const expandHtml = renderExpand(a, isPast, attendees, attendeesTotal);
 
-  return `<article class="home-act-card${isPast ? ' is-past' : ''}${isPlanning ? ' is-planning' : ''}" data-href="${rsvpHref}" onclick="toggleCardExpand(event, this)">
+  const cityClass = a.city === '上海' ? 'is-city-shanghai' : 'is-city-dali';
+  return `<article class="home-act-card ${cityClass}${isPast ? ' is-past' : ''}${isPlanning ? ' is-planning' : ''}" data-href="${rsvpHref}" data-city="${escapeHtml(a.city || '大理')}" onclick="toggleCardExpand(event, this)">
     <div class="home-act-header">
       <div class="home-act-datestack">
         ${dateLineHtml}
@@ -341,19 +342,45 @@ ${itemListLd}
 <div class="blob b3"></div>
 
 <header class="event-topbar">
-  <a href="${SITE_URL}" class="event-back">‹ 主页</a>
-  <a href="${SITE_URL}" class="event-site">CYC.center</a>
+  <a href="${SITE_URL}" class="event-back">‹ <span class="lang-zh-only">主页</span><span class="lang-en-only">Home</span></a>
+  <button type="button" class="home-topbar-lang" id="evLangToggle" aria-label="切换语言 / Toggle language">
+    <span class="lang-zh-only">中 · EN</span>
+    <span class="lang-en-only">EN · 中</span>
+  </button>
 </header>
 
 <main class="el-main">
   <div class="el-hero">
-    <span class="cyc-eyebrow cyc-eyebrow--sm" style="display:block;margin-bottom:8px">EVENTS · 大理</span>
-    <h1 class="cyc-display">近期活动</h1>
-    <p class="el-hero-sub">${SITE_NAME} · 大理</p>
+    <span class="cyc-eyebrow cyc-eyebrow--sm" style="display:block;margin-bottom:8px" id="evHeroEyebrow">
+      <span class="lang-zh-only">EVENTS · 大理</span>
+      <span class="lang-en-only">EVENTS · DALI</span>
+    </span>
+    <h1 class="cyc-display">
+      <span class="lang-zh-only">近期活动</span>
+      <span class="lang-en-only">Upcoming Events</span>
+    </h1>
+    <p class="el-hero-sub" id="evHeroSub">${SITE_NAME} · <span class="lang-zh-only">大理</span><span class="lang-en-only">Dali</span></p>
   </div>
 
-  ${upcomingHtml}
-  ${pastHtml}
+  <div class="home-zone-tabs el-zone-tabs" role="tablist" aria-label="城市切换 / Toggle city">
+    <button class="home-zone-tab is-active" type="button" role="tab" data-zone="大理">
+      <span class="lang-zh-only">大理</span>
+      <span class="lang-en-only">Dali</span>
+    </button>
+    <button class="home-zone-tab" type="button" role="tab" data-zone="上海">
+      <span class="lang-zh-only">上海</span>
+      <span class="lang-en-only">Shanghai · 706 × muShanghai</span>
+    </button>
+  </div>
+
+  <div id="evContent">
+    ${upcomingHtml}
+    ${pastHtml}
+  </div>
+  <div id="evEmpty" class="el-empty" style="display:none">
+    <div class="el-empty-icon">🌿</div>
+    <p><span class="lang-zh-only">这个城市还没有活动</span><span class="lang-en-only">No events in this city yet</span></p>
+  </div>
 
   <section class="el-about" lang="en">
     <h2>About CYC</h2>
@@ -504,6 +531,62 @@ ${itemListLd}
   };
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') window.closePosterLightbox();
+  });
+
+  // ── Phase B: 大理/上海 zone 过滤 + zh/en 语言切换 ──
+  const ZONE_KEY = 'cyc-events-zone';
+  const LANG_KEY = 'cyc-events-lang';
+
+  function applyZone(zone) {
+    document.body.classList.toggle('zone-shanghai', zone === '上海');
+    document.body.classList.toggle('zone-dali', zone !== '上海');
+    try { localStorage.setItem(ZONE_KEY, zone); } catch {}
+    document.querySelectorAll('.el-zone-tabs .home-zone-tab').forEach(b => {
+      b.classList.toggle('is-active', b.dataset.zone === zone);
+    });
+    // 更新 hero eyebrow + sub
+    const eb = document.getElementById('evHeroEyebrow');
+    const sub = document.getElementById('evHeroSub');
+    if (eb) {
+      eb.querySelector('.lang-zh-only').textContent = zone === '上海' ? 'EVENTS · 上海 · 706 × muShanghai' : 'EVENTS · 大理';
+      eb.querySelector('.lang-en-only').textContent = zone === '上海' ? 'EVENTS · SHANGHAI · 706 × muShanghai' : 'EVENTS · DALI';
+    }
+    if (sub) {
+      sub.querySelector('.lang-zh-only').textContent = zone;
+      sub.querySelector('.lang-en-only').textContent = zone === '上海' ? 'Shanghai' : 'Dali';
+    }
+    // 检查空状态
+    const emptyEl = document.getElementById('evEmpty');
+    const cards = document.querySelectorAll('.home-act-card[data-city="' + zone + '"]');
+    if (emptyEl) emptyEl.style.display = cards.length === 0 ? '' : 'none';
+  }
+  function getZone() {
+    try { const z = localStorage.getItem(ZONE_KEY); if (z === '大理' || z === '上海') return z; } catch {}
+    return '大理';
+  }
+  function applyLang(lang) {
+    document.body.classList.toggle('cyc-lang-en', lang === 'en');
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh';
+    try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  }
+  function getLang() {
+    try {
+      const u = new URLSearchParams(location.search).get('lang');
+      if (u === 'en' || u === 'zh') return u;
+      const s = localStorage.getItem(LANG_KEY);
+      if (s === 'en' || s === 'zh') return s;
+    } catch {}
+    if (navigator.language && navigator.language.toLowerCase().startsWith('en')) return 'en';
+    return 'zh';
+  }
+  applyLang(getLang());
+  applyZone(getZone());
+  document.querySelectorAll('.el-zone-tabs .home-zone-tab').forEach(b => {
+    b.addEventListener('click', () => applyZone(b.dataset.zone));
+  });
+  const langBtn = document.getElementById('evLangToggle');
+  if (langBtn) langBtn.addEventListener('click', () => {
+    applyLang(document.body.classList.contains('cyc-lang-en') ? 'zh' : 'en');
   });
 })();
 </script>
