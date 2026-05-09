@@ -203,13 +203,19 @@ ${jsonLd}
     ${!isPast ? '<span class="event-open-pill">🌿 对外开放 · 欢迎来玩</span>' : ''}
   </div>
 
-  <h1 class="event-title cyc-display">${title}</h1>
+  <div class="event-title-row">
+    <h1 class="event-title cyc-display">${title}</h1>
+    <a class="event-edit-btn" href="/generator?edit=${encodeURIComponent(act.record_id)}" title="编辑此活动 / Edit this event">
+      <span class="event-edit-icon" aria-hidden="true">+</span>
+      <span class="event-edit-label">编辑</span>
+    </a>
+  </div>
 
   <div class="event-types-row">
     ${act.types?.length
       ? `<div class="event-types">${act.types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>`
       : '<span class="event-types-empty">暂无活动类型</span>'}
-    <button class="event-types-edit" type="button" onclick="openTypesModal()">✏️ 编辑</button>
+    <button class="event-types-edit" type="button" onclick="openTypesModal()">✏️ 类型</button>
   </div>
 
   <dl class="event-info">

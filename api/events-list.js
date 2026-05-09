@@ -33,10 +33,36 @@ function thumbUrl(act) {
 
 function thumbHtml(act) {
   const url = thumbUrl(act);
-  if (!url) return `<div class="el-card-thumb el-card-thumb-empty ${cycTimeClass(act.time)}" aria-hidden="true"></div>`;
+  if (!url) return `<div class="home-act-thumb home-act-thumb-empty ${cycTimeClass(act.time)}" aria-hidden="true"></div>`;
   const tok = act.poster.file_token;
   const title = escapeHtml(act.title || '');
-  return `<img class="el-card-thumb" data-zoomable src="${url}" alt="${title}" loading="lazy" onclick="openPosterLightbox(event, '${escapeHtml(tok)}', '${title}')">`;
+  return `<img class="home-act-thumb" data-zoomable src="${url}" alt="${title}" loading="lazy" onclick="openPosterLightbox(event, '${escapeHtml(tok)}', '${title}')">`;
+}
+
+// 北京时间 YYYY-MM-DD → "周X"
+function cnDayOfWeek(dateStr) {
+  if (!dateStr) return '';
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const dow = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay();
+  return ['周日','周一','周二','周三','周四','周五','周六'][dow];
+}
+// muShanghai 周次（W1=5/10–5/16, ..., W4=5/31–6/6）
+function muWeekIndex(dateStr) {
+  if (!dateStr) return 0;
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return 0;
+  const ts = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  const w1 = Date.UTC(2026, 4, 10);
+  const days = Math.floor((ts - w1) / 86400000);
+  if (days < 0) return 0;
+  if (days < 7) return 1; if (days < 14) return 2; if (days < 21) return 3; if (days < 28) return 4;
+  return 0;
+}
+function shortDate(dateStr) {
+  if (!dateStr) return '';
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${parseInt(m[2])}/${parseInt(m[3])}` : dateStr;
 }
 
 // ── 头像组 HTML（嘉宾 + 报名 stack）──
@@ -119,60 +145,115 @@ function buildAvatarsByActivity(allRsvps, memberMap) {
   return result;
 }
 
+// v4.2.10 Phase B: 复用首页 home-act-card —— SSR 版本镜像 index.html 的 renderCard
+// （CSS 已在 /styles.css 全局加载；JS toggleCardExpand / openPersonModal 仍走页面底部 inline）
 function renderCard(a, isPast, avatarData) {
-  const thumb = thumbHtml(a);
-  let status = '';
-  if (isPast) status = '<span class="el-card-status past">已结束</span>';
-  else if (a.status === '确认举办') status = '<span class="el-card-status confirm">✓ 确认举办</span>';
-  else if (a.status === '筹备酝酿中') status = '<span class="el-card-status plan">筹备中</span>';
+  const isPlanning = a.status === '筹备酝酿中';
+  const dateStr = shortDate(a.date);
+  const dowStr  = a.date ? cnDayOfWeek(a.date) : '';
+  const thumb   = thumbHtml(a);
 
+  // datestack: 日期+周X / 时间 / W{n}·上海 (上海) 或 城市/已结束 (大理/general)
+  const dateLineHtml = (dateStr || dowStr)
+    ? `<div class="home-act-dateline">${dateStr}${dateStr && dowStr ? ' · ' : ''}${dowStr}</div>`
+    : '';
+  const timeLineHtml = a.time ? `<div class="home-act-timeline">${escapeHtml(a.time)}</div>` : '';
+  const wkn = a.city === '上海' && a.date ? muWeekIndex(a.date) : 0;
+  const locLineHtml = wkn
+    ? `<div class="home-act-locline"><span class="home-act-locline-week">W${wkn}</span>${a.city ? ' · ' + escapeHtml(a.city) : ''}</div>`
+    : (a.city
+        ? `<div class="home-act-locline">${escapeHtml(a.city)}</div>`
+        : (isPast ? '<div class="home-act-locline">已结束</div>' : ''));
+
+  // 类型 pill：筹备中 → 暖橙 "筹备中"；否则 act.types[0]
+  const primaryType = (a.types || []).filter(Boolean)[0] || '';
+  const typepillHtml = isPlanning
+    ? '<span class="home-act-typepill is-planning">筹备中</span>'
+    : (primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '');
+
+  // 嘉宾 meta（筹备中不显示嘉宾占位）
   const av = avatarData || { speakers: [], attendees: [], total: 0 };
-  const avatarHtml = renderAvatarGroups(av.speakers, av.attendees, av.total);
-
-  // 开放性 pill：未结束才显示；is_public=false → 仅成员，默认对外开放
-  let openness = '';
-  if (!isPast) {
-    openness = (a.is_public === false)
-      ? '<span class="el-card-status closed">🔒 仅成员</span>'
-      : '<span class="el-card-status open">🌿 对外开放</span>';
+  const speakers  = av.speakers  || [];
+  const attendees = av.attendees || [];
+  const attendeesTotal = av.total || 0;
+  const metaItems = [];
+  if (!isPlanning && speakers.length) {
+    metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(speakers.map(s => s.name).join(' · '))}</span>`);
   }
+  const metaLineHtml = metaItems.length
+    ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
+    : '';
 
-  // 展开区：描述 + 流程 + 费用 / 报名 + CTA
-  const expandHtml = renderExpand(a, isPast);
+  // 标题块：筹备中 → 隐藏，显示 italic 提示
+  const titleBlockHtml = isPlanning
+    ? `<div class="home-act-planning-hint">这个时间槽还在筹备中。如果你想做讲者 / Demo，点编辑认领。</div>`
+    : `<h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
+       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
+       ${metaLineHtml}`;
 
-  // ⚠️ 用 <article> 而非 <a>：避免与展开区里"📝 详情"<a>嵌套
-  return `<article class="el-card${isPast ? ' is-past' : ''}" data-href="/events/${a.record_id}" onclick="toggleCardExpand(event, this)">
-  ${thumb}
-  <div class="el-card-body">
-    <div class="el-card-title">${escapeHtml(a.title)}</div>
-    <div class="el-card-meta">
-      ${a.time ? `<span>⏰ ${escapeHtml(a.time)}</span>` : ''}
-      ${a.loc  ? `<span>📍 ${escapeHtml(a.loc)}</span>`  : ''}
+  // CTA 行
+  const attendeeCountHtml = (!isPlanning && attendeesTotal)
+    ? `<span class="home-act-cta-attendees">${attendeesTotal} 已报名</span>`
+    : '';
+  const rsvpHref = `/events/${a.record_id}`;
+  const editHref = `/generator?edit=${a.record_id}`;
+  const ctaButtonHtml = isPlanning
+    ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()">编辑 →</a>`
+    : (isPast
+        ? '<span class="home-act-rsvp is-past">已结束</span>'
+        : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()">我要报名 →</a>`);
+  const ctaHtml = `<div class="home-act-cta-row">${ctaButtonHtml}${attendeeCountHtml}</div>`;
+
+  // 展开区
+  const expandHtml = renderExpand(a, isPast, attendees, attendeesTotal);
+
+  return `<article class="home-act-card${isPast ? ' is-past' : ''}${isPlanning ? ' is-planning' : ''}" data-href="${rsvpHref}" onclick="toggleCardExpand(event, this)">
+    <div class="home-act-header">
+      <div class="home-act-datestack">
+        ${dateLineHtml}
+        ${timeLineHtml}
+        ${locLineHtml}
+      </div>
+      ${thumb}
     </div>
-    ${a.types?.length ? `<div class="el-card-types">${a.types.slice(0,3).map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-    ${status}
-    ${openness}
-    ${avatarHtml}
+    ${typepillHtml}
+    ${titleBlockHtml}
+    ${ctaHtml}
     ${expandHtml}
-  </div>
-</article>`;
+  </article>`;
 }
 
-// 展开区 SSR（与 index.html renderExpand 同语义；用 .el-card-expand-* 类避免冲突）
-function renderExpand(a, isPast) {
-  const descHtml = a.desc
-    ? `<p class="el-card-expand-desc">${escapeHtml(a.desc)}</p>`
-    : '';
-  const flowHtml = (a.flow && a.flow.length)
-    ? `<div class="el-card-expand-flow"><div class="el-card-expand-h">🗓️ 流程</div><ul>${a.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`
-    : '';
-  const metaParts = [];
-  if (a.fee)    metaParts.push(`<div><strong>💰 费用</strong> ${escapeHtml(a.fee)}</div>`);
-  if (a.signup) metaParts.push(`<div><strong>🙋 报名</strong> ${escapeHtml(a.signup)}</div>`);
-  const metaHtml = metaParts.length ? `<div class="el-card-expand-meta">${metaParts.join('')}</div>` : '';
-  const ctaLabel = isPast ? '查看完整页 →' : '📝 详情 / 报名 →';
-  const ctaHtml = `<a class="el-card-expand-cta" href="/events/${a.record_id}" onclick="event.stopPropagation()">${ctaLabel}</a>`;
-  return `<div class="el-card-expand"><div class="el-card-expand-inner">${descHtml}${flowHtml}${metaHtml}${ctaHtml}</div></div>`;
+// 展开区 SSR：完整地址 / 是否对外 / 描述 / 流程 / 已报名头像 / 详情链接
+function renderExpand(a, isPast, attendees, attendeesTotal) {
+  const lines = [];
+  if (a.loc) lines.push(`<div class="home-act-expand-line"><strong>📍 地点</strong> ${escapeHtml(a.loc)}${a.location_en ? ' · <em>' + escapeHtml(a.location_en) + '</em>' : ''}</div>`);
+  const accessLabel = a.is_public === false ? '🔒 仅成员' : '🌿 对外开放';
+  lines.push(`<div class="home-act-expand-line"><strong>访问</strong> ${accessLabel}</div>`);
+  if (a.fee)    lines.push(`<div class="home-act-expand-line"><strong>💰 费用</strong> ${escapeHtml(a.fee)}</div>`);
+  if (a.signup) lines.push(`<div class="home-act-expand-line"><strong>🙋 报名</strong> ${escapeHtml(a.signup)}</div>`);
+  if (a.onsite_fee && a.onsite_fee > 0) lines.push(`<div class="home-act-expand-line"><strong>💰 现场</strong> ¥${a.onsite_fee} · 持票人/线上免费</div>`);
+  if (a.tencent_meeting_url) lines.push(`<div class="home-act-expand-line"><strong>🎥 腾讯会议</strong> <a href="${escapeHtml(a.tencent_meeting_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(a.tencent_meeting_url)}</a></div>`);
+  const metaHtml = lines.length ? `<div class="home-act-expand-meta">${lines.join('')}</div>` : '';
+  const descHtml = a.desc ? `<p class="home-act-expand-desc">${escapeHtml(a.desc)}</p>` : '';
+  const flowHtml = (a.flow && a.flow.length) ? `<div class="home-act-expand-flow"><div class="home-act-expand-h">🗓️ 流程</div><ul>${a.flow.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>` : '';
+
+  // 已报名头像组（仅 attendees；嘉宾名字已在卡头 meta 里）
+  const attendees_safe = Array.isArray(attendees) ? attendees : [];
+  let attendeesHtml = '';
+  if (attendees_safe.length) {
+    const stack = attendees_safe.map(p => {
+      const initials = escapeHtml((p.name || '?')[0]);
+      const imgSrc = p.avatar_url ? p.avatar_url : (p.avatar_token ? '/api/poster?token=' + encodeURIComponent(p.avatar_token) : '');
+      const content = imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name)}" loading="lazy">` : `<span class="card-avatar-initials">${initials}</span>`;
+      return `<button class="card-avatar" type="button" data-name="${escapeHtml(p.name)}" data-bio="${escapeHtml(p.bio || '')}" data-url="${escapeHtml(p.avatar_url || '')}" data-token="${escapeHtml(p.avatar_token || '')}" data-mid="${escapeHtml(p.member_rec_id || '')}" onclick="event.preventDefault();event.stopPropagation();openPersonModal(this)" aria-label="${escapeHtml(p.name)}">${content}</button>`;
+    }).join('');
+    const more = attendeesTotal - attendees_safe.length;
+    const moreHtml = more > 0 ? `<span class="card-avatar-more">+${more}</span>` : '';
+    attendeesHtml = `<div class="home-act-expand-attendees"><div class="home-act-expand-h">已报名 (${attendeesTotal})</div><div class="card-avatar-stack">${stack}${moreHtml}</div></div>`;
+  }
+
+  const detailHtml = `<a class="home-act-expand-detail" href="/events/${a.record_id}" onclick="event.stopPropagation()">📝 查看完整页 →</a>`;
+  return `<div class="home-act-expand"><div class="home-act-expand-inner">${metaHtml}${descHtml}${flowHtml}${attendeesHtml}${detailHtml}</div></div>`;
 }
 
 function renderGroups(acts, isPast, avatarsByActivity) {
