@@ -40,6 +40,42 @@ function thumbHtml(act) {
 }
 
 // 北京时间 YYYY-MM-DD → "周X"
+// v4.2.14: 双语数据映射
+const EN_DOW = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const TYPE_EN = {
+  '社区OS分享会': 'Community OS Talk', 'Demo Day': 'Demo Day',
+  'Understanding China': 'Understanding China',
+  '分享会': 'Talk', '工作坊': 'Workshop', '客厅对话': 'Living Room',
+  '聚餐': 'Dinner', '户外': 'Outdoor', '读书分享会': 'Book Club',
+  '麻圆微沙龙': 'Mini Salon', '失眠夜谈': 'Late Night Talk',
+  '篝火读诗会': 'Bonfire Poetry', '黑暗听歌会': 'Listening Session',
+  '无目的城市漫游': 'City Wander', '职业分享会': 'Career Talk',
+  '社区串门': 'Community Visit', '死亡咖啡馆': 'Death Café',
+  '社会青年聚': 'Youth Gathering', '玩点新东西': 'Try Something New',
+  '篝火夜聊': 'Bonfire Night', '运动': 'Sports', '舞蹈': 'Dance',
+  '故事会': 'Storytelling', '心里疗愈': 'Healing', '中医理疗': 'TCM',
+  '绘画': 'Painting', '聊天解惑': 'Chat', '商业规划': 'Biz Planning',
+  '心理游戏': 'Psych Games', '疗愈': 'Healing', '桌游': 'Board Games',
+  '放映会': 'Screening', '故事分享': 'Story Share', '志愿服务': 'Volunteer',
+  '攀岩': 'Climbing', '赚钱科普会': 'Money 101', '公益活动': 'Public Good',
+  '社区共建会议': 'Community Build', '交换日': 'Swap Day',
+  'AI': 'AI', '创业': 'Startup', '艺术': 'Art', '跳舞': 'Dance',
+  '仪式': 'Ritual', '节日': 'Festival', '音乐': 'Music', '体能': 'Fitness',
+  '咖酒': 'Coffee & Wine', '市集': 'Market', '戏剧': 'Theater',
+  '开发': 'Dev', '哲学': 'Philosophy', '对谈': 'Dialogue', '对话': 'Talk',
+  '旅行': 'Travel', '社区': 'Community', '社区共建': 'Community Build',
+  '身体': 'Body', '自然': 'Nature', '创作': 'Creative',
+};
+const CITY_EN = { '大理': 'Dali', '上海': 'Shanghai', '北京': 'Beijing', '柏林': 'Berlin', '巴黎': 'Paris', '远程': 'Remote' };
+function typeEn(zh) { return TYPE_EN[zh] || zh; }
+function cityEn(zh) { return CITY_EN[zh] || zh; }
+function enDayOfWeek(dateStr) {
+  if (!dateStr) return '';
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  return EN_DOW[new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()];
+}
+
 function cnDayOfWeek(dateStr) {
   if (!dateStr) return '';
   const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -151,21 +187,24 @@ function renderCard(a, isPast, avatarData) {
   const isPlanning = a.status === '筹备酝酿中';
   const dateStr = shortDate(a.date);
   const dowStr  = a.date ? cnDayOfWeek(a.date) : '';
+  const dowEn   = a.date ? enDayOfWeek(a.date) : '';
   const thumb   = thumbHtml(a);
 
-  // datestack: 日期+周X / 时间 / W{n}·上海 (上海) 或 城市/已结束 (大理/general)
+  // v4.2.14: 双语 datestack
   const dateLineHtml = (dateStr || dowStr)
-    ? `<div class="home-act-dateline">${dateStr}${dateStr && dowStr ? ' · ' : ''}${dowStr}</div>`
+    ? `<div class="home-act-dateline">${dateStr}${dateStr && dowStr ? ' · ' : ''}<span class="lang-zh-only">${dowStr}</span><span class="lang-en-only">${dowEn}</span></div>`
     : '';
   const timeLineHtml = a.time ? `<div class="home-act-timeline">${escapeHtml(a.time)}</div>` : '';
   const wkn = a.city === '上海' && a.date ? muWeekIndex(a.date) : 0;
+  const cityZh = a.city || '';
+  const cityEnVal = cityEn(cityZh);
   const locLineHtml = wkn
-    ? `<div class="home-act-locline"><span class="home-act-locline-week">W${wkn}</span>${a.city ? ' · ' + escapeHtml(a.city) : ''}</div>`
-    : (a.city
-        ? `<div class="home-act-locline">${escapeHtml(a.city)}</div>`
-        : (isPast ? '<div class="home-act-locline">已结束</div>' : ''));
+    ? `<div class="home-act-locline"><span class="home-act-locline-week">W${wkn}</span>${cityZh ? ' · ' : ''}<span class="lang-zh-only">${escapeHtml(cityZh)}</span><span class="lang-en-only">${escapeHtml(cityEnVal)}</span></div>`
+    : (cityZh
+        ? `<div class="home-act-locline"><span class="lang-zh-only">${escapeHtml(cityZh)}</span><span class="lang-en-only">${escapeHtml(cityEnVal)}</span></div>`
+        : (isPast ? '<div class="home-act-locline"><span class="lang-zh-only">已结束</span><span class="lang-en-only">Past</span></div>' : ''));
 
-  // 类型 pill：筹备中时 pill + 占位提示同行；正常时只 pill
+  // 类型 pill 双语
   const primaryType = (a.types || []).filter(Boolean)[0] || '';
   const typepillHtml = isPlanning
     ? `<div class="home-act-pill-row">
@@ -175,7 +214,7 @@ function renderCard(a, isPast, avatarData) {
           <span class="lang-en-only">Slot reserved — details still being confirmed.</span>
         </span>
        </div>`
-    : (primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '');
+    : (primaryType ? `<span class="home-act-typepill"><span class="lang-zh-only">${escapeHtml(primaryType)}</span><span class="lang-en-only">${escapeHtml(typeEn(primaryType))}</span></span>` : '');
 
   // 嘉宾 meta（筹备中不显示嘉宾占位）—— 双语 spans
   const av = avatarData || { speakers: [], attendees: [], total: 0 };
@@ -190,12 +229,15 @@ function renderCard(a, isPast, avatarData) {
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // 标题块：筹备中 → 标题划掉（提示已在 pill 行）；否则正常显示
+  // 标题块：双语 — zh 模式标题=zh，en 模式标题=title_en（fallback zh）
+  const titleZh = a.title || '未命名活动';
+  const titleEnVal = a.title_en || a.title || 'Untitled';
+  const hasBoth = a.title_en && a.title_en !== a.title;
   const titleBlockHtml = isPlanning
-    ? `<h4 class="home-act-title is-planning-strike">${escapeHtml(a.title || '未命名活动')}</h4>
-       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en is-planning-strike">${escapeHtml(a.title_en)}</div>` : ''}`
-    : `<h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
-       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
+    ? `<h4 class="home-act-title is-planning-strike"><span class="lang-zh-only">${escapeHtml(titleZh)}</span><span class="lang-en-only">${escapeHtml(titleEnVal)}</span></h4>
+       ${hasBoth ? `<div class="home-act-title-en is-planning-strike"><span class="lang-zh-only">${escapeHtml(a.title_en)}</span><span class="lang-en-only">${escapeHtml(a.title)}</span></div>` : ''}`
+    : `<h4 class="home-act-title"><span class="lang-zh-only">${escapeHtml(titleZh)}</span><span class="lang-en-only">${escapeHtml(titleEnVal)}</span></h4>
+       ${hasBoth ? `<div class="home-act-title-en"><span class="lang-zh-only">${escapeHtml(a.title_en)}</span><span class="lang-en-only">${escapeHtml(a.title)}</span></div>` : ''}
        ${metaLineHtml}`;
 
   // CTA 行 —— 双语
