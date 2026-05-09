@@ -385,21 +385,23 @@ function renderCard(a) {
     ? '<span class="home-act-typepill is-planning"><span class="lang-zh-only">筹备中</span><span class="lang-en-only">Planning</span></span>'
     : (primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '');
 
-  // 嘉宾 meta（speakers 名字一行；筹备中时不显示嘉宾占位）
+  // 嘉宾 meta（speakers 名字一行；筹备中时不显示嘉宾占位）—— 双语
   const metaItems = [];
   if (!isPlanning && a.card_speakers && a.card_speakers.length) {
-    metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(a.card_speakers.map(s => s.name).join(' · '))}</span>`);
+    metaItems.push(`<span class="home-act-meta-item"><span class="lang-zh-only">嘉宾</span><span class="lang-en-only">Speakers</span> ${escapeHtml(a.card_speakers.map(s => s.name).join(' · '))}</span>`);
   }
   const metaLineHtml = metaItems.length
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // 标题块：筹备中 → 隐藏（占位标题/嘉宾不应让真讲者疑惑）；否则正常
+  // 标题块：筹备中 → 标题用横线划掉表示占位；正常 → 正常显示
   const titleBlockHtml = isPlanning
-    ? `<div class="home-act-planning-hint">
-        <span class="lang-zh-only">这个时间槽还在筹备中。如果你想做讲者 / Demo，点编辑认领。</span>
-        <span class="lang-en-only">This slot is still planning. Click edit if you'd like to claim it.</span>
-      </div>`
+    ? `<h4 class="home-act-title is-planning-strike">${escapeHtml(a.title || '未命名活动')}</h4>
+       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en is-planning-strike">${escapeHtml(a.title_en)}</div>` : ''}
+       <div class="home-act-planning-hint">
+         <span class="lang-zh-only">这是占位时间槽，点编辑认领并替换标题</span>
+         <span class="lang-en-only">Placeholder slot — click edit to claim and replace the title</span>
+       </div>`
     : `<h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
        ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
        ${metaLineHtml}`;
@@ -407,7 +409,7 @@ function renderCard(a) {
   // CTA 行：筹备中 → "编辑 →" 跳 generator；正常 → "我要报名" 跳 events 详情
   const attendeesTotal = a.card_attendee_total || 0;
   const attendeeCountHtml = (!isPlanning && attendeesTotal)
-    ? `<span class="home-act-cta-attendees">${attendeesTotal} 已报名</span>`
+    ? `<span class="home-act-cta-attendees"><span class="lang-zh-only">${attendeesTotal} 已报名</span><span class="lang-en-only">${attendeesTotal} ${attendeesTotal === 1 ? 'RSVP' : 'RSVPs'}</span></span>`
     : '';
   const rsvpHref = `/events/${escapeAttr(a.record_id)}`;
   const editHref = `/generator?edit=${escapeAttr(a.record_id)}`;

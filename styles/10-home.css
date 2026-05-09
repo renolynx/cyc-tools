@@ -263,12 +263,21 @@ body.cyc-brand .hero-poster-a h2.cyc-display { color: #fff; }
   padding: 6px 13px;  /* border 占了 1px，paddng 减 1 保持高度 */
 }
 .home-act-rsvp.is-edit:hover { background: rgba(217,101,42,0.22); opacity: 1; }
-/* v4.2.10: 筹备中提示（隐藏标题/嘉宾/EN，给个友好引导） */
-.home-act-planning-hint {
-  font-size: 13px; line-height: 1.5;
+/* v4.2.11 (玖玖六轮)：筹备中标题用横线划掉表示占位，下方再加 small italic 提示 */
+.home-act-title.is-planning-strike,
+.home-act-title-en.is-planning-strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(0,0,0,0.30);
   color: var(--cyc-text-muted);
+  opacity: 0.78;
+}
+.home-act-planning-hint {
+  font-size: 12px; line-height: 1.5;
+  color: var(--cyc-orange);
   font-style: italic;
-  padding: 4px 0 2px;
+  padding: 6px 0 0;
+  letter-spacing: 0.01em;
 }
 .home-act-card.is-planning .home-act-thumb-empty {
   /* 筹备中卡片的占位 thumb 用更弱化的颜色（如果想加，但 cyc-time-* 已 ok）*/

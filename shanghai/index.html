@@ -929,12 +929,21 @@ function renderShanghaiEvent(a) {
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // 标题块
+  // 标题块：筹备中 → 标题用横线划掉表示占位 + 小提示；正常 → 完整显示
   const titleBlockHtml = isPlanning
-    ? `<div class="home-act-planning-hint">
-        <span class="lang-zh">这个时间槽还在筹备中。如果你想做讲者 / Demo，点编辑认领。</span>
-        <span class="lang-en">This slot is still planning. Click edit if you'd like to claim it.</span>
-      </div>`
+    ? `<h4 class="home-act-title is-planning-strike">
+         <span class="lang-zh">${esc(a.title || '')}</span>
+         <span class="lang-en">${esc(a.title_en || a.title || '')}</span>
+       </h4>
+       ${a.title_en && a.title !== a.title_en ? `
+         <div class="home-act-title-en is-planning-strike">
+           <span class="lang-zh">${esc(a.title_en)}</span>
+           <span class="lang-en">${esc(a.title)}</span>
+         </div>` : ''}
+       <div class="home-act-planning-hint">
+         <span class="lang-zh">这是占位时间槽，点编辑认领并替换标题</span>
+         <span class="lang-en">Placeholder slot — click edit to claim and replace the title</span>
+       </div>`
     : `<h4 class="home-act-title">
          <span class="lang-zh">${esc(a.title || '')}</span>
          <span class="lang-en">${esc(a.title_en || a.title || '')}</span>

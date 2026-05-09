@@ -171,37 +171,39 @@ function renderCard(a, isPast, avatarData) {
     ? '<span class="home-act-typepill is-planning">筹备中</span>'
     : (primaryType ? `<span class="home-act-typepill">${escapeHtml(primaryType)}</span>` : '');
 
-  // 嘉宾 meta（筹备中不显示嘉宾占位）
+  // 嘉宾 meta（筹备中不显示嘉宾占位）—— 双语 spans
   const av = avatarData || { speakers: [], attendees: [], total: 0 };
   const speakers  = av.speakers  || [];
   const attendees = av.attendees || [];
   const attendeesTotal = av.total || 0;
   const metaItems = [];
   if (!isPlanning && speakers.length) {
-    metaItems.push(`<span class="home-act-meta-item">嘉宾 ${escapeHtml(speakers.map(s => s.name).join(' · '))}</span>`);
+    metaItems.push(`<span class="home-act-meta-item"><span class="lang-zh-only">嘉宾</span><span class="lang-en-only">Speakers</span> ${escapeHtml(speakers.map(s => s.name).join(' · '))}</span>`);
   }
   const metaLineHtml = metaItems.length
     ? `<div class="home-act-meta-line">${metaItems.join('')}</div>`
     : '';
 
-  // 标题块：筹备中 → 隐藏，显示 italic 提示
+  // 标题块：筹备中 → 标题横线划掉表示占位；否则正常显示
   const titleBlockHtml = isPlanning
-    ? `<div class="home-act-planning-hint">这个时间槽还在筹备中。如果你想做讲者 / Demo，点编辑认领。</div>`
+    ? `<h4 class="home-act-title is-planning-strike">${escapeHtml(a.title || '未命名活动')}</h4>
+       ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en is-planning-strike">${escapeHtml(a.title_en)}</div>` : ''}
+       <div class="home-act-planning-hint"><span class="lang-zh-only">这是占位时间槽，点编辑认领并替换标题</span><span class="lang-en-only">Placeholder slot — click edit to claim and replace the title</span></div>`
     : `<h4 class="home-act-title">${escapeHtml(a.title || '未命名活动')}</h4>
        ${a.title_en && a.title_en !== a.title ? `<div class="home-act-title-en">${escapeHtml(a.title_en)}</div>` : ''}
        ${metaLineHtml}`;
 
-  // CTA 行
+  // CTA 行 —— 双语
   const attendeeCountHtml = (!isPlanning && attendeesTotal)
-    ? `<span class="home-act-cta-attendees">${attendeesTotal} 已报名</span>`
+    ? `<span class="home-act-cta-attendees"><span class="lang-zh-only">${attendeesTotal} 已报名</span><span class="lang-en-only">${attendeesTotal} ${attendeesTotal === 1 ? 'RSVP' : 'RSVPs'}</span></span>`
     : '';
   const rsvpHref = `/events/${a.record_id}`;
   const editHref = `/generator?edit=${a.record_id}`;
   const ctaButtonHtml = isPlanning
-    ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()">编辑 →</a>`
+    ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()"><span class="lang-zh-only">编辑 →</span><span class="lang-en-only">Edit →</span></a>`
     : (isPast
-        ? '<span class="home-act-rsvp is-past">已结束</span>'
-        : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()">我要报名 →</a>`);
+        ? '<span class="home-act-rsvp is-past"><span class="lang-zh-only">已结束</span><span class="lang-en-only">Past</span></span>'
+        : `<a href="${rsvpHref}" class="home-act-rsvp" onclick="event.stopPropagation()"><span class="lang-zh-only">我要报名 →</span><span class="lang-en-only">RSVP →</span></a>`);
   const ctaHtml = `<div class="home-act-cta-row">${ctaButtonHtml}${attendeeCountHtml}</div>`;
 
   // 展开区
