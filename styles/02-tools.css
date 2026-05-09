@@ -915,3 +915,38 @@ textarea{resize:vertical;min-height:60px;line-height:1.55}
 .pwd-confirm:active{transform:scale(0.98)}
 .pwd-confirm:disabled{opacity:0.5;cursor:not-allowed}
 
+/* ── v4.2.11 batch C: generator 新 topbar 元素 ── */
+/* ← 主页 link */
+.topbar-back{
+  display:inline-flex;align-items:center;
+  font-size:13px;font-weight:600;color:var(--green);
+  text-decoration:none;
+  padding:6px 10px;border-radius:8px;
+  -webkit-tap-highlight-color:transparent;white-space:nowrap;
+}
+.topbar-back:hover{background:rgba(28,61,46,0.06)}
+.topbar-back:active{background:rgba(28,61,46,0.12)}
+
+/* topbar 城市切换（决定通告 header / footer 模板） */
+.topbar-city-tabs{
+  flex:1;display:flex;justify-content:center;gap:0;
+  background:rgba(28,61,46,0.06);border-radius:100px;padding:2px;
+  margin:0 8px;align-self:center;
+}
+.topbar-city-tab{
+  appearance:none;background:transparent;border:0;
+  padding:5px 14px;border-radius:100px;
+  font-size:12px;font-weight:600;color:var(--text-muted);
+  cursor:pointer;letter-spacing:0.02em;
+  -webkit-tap-highlight-color:transparent;
+  transition:background 0.15s,color 0.15s;
+}
+.topbar-city-tab:hover{color:var(--text)}
+.topbar-city-tab.is-active{
+  background:var(--green);color:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,0.10);
+}
+
+/* topbar-cal 之前是 button onclick；现在改 <a href="/events">，沿用样式 */
+a.topbar-cal{text-decoration:none}
+

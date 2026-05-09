@@ -25,67 +25,17 @@
 <div class="blob b2"></div>
 <div class="blob b3"></div>
 
+<!-- v4.2.11 batch C: 极简 topbar — ← 主页 / 通告城市切换 / 日历 → /events -->
 <div class="topbar">
-  <button class="topbar-menu" onclick="openMenu()" aria-label="打开菜单">☰</button>
-  <div class="topbar-title">活动通告生成器</div>
-  <button class="topbar-cal" onclick="openCalendar()">📅 日历</button>
-</div>
-
-<!-- 汉堡菜单抽屉 -->
-<div class="menu-backdrop" id="menuBackdrop" onclick="closeMenu()"></div>
-<div class="menu-drawer" id="menuDrawer">
-  <div class="menu-head">
-    <div class="menu-title">CYC.center</div>
-    <button class="menu-close" onclick="closeMenu()" aria-label="关闭菜单">✕</button>
+  <a class="topbar-back" href="/" aria-label="返回主页">← 主页</a>
+  <div class="topbar-city-tabs" role="tablist" aria-label="通告城市">
+    <button type="button" class="topbar-city-tab is-active" data-city="大理" onclick="setPreviewCity('大理')">大理</button>
+    <button type="button" class="topbar-city-tab" data-city="上海" onclick="setPreviewCity('上海')">上海</button>
   </div>
-  <nav class="menu-list">
-    <a class="menu-item" href="/" onclick="closeMenu();return true">
-      <div class="menu-icon">🏠</div>
-      <div class="menu-info">
-        <div class="menu-name">首页</div>
-        <div class="menu-desc">CYC.center 主站 · 双海报入口 + 活动卡片流</div>
-      </div>
-    </a>
-    <a class="menu-item current" href="/generator" onclick="closeMenu();return true">
-      <div class="menu-icon">📋</div>
-      <div class="menu-info">
-        <div class="menu-name">活动通告生成器<span class="menu-current-tag">当前</span></div>
-        <div class="menu-desc">填写活动 · 一键生成微信群通告</div>
-      </div>
-    </a>
-    <a class="menu-item" href="/events">
-      <div class="menu-icon">📅</div>
-      <div class="menu-info">
-        <div class="menu-name">近期活动</div>
-        <div class="menu-desc">公开活动日历 · 可分享 · 含历史</div>
-      </div>
-    </a>
-    <a class="menu-item" href="/community">
-      <div class="menu-icon">👥</div>
-      <div class="menu-info">
-        <div class="menu-name">社区成员</div>
-        <div class="menu-desc">大理 / 上海 在地伙伴 · 可分享</div>
-      </div>
-    </a>
-    <a class="menu-item" href="/food/">
-      <div class="menu-icon">🍽️</div>
-      <div class="menu-info">
-        <div class="menu-name">今天吃什么</div>
-        <div class="menu-desc">随机推荐 · 发起约饭 · AA 算账</div>
-      </div>
-    </a>
-  </nav>
+  <a class="topbar-cal" href="/events" aria-label="查看全部活动">📅 全部</a>
 </div>
 
 <div class="page">
-
-<div class="visitor-strip">
-  <span class="visitor-strip-emoji">👋</span>
-  <span>新来 CYC?</span>
-  <a href="/events" data-track="visitor_strip_click" data-track-meta='{"target":"events"}'>看看本周活动 →</a>
-  <span class="visitor-strip-sep">·</span>
-  <a href="/community" data-track="visitor_strip_click" data-track-meta='{"target":"community"}'>社区成员 →</a>
-</div>
 
 <div class="week-nav">
   <button class="nav-btn" onclick="changeWeek(-1)">‹ 上周</button>
@@ -215,7 +165,18 @@ function renderWeek(){
     strip.appendChild(b);
   }
 }
-function changeWeek(d){wkOffset+=d;renderWeek()}
+function changeWeek(d){wkOffset+=d;renderWeek();autoFetchIfStale()}
+// v4.2.11 batch C: 自动拉本周飞书数据 —— 每个周 offset 只触发一次（per session）
+const _autoFetched = new Set();
+function autoFetchIfStale() {
+  const key = 'wk:' + wkOffset;
+  if (_autoFetched.has(key)) return;
+  _autoFetched.add(key);
+  // 静默调用 fetch（如果 fetchFromFeishu 还没初始化，wait 一帧）
+  if (typeof fetchFromFeishu === 'function') {
+    setTimeout(() => fetchFromFeishu({silent: true}), 0);
+  }
+}
 function selDay(key){selDate=key;if(!data[key])data[key]=[];renderWeek();renderActs()}
 function jumpToAct(key,aid){
   const target=new Date(key+'T00:00:00');
@@ -443,6 +404,32 @@ function setCopyMode(mode){
     : '含完整详情·流程 + 嘉宾，文本较长';
   genPreview();
 }
+// v4.2.11 batch C: 通告城市模板（topbar 切换决定 header / footer 文案）
+const CYC_TEMPLATES = {
+  '大理': {
+    header: 'CYC 本周活动更新',
+    footerLines: '📍 完整活动详情 · 在线日历\nhttps://cyc.center',
+    footerLink: 'https://cyc.center',
+  },
+  '上海': {
+    header: '706 × muShanghai · 本周活动',
+    footerLines: '📍 报名 / 详情 · 在线日历\nhttps://cyc.center/shanghai\n\n🌍 国际嘉宾 / 开发者 / 志愿者申请\nhttps://wcnbuffhffle.feishu.cn/share/base/form/shrcn2Bc79UfHG2MPVPvgQper6r',
+    footerLink: 'https://cyc.center/shanghai',
+  },
+};
+let previewCity = (function() {
+  try { const c = localStorage.getItem('cyc-gen-city'); if (c === '大理' || c === '上海') return c; } catch {}
+  return '大理';
+})();
+function setPreviewCity(city) {
+  if (city !== '大理' && city !== '上海') return;
+  previewCity = city;
+  try { localStorage.setItem('cyc-gen-city', city); } catch {}
+  document.querySelectorAll('.topbar-city-tab').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.city === city);
+  });
+  if (typeof genPreview === 'function') genPreview();
+}
 const CYC_FOOTER = '\n\n———————————\n📍 完整活动详情 · 在线日历\nhttps://cyc.center';
 
 function genPreview(){
@@ -451,7 +438,8 @@ function genPreview(){
   const box=document.getElementById('preview');
   if(!days.length){box.innerHTML='<div class="preview-empty">还没有未来的活动。在左侧选择日期添加活动，或点上方「☁️ 从飞书读取本周活动」拉取已有记录。</div>';return}
   const full = copyMode === 'full';
-  let html='<div class="preview-global-head">CYC本周活动更新</div>';
+  const tpl = CYC_TEMPLATES[previewCity] || CYC_TEMPLATES['大理'];
+  let html='<div class="preview-global-head">'+tpl.header+'</div>';
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
     html+='<div class="preview-day">';
@@ -465,8 +453,12 @@ function genPreview(){
     });
     html+='</div>';
   });
-  // cyc.center 引导卡片
-  html+='<div class="preview-cyc-footer">📍 完整活动详情 · 在线日历<br><a href="https://cyc.center" target="_blank" rel="noopener">https://cyc.center</a></div>';
+  // 城市模板 footer（大理 → cyc.center；上海 → /shanghai + Strayn 报名表）
+  const footerHtml = tpl.footerLines.split('\n').map(line => {
+    if (line.startsWith('http')) return '<a href="' + line + '" target="_blank" rel="noopener">' + line + '</a>';
+    return line;
+  }).join('<br>');
+  html+='<div class="preview-cyc-footer">'+footerHtml+'</div>';
   box.innerHTML=html;
   renderPosterGallery();
 }
@@ -475,7 +467,8 @@ function plainText(){
   const days=Object.keys(data).filter(k=>data[k]&&data[k].length&&k>=todayStr).sort();
   if(!days.length)return'';
   const full = copyMode === 'full';
-  let txt='CYC本周活动更新';
+  const tpl = CYC_TEMPLATES[previewCity] || CYC_TEMPLATES['大理'];
+  let txt=tpl.header;
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
     sortByTime(data[key]).forEach(a=>{
@@ -483,7 +476,7 @@ function plainText(){
       const b=actBodyText(a, full);if(b)txt+='\n'+b;
     });
   });
-  txt += CYC_FOOTER;
+  txt += '\n\n———————————\n' + tpl.footerLines;
   return txt.trim();
 }
 function doCopy(){
@@ -512,17 +505,21 @@ function updateSyncBtn(id) {
   }
 }
 
-// ── 从飞书读取本周活动 ──
-async function fetchFromFeishu() {
+// ── 从飞书读取本周活动 ──（{silent:true} 时不动按钮 UI，自动场景用）
+async function fetchFromFeishu(opts) {
+  opts = opts || {};
+  const silent = !!opts.silent;
   const btn    = document.getElementById('fetchBtn');
   const icon   = document.getElementById('fetchIcon');
   const lbl    = document.getElementById('fetchLabel');
   const status = document.getElementById('fetchStatus');
 
-  btn.disabled     = true;
-  icon.textContent = '⏳';
-  lbl.textContent  = '读取中…';
-  status.textContent = '';
+  if (!silent) {
+    btn.disabled     = true;
+    icon.textContent = '⏳';
+    lbl.textContent  = '读取中…';
+    status.textContent = '';
+  }
 
   const s = getMonStart(wkOffset);
   const e = new Date(s); e.setDate(s.getDate() + 6);
@@ -557,14 +554,55 @@ async function fetchFromFeishu() {
       genPreview();
     }
   } catch (err) {
-    status.textContent = '读取失败：' + err.message;
+    if (!silent) status.textContent = '读取失败：' + err.message;
   } finally {
-    btn.disabled     = false;
-    icon.textContent = '☁️';
-    lbl.textContent  = '从飞书读取本周活动';
-    setTimeout(() => { status.textContent = ''; }, 4000);
+    if (!silent) {
+      btn.disabled     = false;
+      icon.textContent = '☁️';
+      lbl.textContent  = '从飞书读取本周活动';
+      setTimeout(() => { status.textContent = ''; }, 4000);
+    }
   }
 }
+
+// v4.2.11 batch C: ?edit=<rec_id> 进入编辑模式 —— 自动拉本周（含目标活动） + 跳到那条
+async function initEditMode() {
+  const editId = new URLSearchParams(location.search).get('edit');
+  if (!editId) return;
+  // 先拉单条获活动日期，跳到那个周
+  try {
+    const r = await fetch('/api/get-activities', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({weekStart:'2026-01-01', weekEnd:'2026-12-31'}),
+    });
+    const j = await r.json();
+    if (!j.success) return;
+    const target = j.activities.find(a => a.record_id === editId);
+    if (!target || !target.date) return;
+    // 跳到那个周
+    const targetDate = new Date(target.date + 'T00:00:00');
+    const ms = getMonStart(0);
+    const diffDays = Math.round((targetDate - ms) / 86400000);
+    wkOffset = Math.floor(diffDays / 7);
+    renderWeek();
+    // 拉本周 + 选目标日期
+    await fetchFromFeishu({silent:true});
+    selDate = target.date;
+    if (!data[selDate]) data[selDate] = [];
+    renderWeek(); renderActs();
+    // 高亮预览
+    activePreviewId = (data[selDate].find(x => x.record_id === editId) || {}).id || null;
+    if (activePreviewId) genPreview();
+    // 城市从活动 city 自动设
+    if (target.city === '上海') setPreviewCity('上海');
+  } catch (err) {
+    console.warn('[initEditMode] failed:', err.message);
+  }
+}
+// 入口：DOM ready 后跑一次
+if (document.readyState !== 'loading') initEditMode();
+else document.addEventListener('DOMContentLoaded', initEditMode);
 
 // ── ?edit=<rec_id> 编辑模式：从首页/详情页/筹备中卡跳过来直接加载该活动 ──
 //    Phase B (2026-05-09): 让"编辑"按钮真正能 deep-link 到具体活动
