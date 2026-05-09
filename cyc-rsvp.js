@@ -122,6 +122,9 @@
             data-zh="↩ 取消刚刚的报名"
             data-en="↩ Cancel that RSVP"></button>
     <div id="cycRsvpCancelStatus" style="margin-top:8px;font-size:12px;text-align:center;color:#6a6c66;"></div>
+    <a href="/me/rsvps" style="display:block;text-align:center;margin-top:6px;font-size:11.5px;color:#a8a8a8;text-decoration:none;"
+       data-zh="→ 看我所有的报名"
+       data-en="→ See all my RSVPs"></a>
   </div>
 </div>`;
     document.body.appendChild(wrap);

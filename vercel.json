@@ -34,6 +34,7 @@
     { "source": "/event-card", "destination": "/event-card/index.html" },
     { "source": "/team", "destination": "/team/index.html" },
     { "source": "/me/timeline", "destination": "/me/timeline/index.html" },
+    { "source": "/me/rsvps", "destination": "/me/rsvps/index.html" },
     { "source": "/food", "destination": "/food/index.html" },
     { "source": "/youyang", "destination": "/youyang/index.html" },
     { "source": "/doujiadraft", "destination": "/doujiadraft/index.html" },

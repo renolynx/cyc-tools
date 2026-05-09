@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>我的报名 · CYC.center</title>
+<meta name="description" content="管理你在 CYC 大理 / 上海 / 706 × muShanghai 的所有活动报名">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  body.cyc-brand { padding-bottom: 80px; }
+  .me-page {
+    max-width: 720px; margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  .me-topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px;
+  }
+  .me-topbar a {
+    font-size: 13px; font-weight: 600; color: var(--cyc-green);
+    text-decoration: none; padding: 6px 10px; border-radius: 8px;
+  }
+  .me-topbar a:hover { background: rgba(28,61,46,0.06); }
+  .me-lang {
+    appearance: none; background: transparent; border: 0;
+    padding: 6px 12px; border-radius: 100px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    color: var(--cyc-green); cursor: pointer; letter-spacing: 0.06em;
+  }
+  .me-lang:hover { background: rgba(28,61,46,0.08); }
+
+  .me-hero {
+    margin-bottom: 32px;
+  }
+  .me-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--cyc-text-muted); margin-bottom: 6px;
+  }
+  .me-hero h1 {
+    font-family: 'Source Serif 4', 'Source Han Serif SC', serif;
+    font-size: 32px; font-weight: 400; letter-spacing: -0.01em;
+    margin: 0 0 6px; color: var(--cyc-text-strong);
+  }
+  .me-hero p {
+    margin: 0; color: var(--cyc-text-muted); font-size: 14px;
+    line-height: 1.55; font-style: italic;
+  }
+
+  .me-identity-box {
+    margin: 0 0 28px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.42);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-radius: var(--cyc-r-card);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4);
+    font-size: 13px; color: var(--cyc-text);
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .me-identity-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--cyc-text-muted);
+  }
+  .me-identity-name { font-weight: 600; }
+  .me-identity-cred { color: var(--cyc-text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .me-identity-clear {
+    margin-left: auto;
+    appearance: none; background: transparent; border: 0;
+    color: var(--cyc-text-muted); font-size: 12px; cursor: pointer;
+    text-decoration: underline; padding: 2px 6px;
+  }
+  .me-identity-clear:hover { color: #c0392b; }
+
+  .me-cred-form {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 24px; background: rgba(255,255,255,0.42);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-radius: var(--cyc-r-card);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4);
+    margin-bottom: 24px;
+  }
+  .me-cred-form input {
+    padding: 10px 14px; font-size: 14px;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 6px;
+    font-family: inherit;
+  }
+  .me-cred-form button {
+    padding: 10px; border: 0; border-radius: 100px;
+    background: var(--cyc-green); color: #fff;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.04em; cursor: pointer;
+  }
+  .me-cred-form button:disabled { opacity: 0.5; }
+
+  .me-section {
+    margin-bottom: 32px;
+  }
+  .me-section-h {
+    display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 14px;
+  }
+  .me-section-h h3 {
+    font-family: 'Source Serif 4', 'Source Han Serif SC', serif;
+    font-size: 18px; font-weight: 500; margin: 0;
+    color: var(--cyc-text-strong);
+  }
+  .me-section-h .count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--cyc-text-muted);
+  }
+
+  .me-rsvp-list { display: flex; flex-direction: column; gap: 1px; background: rgba(0,0,0,0.06); border-radius: var(--cyc-r-card); overflow: hidden; }
+  .me-rsvp-item {
+    display: grid; grid-template-columns: 80px 1fr auto; gap: 14px;
+    padding: 14px 16px; background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(12px);
+    align-items: center;
+  }
+  .me-rsvp-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; color: var(--cyc-green); font-weight: 600;
+    line-height: 1.2;
+  }
+  .me-rsvp-date-time {
+    font-size: 11px; color: var(--cyc-text-muted); margin-top: 2px; font-weight: 400;
+  }
+  .me-rsvp-info { min-width: 0; }
+  .me-rsvp-title {
+    font-family: 'Source Serif 4', 'Source Han Serif SC', serif;
+    font-size: 15px; font-weight: 500; margin: 0;
+    color: var(--cyc-text-strong);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .me-rsvp-meta {
+    margin-top: 4px; font-size: 11.5px; color: var(--cyc-text-muted);
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .me-rsvp-meta-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: rgba(28,61,46,0.08); color: var(--cyc-green);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .me-rsvp-meta-pill.is-host { background: rgba(217,101,42,0.12); color: var(--cyc-orange); }
+  .me-rsvp-meta-pill.is-past { background: rgba(0,0,0,0.06); color: var(--cyc-text-muted); }
+
+  .me-rsvp-actions {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .me-rsvp-btn {
+    appearance: none; background: transparent;
+    border: 1px solid rgba(0,0,0,0.10);
+    padding: 5px 10px; border-radius: 100px;
+    font-size: 11.5px; cursor: pointer;
+    color: var(--cyc-text-muted);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .me-rsvp-btn:hover { background: rgba(0,0,0,0.04); color: var(--cyc-text); }
+  .me-rsvp-btn.is-cancel:hover { background: rgba(192,57,43,0.08); color: #c0392b; border-color: rgba(192,57,43,0.3); }
+
+  .me-empty {
+    padding: 48px 16px; text-align: center;
+    font-size: 14px; color: var(--cyc-text-muted);
+    line-height: 1.7;
+  }
+  .me-empty a { color: var(--cyc-green); text-decoration: underline; }
+
+  /* lang toggle: 默认 zh 显示 */
+  body:not(.cyc-lang-en) .lang-en-only { display: none !important; }
+  body.cyc-lang-en .lang-zh-only { display: none !important; }
+</style>
+</head>
+<body class="cyc-brand">
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="me-page">
+  <div class="me-topbar">
+    <a href="/">← <span class="lang-zh-only">主页</span><span class="lang-en-only">Home</span></a>
+    <button type="button" class="me-lang" id="meLang">
+      <span class="lang-zh-only">中 · EN</span>
+      <span class="lang-en-only">EN · 中</span>
+    </button>
+  </div>
+
+  <div class="me-hero">
+    <div class="me-eyebrow">
+      <span class="lang-zh-only">个人空间</span>
+      <span class="lang-en-only">My space</span>
+    </div>
+    <h1>
+      <span class="lang-zh-only">我的报名</span>
+      <span class="lang-en-only">My RSVPs</span>
+    </h1>
+    <p>
+      <span class="lang-zh-only">所有你在 CYC 报名过的活动 · 可随时取消</span>
+      <span class="lang-en-only">All events you've RSVP'd to · cancel anytime</span>
+    </p>
+  </div>
+
+  <!-- 已知身份：显示当前 credential + 可清除 -->
+  <div class="me-identity-box" id="meIdentityBox" style="display:none;">
+    <span class="me-identity-label">
+      <span class="lang-zh-only">身份</span><span class="lang-en-only">Identity</span>
+    </span>
+    <span class="me-identity-name" id="meName"></span>
+    <span class="me-identity-cred" id="meCred"></span>
+    <button type="button" class="me-identity-clear" id="meClear">
+      <span class="lang-zh-only">不是我？切换</span>
+      <span class="lang-en-only">Not me? Switch</span>
+    </button>
+  </div>
+
+  <!-- 未知身份：手输 credential 查 -->
+  <form class="me-cred-form" id="meCredForm" style="display:none;">
+    <label style="font-size:12px;color:var(--cyc-text-muted);">
+      <span class="lang-zh-only">输入你报名时填的 微信号 / 邮箱 查看你的报名</span>
+      <span class="lang-en-only">Enter the WeChat / email you RSVP'd with</span>
+    </label>
+    <input type="text" id="meCredInput" placeholder="wechat / email" autocomplete="off">
+    <button type="submit"><span class="lang-zh-only">查看我的报名</span><span class="lang-en-only">Show my RSVPs</span></button>
+  </form>
+
+  <div id="meContent"></div>
+
+  <div id="meLoading" class="me-empty" style="display:none;">
+    <span class="lang-zh-only">加载中…</span>
+    <span class="lang-en-only">Loading…</span>
+  </div>
+
+  <div id="meError" class="me-empty" style="display:none;color:#c0392b;"></div>
+</div>
+
+<script>
+// ─── 双语 toggle ───
+(function () {
+  const KEY = 'cyc-lang';
+  function getLang() {
+    try {
+      const u = new URLSearchParams(location.search).get('lang');
+      if (u === 'en' || u === 'zh') return u;
+      const s = localStorage.getItem(KEY);
+      if (s === 'en' || s === 'zh') return s;
+    } catch {}
+    if (navigator.language && navigator.language.toLowerCase().startsWith('en')) return 'en';
+    return 'zh';
+  }
+  function applyLang(lang) {
+    document.body.classList.toggle('cyc-lang-en', lang === 'en');
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh';
+    try { localStorage.setItem(KEY, lang); } catch {}
+  }
+  applyLang(getLang());
+  document.getElementById('meLang').addEventListener('click', () => {
+    const next = document.body.classList.contains('cyc-lang-en') ? 'zh' : 'en';
+    applyLang(next);
+  });
+})();
+
+// ─── 身份 + RSVPs ───
+function getMe() {
+  try { return JSON.parse(localStorage.getItem('cyc-me') || 'null'); } catch { return null; }
+}
+function clearMe() {
+  try { localStorage.removeItem('cyc-me'); } catch {}
+}
+
+const meName = document.getElementById('meName');
+const meCred = document.getElementById('meCred');
+const meIdBox = document.getElementById('meIdentityBox');
+const meForm = document.getElementById('meCredForm');
+const meContent = document.getElementById('meContent');
+const meLoading = document.getElementById('meLoading');
+const meError = document.getElementById('meError');
+
+document.getElementById('meClear').addEventListener('click', () => {
+  clearMe();
+  init();
+});
+meForm.addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const cred = document.getElementById('meCredInput').value.trim();
+  if (!cred) return;
+  // 临时身份（不写 localStorage 直到确认有 RSVPs）
+  await loadRsvps(cred, /*saveOnSuccess*/ true);
+});
+
+async function loadRsvps(credential, saveOnSuccess) {
+  meError.style.display = 'none';
+  meContent.innerHTML = '';
+  meLoading.style.display = '';
+  try {
+    const res = await fetch('/api/me-rsvps?credential=' + encodeURIComponent(credential));
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || `${res.status}`);
+
+    if (saveOnSuccess && data.count > 0) {
+      try { localStorage.setItem('cyc-me', JSON.stringify({ name: '', wechat: credential.includes('@') ? '' : credential, email: credential.includes('@') ? credential : '', savedAt: Date.now() })); } catch {}
+      init();
+      return;
+    }
+
+    render(data);
+  } catch (err) {
+    meError.textContent = (document.body.classList.contains('cyc-lang-en') ? 'Failed to load: ' : '加载失败：') + err.message;
+    meError.style.display = '';
+  } finally {
+    meLoading.style.display = 'none';
+  }
+}
+
+function init() {
+  const me = getMe();
+  if (!me || (!me.wechat && !me.email)) {
+    meIdBox.style.display = 'none';
+    meForm.style.display = '';
+    meContent.innerHTML = '';
+    return;
+  }
+  meIdBox.style.display = '';
+  meForm.style.display = 'none';
+  meName.textContent = me.name || me.wechat || me.email;
+  meCred.textContent = me.wechat || me.email;
+  loadRsvps(me.wechat || me.email, false);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  return parseInt(m[2]) + '/' + parseInt(m[3]);
+}
+function fmtDow(iso) {
+  if (!iso) return '';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const dow = new Date(Date.UTC(+m[1], +m[2]-1, +m[3])).getUTCDay();
+  const isEn = document.body.classList.contains('cyc-lang-en');
+  return isEn ? ['SUN','MON','TUE','WED','THU','FRI','SAT'][dow] : ['周日','周一','周二','周三','周四','周五','周六'][dow];
+}
+
+function render(data) {
+  const isEn = document.body.classList.contains('cyc-lang-en');
+  const sectionTitle = (zh, en) => `<div class="me-section-h"><h3><span class="lang-zh-only">${zh}</span><span class="lang-en-only">${en}</span></h3></div>`;
+
+  if (data.count === 0) {
+    meContent.innerHTML = `<div class="me-empty">
+      <span class="lang-zh-only">还没有报名记录。<a href="/">回首页找活动 →</a></span>
+      <span class="lang-en-only">No RSVPs yet. <a href="/">Browse events →</a></span>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+  if (data.upcoming.length) {
+    html += '<div class="me-section">';
+    html += sectionTitle(`即将到来 · ${data.upcoming.length}`, `Upcoming · ${data.upcoming.length}`);
+    html += '<div class="me-rsvp-list">' + data.upcoming.map(r => renderItem(r, false)).join('') + '</div>';
+    html += '</div>';
+  }
+  if (data.past.length) {
+    html += '<div class="me-section">';
+    html += sectionTitle(`已结束 · ${data.past.length}`, `Past · ${data.past.length}`);
+    html += '<div class="me-rsvp-list">' + data.past.map(r => renderItem(r, true)).join('') + '</div>';
+    html += '</div>';
+  }
+  meContent.innerHTML = html;
+
+  // wire cancel buttons
+  meContent.querySelectorAll('.js-cancel').forEach(btn => {
+    btn.addEventListener('click', () => onCancel(btn.dataset.recId, btn.dataset.title, btn));
+  });
+}
+
+function renderItem(r, isPast) {
+  const a = r.activity || {};
+  const isHost = r.role && (r.role === '活动发起者' || r.role === '活动发起人' || r.role === '嘉宾');
+  const date = a.date ? fmtDate(a.date) : '—';
+  const dow  = a.date ? fmtDow(a.date) : '';
+  const titleZh = a.title || '(unknown)';
+  const titleEn = a.title_en || a.title || '(unknown)';
+
+  const cityPill = a.city
+    ? `<span class="me-rsvp-meta-pill"><span class="lang-zh-only">${esc(a.city)}</span><span class="lang-en-only">${esc({'大理':'Dali','上海':'Shanghai','北京':'Beijing','柏林':'Berlin'}[a.city] || a.city)}</span></span>`
+    : '';
+  const rolePill = isHost
+    ? `<span class="me-rsvp-meta-pill is-host"><span class="lang-zh-only">嘉宾</span><span class="lang-en-only">Speaker</span></span>`
+    : '';
+  const pastPill = isPast
+    ? `<span class="me-rsvp-meta-pill is-past"><span class="lang-zh-only">已结束</span><span class="lang-en-only">Past</span></span>`
+    : '';
+
+  const cancelBtn = (!isPast)
+    ? `<button class="me-rsvp-btn is-cancel js-cancel" data-rec-id="${esc(r.activity?.record_id || '')}" data-title="${esc(titleZh)}">
+         <span class="lang-zh-only">✕ 取消</span>
+         <span class="lang-en-only">✕ Cancel</span>
+       </button>`
+    : '';
+  const detailLink = a.record_id
+    ? `<a href="/events/${esc(a.record_id)}" class="me-rsvp-btn">
+         <span class="lang-zh-only">详情 →</span>
+         <span class="lang-en-only">Details →</span>
+       </a>`
+    : '';
+
+  return `<div class="me-rsvp-item">
+    <div class="me-rsvp-date">
+      ${date}<br>
+      <span class="me-rsvp-date-time">${dow}${a.time ? ' · ' + esc(a.time) : ''}</span>
+    </div>
+    <div class="me-rsvp-info">
+      <h4 class="me-rsvp-title">
+        <span class="lang-zh-only">${esc(titleZh)}</span>
+        <span class="lang-en-only">${esc(titleEn)}</span>
+      </h4>
+      <div class="me-rsvp-meta">
+        ${cityPill}${rolePill}${pastPill}
+      </div>
+    </div>
+    <div class="me-rsvp-actions">
+      ${detailLink}
+      ${cancelBtn}
+    </div>
+  </div>`;
+}
+
+async function onCancel(activityRecId, title, btn) {
+  const isEn = document.body.classList.contains('cyc-lang-en');
+  if (!confirm(isEn ? `Cancel RSVP for "${title}"?` : `取消报名 "${title}"？`)) return;
+  const me = getMe();
+  if (!me) return;
+  const cred = me.wechat || me.email;
+  btn.disabled = true;
+  btn.textContent = isEn ? 'Canceling…' : '取消中…';
+  try {
+    const res = await fetch('/api/rsvp?action=delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity_rec_id: activityRecId, auth: cred }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || `${res.status}`);
+    // 取消成功 → 重新拉
+    init();
+  } catch (err) {
+    alert((isEn ? 'Cancel failed: ' : '取消失败：') + err.message);
+    btn.disabled = false;
+    btn.textContent = isEn ? '✕ Cancel' : '✕ 取消';
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
