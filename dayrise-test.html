@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dayrise-os mono 字体选型对比 · cyc.center</title>
+
+<!-- Display serif (Source Serif 4 Light · Atlas brand register) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300&family=Inter:wght@400;600;700&family=Geist+Mono:wght@400;600&family=IBM+Plex+Mono:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+:root {
+  /* cyc 调色 (v3 保留) */
+  --cyc-green: #1c3d2e;
+  --cyc-green-2: #2a5740;
+  --cyc-orange: #d9652a;
+  --cyc-sand: #f2ede6;
+  --cyc-tan: #c8a96e;
+
+  --cyc-text-strong: #0d0d0d;
+  --cyc-text: #1a1a1a;
+  --cyc-text-muted: #4d4d4d;
+  --cyc-text-faint: #757575;
+  --cyc-warning: #b04a18;
+
+  --cyc-surface-glass: rgba(255, 255, 255, 0.75);
+  --cyc-border-glass: rgba(255, 255, 255, 0.6);
+
+  /* dayrise v4 字体 */
+  --cyc-font-display: 'Source Serif 4', 'Source Han Serif SC', Georgia, serif;
+  --cyc-font-body: 'Inter', -apple-system, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--cyc-sand);
+  color: var(--cyc-text-strong);
+  font-family: var(--cyc-font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 48px 24px 96px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 三个 ambient blob (v3 unified base) */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.18;
+  z-index: 0;
+}
+body::before {
+  width: 480px; height: 480px;
+  background: var(--cyc-orange);
+  top: -120px; right: -80px;
+}
+body::after {
+  width: 600px; height: 600px;
+  background: var(--cyc-green);
+  bottom: -200px; left: -120px;
+}
+
+.container {
+  max-width: 1320px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* hero: display serif demo */
+.hero {
+  margin-bottom: 64px;
+  padding-block: 32px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.eyebrow {
+  font-family: var(--cyc-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cyc-text-muted);
+  margin-bottom: 12px;
+}
+
+.hero h1 {
+  font-family: var(--cyc-font-display);
+  font-weight: 300;
+  font-size: clamp(40px, 5vw, 56px);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--cyc-text-strong);
+  margin: 0 0 12px;
+  max-width: 880px;
+}
+
+.hero .subtitle {
+  font-size: 16px;
+  color: var(--cyc-text-muted);
+  font-style: italic;
+  max-width: 720px;
+}
+
+.hero .meta {
+  margin-top: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 三列对比 grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+.col {
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cyc-border-glass);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.7) inset;
+}
+
+.col[data-recommended] {
+  outline: 2px solid var(--cyc-orange);
+  outline-offset: -2px;
+}
+
+.col-header {
+  margin-bottom: 24px;
+}
+
+.col-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyc-text-muted);
+  margin-bottom: 6px;
+}
+
+.col-tag--recommended {
+  color: var(--cyc-orange);
+}
+
+.col-tag--current {
+  color: var(--cyc-green);
+}
+
+.col-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--cyc-text-strong);
+  margin-bottom: 6px;
+}
+
+.col-desc {
+  font-size: 13px;
+  color: var(--cyc-text-muted);
+  line-height: 1.5;
+}
+
+/* Demo sections */
+.demo {
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.demo:last-child {
+  padding-bottom: 0;
+}
+
+.demo-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cyc-text-faint);
+  margin-bottom: 10px;
+}
+
+/* Mono font classes */
+.geist     { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ibm       { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+.jetbrains { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* Component demos */
+
+.section-eyebrow {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cyc-text-muted);
+}
+
+.pill-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(28, 61, 46, 0.08);
+  color: var(--cyc-text-muted);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+
+.time-stamp {
+  font-size: 13px;
+  color: var(--cyc-text-muted);
+  letter-spacing: 0;
+}
+
+.status-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.status-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyc-warning);
+}
+
+.status-live::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyc-warning);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-open {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyc-text-muted);
+}
+
+.kpi-tile {
+  background: rgba(28, 61, 46, 0.04);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.kpi-label {
+  font-family: var(--cyc-font-body);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cyc-text-faint);
+  margin-bottom: 4px;
+}
+
+.kpi-num {
+  font-size: 28px;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+  color: var(--cyc-text-strong);
+  line-height: 1;
+}
+
+.char-spec {
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--cyc-text-strong);
+}
+
+.char-spec-bold {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cyc-text-strong);
+  margin-top: 6px;
+}
+
+.cn-fallback-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.cn-fallback-note {
+  font-size: 11px;
+  color: var(--cyc-text-faint);
+  font-family: var(--cyc-font-body);
+  line-height: 1.5;
+}
+
+/* Decision table at bottom */
+.verdict {
+  margin-top: 64px;
+  padding: 32px;
+  background: var(--cyc-surface-glass);
+  backdrop-filter: blur(24px);
+  border-radius: 16px;
+  border: 1px solid var(--cyc-border-glass);
+}
+
+.verdict h2 {
+  font-family: var(--cyc-font-display);
+  font-weight: 300;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  color: var(--cyc-text-strong);
+}
+
+.verdict p {
+  color: var(--cyc-text-muted);
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.verdict-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.verdict-table th, .verdict-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.verdict-table th {
+  font-weight: 600;
+  color: var(--cyc-text-strong);
+  background: rgba(28, 61, 46, 0.04);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.verdict-table td:first-child {
+  font-weight: 600;
+  color: var(--cyc-text-strong);
+}
+
+.cell-good { color: var(--cyc-green); }
+.cell-warn { color: var(--cyc-warning); }
+.cell-bad  { color: #a93226; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HERO — display serif live demo -->
+<header class="hero">
+  <div class="eyebrow">DAYRISE-OS V4 · TYPOGRAPHY TEST</div>
+  <h1>三种 mono 字体 · 哪个配 cyc.center</h1>
+  <p class="subtitle">Source Serif 4 Light @ 56px hero · 配 mono stamp 看搭配 · 沙底 + 三 blob 还原线上视觉环境</p>
+  <div class="meta">
+    <span class="status-live geist">LIVE TEST</span>
+    <span class="time-stamp ibm">2026-05-07 · v4 PROPOSAL</span>
+  </div>
+</header>
+
+<!-- THREE COLUMNS -->
+<div class="grid">
+
+  <!-- COL 1: Geist Mono (玖玖倾向) -->
+  <div class="col" data-recommended>
+    <div class="col-header">
+      <div class="col-tag col-tag--recommended">⭐ 玖玖倾向</div>
+      <div class="col-name">Geist Mono</div>
+      <div class="col-desc">Vercel 出品（2023）· 现代几何 · 稍冷 · 极简感强 · 字符无衬线、骨骼清晰</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">SECTION EYEBROW</div>
+      <div class="section-eyebrow geist">COMMUNITY · 本周</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">活动类型 PILL（英文 label）</div>
+      <div class="pill-row">
+        <span class="pill geist">READING</span>
+        <span class="pill geist">OUTDOOR</span>
+        <span class="pill geist">WORKSHOP</span>
+        <span class="pill geist">TALK</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">时间 STAMP</div>
+      <div class="time-stamp geist">May 12 · 19:00 — 21:30</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">状态 LABEL</div>
+      <div class="status-row">
+        <span class="status-live geist">LIVE</span>
+        <span class="status-open geist">OPEN RSVP</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">ADMIN KPI 数字</div>
+      <div class="kpi-tile">
+        <div class="kpi-label">EVENTS THIS WEEK</div>
+        <div class="kpi-num geist">12,847</div>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">字符识别度（关键字符）</div>
+      <div class="char-spec geist">Il1 O0 @# {[(</div>
+      <div class="char-spec-bold geist">abc ABC 123 -→</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">中文 FALLBACK（mono 没中文 glyph，看 fallback）</div>
+      <div class="cn-fallback-row">
+        <span class="pill geist">读书分享会</span>
+        <span class="pill geist">户外</span>
+        <span class="pill geist">麻圆微沙龙</span>
+      </div>
+      <div class="cn-fallback-note">↑ 中文应该 fallback 到 PingFang SC（不是系统 monospace）。如看到等宽中文 = 不及格。</div>
+    </div>
+  </div>
+
+  <!-- COL 2: IBM Plex Mono (推荐) -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-tag col-tag--current">↳ Claudian 推荐</div>
+      <div class="col-name">IBM Plex Mono</div>
+      <div class="col-desc">IBM 出品（2018）· 工业感 + humanist 圆润 · 比 Geist 暖一些 · 跟"工具站"contextual fit</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">SECTION EYEBROW</div>
+      <div class="section-eyebrow ibm">COMMUNITY · 本周</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">活动类型 PILL（英文 label）</div>
+      <div class="pill-row">
+        <span class="pill ibm">READING</span>
+        <span class="pill ibm">OUTDOOR</span>
+        <span class="pill ibm">WORKSHOP</span>
+        <span class="pill ibm">TALK</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">时间 STAMP</div>
+      <div class="time-stamp ibm">May 12 · 19:00 — 21:30</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">状态 LABEL</div>
+      <div class="status-row">
+        <span class="status-live ibm">LIVE</span>
+        <span class="status-open ibm">OPEN RSVP</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">ADMIN KPI 数字</div>
+      <div class="kpi-tile">
+        <div class="kpi-label">EVENTS THIS WEEK</div>
+        <div class="kpi-num ibm">12,847</div>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">字符识别度（关键字符）</div>
+      <div class="char-spec ibm">Il1 O0 @# {[(</div>
+      <div class="char-spec-bold ibm">abc ABC 123 -→</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">中文 FALLBACK</div>
+      <div class="cn-fallback-row">
+        <span class="pill ibm">读书分享会</span>
+        <span class="pill ibm">户外</span>
+        <span class="pill ibm">麻圆微沙龙</span>
+      </div>
+      <div class="cn-fallback-note">↑ 中文应该 fallback 到 PingFang SC（不是系统 monospace）。</div>
+    </div>
+  </div>
+
+  <!-- COL 3: JetBrains Mono (控制组) -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-tag">控制组</div>
+      <div class="col-name">JetBrains Mono</div>
+      <div class="col-desc">JetBrains 出品（2019）· 程序员感最强 · ligatures 多 · 极客标签 · 用作对比基准</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">SECTION EYEBROW</div>
+      <div class="section-eyebrow jetbrains">COMMUNITY · 本周</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">活动类型 PILL（英文 label）</div>
+      <div class="pill-row">
+        <span class="pill jetbrains">READING</span>
+        <span class="pill jetbrains">OUTDOOR</span>
+        <span class="pill jetbrains">WORKSHOP</span>
+        <span class="pill jetbrains">TALK</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">时间 STAMP</div>
+      <div class="time-stamp jetbrains">May 12 · 19:00 — 21:30</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">状态 LABEL</div>
+      <div class="status-row">
+        <span class="status-live jetbrains">LIVE</span>
+        <span class="status-open jetbrains">OPEN RSVP</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">ADMIN KPI 数字</div>
+      <div class="kpi-tile">
+        <div class="kpi-label">EVENTS THIS WEEK</div>
+        <div class="kpi-num jetbrains">12,847</div>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">字符识别度（关键字符）</div>
+      <div class="char-spec jetbrains">Il1 O0 @# {[(</div>
+      <div class="char-spec-bold jetbrains">abc ABC 123 -→</div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">中文 FALLBACK</div>
+      <div class="cn-fallback-row">
+        <span class="pill jetbrains">读书分享会</span>
+        <span class="pill jetbrains">户外</span>
+        <span class="pill jetbrains">麻圆微沙龙</span>
+      </div>
+      <div class="cn-fallback-note">↑ 中文应该 fallback 到 PingFang SC（不是系统 monospace）。</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- VERDICT TABLE -->
+<div class="verdict">
+  <h2>速判表</h2>
+  <p>三种字体在 cyc.center 实际场景下的对比。看完上面 live 渲染再回来看这个表。</p>
+  <table class="verdict-table">
+    <thead>
+      <tr>
+        <th>维度</th>
+        <th>Geist Mono</th>
+        <th>IBM Plex Mono</th>
+        <th>JetBrains Mono</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>气质</td>
+        <td>现代 / 几何 / 稍冷</td>
+        <td>工业 / humanist / 暖</td>
+        <td>程序员 / 极客</td>
+      </tr>
+      <tr>
+        <td>跟"独立 zine 编辑部"匹配度</td>
+        <td class="cell-warn">中（偏 SaaS）</td>
+        <td class="cell-good">高（工艺感）</td>
+        <td class="cell-bad">低（极客标签）</td>
+      </tr>
+      <tr>
+        <td>跟 Source Serif 4 配对感</td>
+        <td class="cell-good">好（同代清爽）</td>
+        <td class="cell-good">好（年代感对位）</td>
+        <td class="cell-warn">中（差异略大）</td>
+      </tr>
+      <tr>
+        <td>字符识别度</td>
+        <td class="cell-good">高</td>
+        <td class="cell-good">高</td>
+        <td class="cell-good">高（ligatures）</td>
+      </tr>
+      <tr>
+        <td>数字 tabular 体感</td>
+        <td class="cell-good">好（窄、紧）</td>
+        <td class="cell-good">好（适中）</td>
+        <td class="cell-good">好（宽松）</td>
+      </tr>
+      <tr>
+        <td>加载成本（Latin）</td>
+        <td>~50KB</td>
+        <td>~50KB</td>
+        <td>~60KB</td>
+      </tr>
+      <tr>
+        <td>License</td>
+        <td>OFL</td>
+        <td>OFL</td>
+        <td>OFL</td>
+      </tr>
+      <tr>
+        <td>跟 Vercel 部署的"附加意义"</td>
+        <td class="cell-warn">同生态<br>（可能太强 SaaS 暗示）</td>
+        <td class="cell-good">中性（IBM 历史 +）</td>
+        <td class="cell-warn">无关</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+</body>
+</html>

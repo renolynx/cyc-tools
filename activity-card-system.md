@@ -3,6 +3,22 @@
 > 这份文档是活动卡片**跨界面信息呈现 + 交互一致性**的最终依据。任何"小卡片状态/展开/报名/编辑/海报 lightbox"的设计冲突时以本文档为准。
 >
 > 来源：玖玖（产品负责人）2026-05-02 提出的设计统一诉求 —— "近期活动 / 主页 / 全部活动 这几个清单页都不统一信息呈现，要统一设计"。
+>
+> ---
+>
+> ## ⚠️ v3 更新（2026-05-09）—— 5/8-5/9 拓展期演化已落地
+>
+> 本文档原 v1/v2 是"统一卡片"的**设想 + 设计原则**（5/2 写）。5/8-5/9 之间该统一**已大部分实施**，并在玖玖 7 轮反馈中演化出 v1/v2 没料到的形态：
+>
+> - ✅ **Phase B 通用卡迁移**（commits `b3d0c9e` `aab4cd8`）—— `/events` 列表 + `/shanghai` 都迁到通用 `home-act-card`，原"4 surface 各自实现"压缩到 **3 surface 共用 1 component**（home / events list / shanghai 都是同一个 `home-act-card`，仅 detail 仍独立）
+> - ✅ **home-act-card 列式布局**（v4.2.6 → v4.2.10，5 轮反馈稳定）—— 不再是简版收起式，而是 datestack+thumb header / RSVP+attendees CTA 行的列式
+> - ✅ **双城分流**（commits `2efe89d` `0017444`）—— `/events` 加大理 / 上海 segmented tab，每 tab 独立卡流
+> - ✅ **双语 toggle**（commits `9ac377f` `d558b23` `07181fc`）—— 卡片元素全 zh/en，title_en / location_en / desc_en 等并行字段；topbar lang sync 跨页保持
+> - ✅ **筹备中状态视觉**（commits `07181fc` `9ac377f` `d560d45`）—— 占位标题加横线划掉 + 筹备 pill+提示同行 + 不显示具体时间地点
+>
+> 详见下方新增 §十二「2026-05 拓展期演化」。
+>
+> 原 v1/v2 内容（§一 ~ §十一）保留作历史叙事，**冲突以 §十二 为准**。
 
 ---
 
@@ -278,3 +294,144 @@ renderActivityCard(activity, options) → HTMLString
 
 - **2026-05-02** 玖玖反馈"信息呈现不统一 + 交互不统一"—— 创建本文档
 - **2026-05-02 (v2)** 玖玖反馈"卡片应该就地展开" —— 翻转原则：原 v1 红线"❌ 卡片就地展开"删除，整卡 click 改为 toggle is-expanded；保留详情页作为 SEO/share canonical URL；展开区底部加「📝 详情/报名 →」link 作 escape hatch
+- **2026-05-09 (v3)** 5/8-5/9 拓展期演化回填 —— 详见 §十二。Phase B 通用卡迁移已 ship（home / events list / shanghai 三 surface 共用 `home-act-card`，原计划 §八 3.5.1-3.5.4 部分已落地）。新增双城 / 双语 / 筹备状态 3 个未在 v1/v2 框架内的维度
+
+---
+
+## 十二、2026-05 拓展期演化（v3）
+
+> **本节是当前权威**。原 §一 ~ §十 是 v1/v2 设想，本节是真实 ship 后的状态。冲突以本节为准。
+
+### 12.1 surface 收敛 4 → 2
+
+| Surface | 5/2 v1 设想 | 5/9 实际 |
+|---|---|---|
+| home | `home-act-card`（CSR）| ✅ `home-act-card`（CSR，列式布局 v4.2.10）|
+| list（/events）| `el-card`（SSR） | ✅ **迁到 `home-act-card`** —— commit `b3d0c9e`（Phase B commit 1）|
+| shanghai（/shanghai）| ❌ 不存在 | ✅ `home-act-card`（迁移 commit `aab4cd8`，Phase B commit 3）|
+| mini（profile 列出）| 文字列表（无卡片）| ⏳ 仍未做卡片化，仍是文字列表 |
+| detail（/events/:id）| 整页 `event-*` block | ✅ 不变，仍独立（一张大卡片即整页）|
+
+**净效果**：原计划"3 个清单 surface 共用 1 component"已落地（home / list / shanghai），剩 mini / detail 仍独立。这是 v1 §八 迁移路线 3.5.1-3.5.4 的**部分实施**（不是抽 `_card.js`，而是直接让 `/events` SSR 和 `/shanghai` CSR 都渲染同款 `home-act-card` markup）。
+
+### 12.2 home-act-card 列式布局（v4.2.6 → v4.2.10）
+
+5/2 v2 没规定 home-act-card 的内部结构。v4.2.6 起在玖玖 7 轮反馈下定型为**列式 header + content + cta 行**：
+
+```
+┌─────────────────────────────────────────┐
+│ [datestack ┃ thumb 16:10]               │  ← header 行
+│  日 · 月       (海报或时段渐变占位)         │
+├─────────────────────────────────────────┤
+│ 标题（zh）                                │
+│ Title (en，italic 灰)                     │  ← 双语并列
+│ ⏰ 19:00 · 📍 苍山下咖啡桌                │  ← meta 行
+├─────────────────────────────────────────┤
+│ 状态 pill · 类型 chips                    │
+│ ─────────────────────────────────────  │
+│ [RSVP 按钮]      [报名头像 stack +N]      │  ← CTA 行（v4.2.7 加）
+└─────────────────────────────────────────┘
+```
+
+**反馈轮次**（每轮一个 commit）：
+1. v4.2.6 (`3f24041`)：扁平化（去 inner padding 嵌套）+ 层次升级（向 /shanghai 学习）
+2. v4.2.7 (`f9c67b3`)：列式布局确立（datestack+thumb header / RSVP+attendees CTA 行）
+3. v4.2.8 (`d4a9aaa`)：mobile 截断 / 字体层次 / 展开去重
+4. v4.2.9 (`d558b23`)：紧凑卡片 / 头像 / topbar lang / hero 透 / CTA 文案
+5. v4.2.10 (`07181fc`)：3 区块间距 / glass CTA / lang sync / 筹备中特殊卡
+
+**关键决策**：
+- header 用 `datestack`（日大、月小）+ thumb 16:10 并列，不是单纯的"poster on top, text below"
+- 海报缺失时 thumb 走 `cyc-time-*` 5 段时段渐变占位（DESIGN.md Pattern 10）
+- 双语标题 zh/en 并列（en italic 灰），不是 toggle 切换 —— 见 12.4
+- CTA 行 (RSVP + attendees) 是 v4.2.7 才加的，原 v2 §三 红线"❌ 卡内多个**主**入口"被部分突破：现在卡内有 2 个主交互（展开 + RSVP），可接受因为 RSVP 是 critical conversion path
+
+### 12.3 双城分流（commits `2efe89d` `0017444`）
+
+`/events` 顶部加 segmented tab：
+
+```
+[ 大理 (默认) ] [ 上海 ]
+```
+
+- 数据源：飞书活动表加 `city` 字段（值：`大理` / `上海`）
+- 渲染：tab 切换瞬时（不刷页），用 `?city=大理` / `?city=上海` URL param 持久化
+- 筛选：服务端 SSR 时按 `city` 过滤；CSR tab 切换时拉对应数据
+- 展示：tab 状态用 `cyc-stamp` 字号 + green underline；不用渐变 / 不用 brand color
+
+**新 surface**：`/shanghai` 是 city=上海 的独立着陆页（hero "706 × muShanghai · 当下在发生什么" + 卡流），不是 tab 的一种 view，是独立路由。两者关系：
+- `/shanghai` = 落地页 + 上海全活动卡流 + RSVP form（双语）
+- `/events?city=上海` = 全站 events 列表里看上海的 view
+
+详见 [[706 x muShanghai 行动计划]] (vault `cyc.center/04 执行/04`)。
+
+### 12.4 双语 toggle（commits `9ac377f` `d558b23` `07181fc`）
+
+不是切换 toggle（一次只显示一种语言），而是**zh/en 并列字段并行渲染**：
+
+| 飞书字段 | zh 字段 | en 字段 |
+|---|---|---|
+| 标题 | 标题 | title_en |
+| 地点 | 地点 | location_en |
+| 描述 | 活动/项目描述 | desc_en |
+| 时间 | 时间 (中文格式 "5月12日 19:00")| 同字段，模板自动 fallback "May 12 · 19:00" |
+
+**渲染规则**：
+- topbar lang toggle：zh / en 二选一，全站持久化（localStorage `cyc-lang`）
+- lang=zh 时：标题 zh 主、en 在下方 italic 灰
+- lang=en 时：标题 en 主、zh 在下方 muted
+- en 字段缺失时：双向 fallback 显示 zh
+- topbar lang state 跨页 sync（`d558b23`），刷新不丢
+
+**不在范围内**：
+- ❌ 全站 i18n（不翻 nav / button text，只翻数据驱动的标题/地点/描述）
+- ❌ URL 路由 `/en/events`（用 query string `?lang=en` 或 localStorage）
+- ❌ 自动翻译（en 字段是手填，缺就用 zh fallback）
+
+### 12.5 筹备中状态视觉（commits `07181fc` `9ac377f` `d560d45`）
+
+新增"筹备中"卡片状态——活动**已立项但细节未定**（时间地点暂缺）的展示规则。原 v1/v2 §六 只规定了`是否对外开放`pill，没考虑"信息不完整"的视觉降级。
+
+**触发条件**：飞书活动 `status` 字段 = `筹备中`（非"确认举办"）
+
+**视觉差异**：
+
+```
+确认举办活动卡：                        筹备中活动卡：
+┌──────────────────────────┐          ┌──────────────────────────┐
+│ [日期] [thumb]            │          │ [thumb 渐变占位]          │  ← 不显日期
+│ 标题                      │          │ ~~占位标题~~              │  ← 标题加横线划掉
+│ ⏰ 19:00 · 📍 地点        │          │ 🔵 筹备中 · 详情待定      │  ← pill+提示同行替代 meta
+│ 类型 chips                │          │                          │
+│ [RSVP]   [attendees]      │          │ (无 CTA 行 / 不可 RSVP)   │
+└──────────────────────────┘          └──────────────────────────┘
+```
+
+**关键**：
+- 标题 strikethrough 视觉降级（`text-decoration: line-through`）—— 玖玖反馈"占位标题不该和真活动一样醒目"
+- 筹备 pill + 提示文案同一行（`d560d45` 玖玖第七轮反馈）—— 不要分两行占空间
+- 没有 RSVP 按钮 / attendees stack（这俩在筹备中无意义）
+- 时段渐变占位仍走 `cyc-time-*`（基于 `time` 字段哪怕是 placeholder 也能 fallback noon）
+
+### 12.6 影响 §一 ~ §十 的修订摘要
+
+| 原节 | 5/2 设想 | 5/9 实际 | 差异 |
+|---|---|---|---|
+| §一 4 surface | home / list / mini / detail | home + list + shanghai 共用 `home-act-card`；mini 仍是文字；detail 独立 | 3 surface 共用 1 component（少 1）+ 加新 surface `shanghai` |
+| §二 信息矩阵 | 每 field × 每 surface | 加 title_en / location_en / desc_en（双语并列）+ 筹备状态降级规则 | 矩阵需增 4 行 + 1 列 status |
+| §三 6 个交互原语 | 1 整卡 click 展开 / 2 头像 modal / 3 海报 lightbox / 4 RSVP / 5 编辑 / 红线"卡内单主交互" | 实际 5 项不变 + 卡内多 1 个主交互（RSVP CTA 在卡上） | §三 红线"❌ 卡内多个主入口"已突破，可接受（RSVP 是 critical conversion）|
+| §六 「对外开放」字段 | `is_public` boolean | 仍按设计落地，加 `status=筹备中` 的额外 pill 处理 | additive |
+| §七 组件契约 | `renderActivityCard(act, opts)` 服务端 + 客户端镜像 | 实际未抽 `_card.js`，是用模板字符串复制粘贴让 markup 一致 | 不优雅但 work，重构压力 defer |
+| §八 迁移路线 3.5.1-3.5.4 | 抽 `_card.js` + cyc-card.js + 快照测试 + 旧实现下线 | 3.5.4（旧实现下线）部分完成（list 已迁），3.5.1-3.5.3 未做 | 用"复制 markup"代替"抽组件"——快但有漂移风险 |
+
+### 12.7 接下来未做的（v3 backlog）
+
+- ⏳ **mini surface 卡片化**：profile 页 "ta 参加过的活动" 仍是文字列表，应该用 `home-act-card mini` 变体（密度更高）
+- ⏳ **抽 `_card.js` 服务端组件 + 快照测试**：当前"复制 markup"在 home/list/shanghai 三处保持一致全靠人工 review，有漂移风险（已发生过：v4.2.11 batch A 加双语时，shanghai 卡漏了一行）
+- ⏳ **cyc-card.js 客户端镜像**：与 `_card.js` 字符串等价的 CSR 版，让首页 dynamic 加载也共用
+- ⏳ **筹备中卡的 admin 入口**：当前筹备中卡不显示 RSVP，但也没有"补完信息→升级到确认举办"的快捷入口，admin 需要去 generator 编辑
+
+不在 backlog（确定不做）：
+- ❌ 卡内 inline 编辑（在卡上直接改标题等字段）—— 永远走 generator 编辑模式
+- ❌ 多语言扩展超过 zh/en（不做日韩等）
+- ❌ 把 detail 页也做成 card 复用 —— detail 一直是独立页，不强行共用

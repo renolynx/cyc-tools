@@ -6,7 +6,7 @@
 import { getAccessToken } from './_feishu.js';
 
 /**
- * dayrise v4.2 时段渐变占位（[[08 dayrise-os v4.2 时段渐变占位提案]]）
+ * dayrise v4.2 时段渐变占位 v4.2.5（[[_archive/踩坑 2026-05 v4.2 时段渐变（4 段 linear → 5 段 radial）]]）
  * v4.2.5 调整（2026-05-09）：4 段 → 5 段 + 修 full-width colon bug
  *
  * 把活动开始时间映射到 5 段大理日色 utility class：

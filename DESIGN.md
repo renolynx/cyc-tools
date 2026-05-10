@@ -8,7 +8,7 @@
 > - **Warm muted body**：`--cyc-text-muted-warm: #5c554c` → Daybook long-form opt-in
 > - **Brand register flag**：`body.cyc-brand` 开启 display + 大 spacing
 >
-> 详见 `.claude/skills/dayrise-os/SKILL.md` 和 vault 内 `cyc.center/03 设计/05 dayrise-os 重构提案 (v3 → v4).md`。
+> 详见 `.claude/skills/dayrise-os/SKILL.md` 和 vault 内 `cyc.center/03 设计/_archive/决策 2026-05 dayrise-os v4 重构.md`。
 >
 > ---
 >
@@ -588,20 +588,56 @@ memoji-style 3D 头像保持彩色（identity 不限色）。容器 frame 用 `d
 - **Self-Mood**：5 态笑脸，单色绿 (`var(--cyc-green)`) on `var(--cyc-surface-pure)` 圆背景。位于 `/me`、journal、daily check-in
 - **Identity Avatar**：3D 彩色 memoji，每人不同。位于 `/community`、消息、协作视图
 
-### Time Gradient Fallback (🆕 v4.2 · 2026-05-08)
+### Time Gradient Fallback (🆕 v4.2 · v4.2.5 落地 · 2026-05-09)
 
-活动卡片海报缺失时的时段渐变占位。`api/_activity.js` export `cycTimeClass(activity.time)` 把开始小时映射到 4 段大理日色 utility class（morning 5-11 / noon 11-15 / dusk 15-19 / night 19-5）。
+活动卡片海报缺失时的时段渐变占位。`api/_activity.js` export `cycTimeClass(activity.time)` 把开始时间映射到 **5 段**大理日色 utility class，让占位携带"时间感"。
+
+**5 时段定义**（v4.2.5 起，4 段 linear → 5 段 radial）：
+
+| 时段 | 中文 | 区间 | 性格 | 光源方向 |
+|---|---|---|---|---|
+| morning | 晨 | < 11:30 | 苍山日出 · 暖金日光 → 浅蓝灰天 | ellipse at 20% 90%（左下） |
+| noon | 午 | 11:30-15 | 烈日中午 · 清亮金顶光 → 浅天蓝边 | circle at 50% 0%（正顶） |
+| dusk | 昏 | 15-17 | 下午夕阳 · 暖金光 + 浅暖蓝灰（**软不强**）| ellipse at 75% 25%（右上） |
+| evening | 暮 | 17-20 | 强落日橙红 → 深暮蓝紫（**暖冷剧烈反转**）| ellipse at 75% 25%（右上） |
+| night | 夜 | ≥ 20 / < 5 | 深夜 · 月光 → 深 erhai 水底 | circle at 50% 25%（中上） |
 
 ```css
-.cyc-time-morning { background: linear-gradient(180deg, #b3c5d4 0%, #e3d2b6 55%, #8a9876 100%); }
-.cyc-time-noon    { background: linear-gradient(180deg, #c5d4dd 0%, #ead7a8 50%, #d4b878 100%); }
-.cyc-time-dusk    { background: linear-gradient(180deg, #d97c46 0%, #d4b878 48%, #6f80a0 100%); }
-.cyc-time-night   { background: linear-gradient(180deg, var(--cyc-erhai-deep), var(--cyc-erhai) 60%, var(--cyc-erhai-light)); }
+/* 全部 radial-gradient · 4 stops 参差 spacing · rgba 让 sand 底渗透 */
+.cyc-time-morning {
+  background: radial-gradient(ellipse 130% 90% at 20% 90%,
+    rgba(250, 200, 130, 0.82) 0%, rgba(225, 195, 165, 0.68) 30%,
+    rgba(165, 180, 205, 0.65) 65%, rgba(100, 125, 160, 0.75) 100%);
+}
+.cyc-time-noon {
+  background: radial-gradient(circle at 50% 0%,
+    rgba(255, 232, 165, 0.78) 0%, rgba(232, 220, 180, 0.62) 26%,
+    rgba(195, 215, 230, 0.55) 60%, rgba(155, 185, 210, 0.65) 100%);
+}
+.cyc-time-dusk {
+  background: radial-gradient(ellipse 110% 100% at 75% 25%,
+    rgba(248, 195, 130, 0.80) 0%, rgba(225, 185, 145, 0.65) 28%,
+    rgba(190, 175, 175, 0.62) 60%, rgba(140, 145, 170, 0.72) 100%);
+}
+.cyc-time-evening {
+  background: radial-gradient(ellipse 110% 100% at 75% 25%,
+    rgba(240, 115, 60, 0.85) 0%, rgba(215, 130, 95, 0.70) 25%,
+    rgba(140, 110, 145, 0.70) 55%, rgba(70, 85, 130, 0.85) 100%);
+}
+.cyc-time-night {
+  background: radial-gradient(circle at 50% 25%,
+    rgba(180, 195, 215, 0.78) 0%, rgba(95, 120, 155, 0.78) 30%,
+    rgba(45, 70, 105, 0.88) 65%, rgba(22, 38, 65, 0.92) 100%);
+}
 ```
 
-night 复用 v4.1 erhai token；morning/noon/dusk 用 dali 实景 hex 不进 token（避免膨胀）。
+**为什么不进 token**：5 段共 20 个 rgba stops，复用范围低（仅 `.home-act-thumb-empty` / `.el-card-thumb-empty` 用），token 化只会膨胀 token 系统。直接 hex/rgba 写在 utility class 里。
 
-**A 边界**：有海报永远优先 `<img>` 渲染；缺图才降级到 `.cyc-time-*`。当前应用：`.home-act-thumb-empty` / `.el-card-thumb-empty`。Hard rule #23 禁用 chrome / nav / button / pill / 始终可见装饰 / hero 主背景。完整决策路径见 [[08 dayrise-os v4.2 时段渐变占位提案]]。
+**A 边界**：有海报永远优先 `<img>` 渲染；缺图才降级到 `.cyc-time-*`。当前应用：`.home-act-thumb-empty` / `.el-card-thumb-empty`。Hard rule #23 禁用 chrome / nav / button / pill / 始终可见装饰 / hero 主背景。
+
+**派发兼容**：regex 同时认半角 `:` 和全角 `：`（飞书数据兼容），跨夜活动按开始时间，无时间 fallback `cyc-time-noon`。完整 markup + 派发逻辑见 `.claude/skills/dayrise-os/SKILL.md` Pattern 10。
+
+完整 v4.2.0 → v4.2.5 踩坑路径见 vault `cyc.center/03 设计/_archive/踩坑 2026-05 v4.2 时段渐变（4 段 linear → 5 段 radial）.md`。
 
 ## Iconography
 
@@ -688,13 +724,26 @@ night 复用 v4.1 erhai token；morning/noon/dusk 用 dali 实景 hex 不进 tok
 
 ## Changelog
 
+**v2.2.1** (2026-05-09) — **时段渐变 v4.2.5：4 段 linear → 5 段 radial**：
+- 🆕 加 `evening` 暮（17-20，承接原 dusk 落日强反转）—— 4 段 → 5 段
+- 改 `dusk` 边界 15-19 → 15-17，性格从"洱海日落"改"下午软暖光"
+- 改 `morning` 边界 5-11 → 5-11.5（让"上午"概念延伸过 11 点）
+- 改 `noon` 顶蓝更浅（v4.2.5 玖玖反馈"蓝天稍重"）
+- 改 `linear-gradient(180deg)` → `radial-gradient` 带方向光源（v4.2.2 反馈"色带刷屏"）
+- 改 stops 等距 → 参差 0/30/65/100（v4.2.2 反馈"要参差氤氲"）
+- 改 hex 实色 → rgba 半透（让 sand 底渗透 · v4.2.3 反馈"看不出时段"）
+- 改 `cycTimeClass` regex 兼容全角冒号 `：`（飞书数据兼容 bug）
+- night 不再依赖 `--cyc-erhai-*` token，直接 rgba（5 段共用一致语法）
+- 配套 hard rule #23 改"4 段"→"5 段"
+- Non-breaking · v2.2 全部规则保留 · 完整踩坑路径见 vault `cyc.center/03 设计/_archive/踩坑 2026-05 v4.2 时段渐变（4 段 linear → 5 段 radial）.md`
+
 **v2.1** (2026-05-08) — **加洱海三色 environment base**：
 - 🆕 加 `--cyc-erhai-deep #2a3f5f` / `--cyc-erhai #5a6e8a` / `--cyc-erhai-light #aab5c4`
 - 改 anti-pattern #1 措辞：禁电子蓝，erhai dusty blue 允许
 - 改 atlas-canvas / atlas-card 示例从 cyc-green 暗化改用 cyc-erhai-deep（用户反馈"首页 hero 墨绿色丑爆了"）
 - 改 styles/10-home.css `.hero-poster-a` 真实代码同步
 - Non-breaking · v2.0 全部 token 保留 · 配套 dayrise-os SKILL.md v4.1.0
-- 决策依据见 配色探索 demo v0.4 → v0.6（vault 内 `cyc.center/03 设计/界面组件参考/时段渐变 探索/cyc-time-gradient-demo.html`）+ 提案文档 `cyc.center/03 设计/07 dayrise-os v4.1 加洱海三色提案.md`
+- 决策依据见 配色探索 demo v0.4 → v0.6（vault 内 `cyc.center/03 设计/界面组件参考/时段渐变 探索/cyc-time-gradient-demo.html`）+ 提案文档 `cyc.center/03 设计/_archive/决策 2026-05 v4.1 erhai 三色.md`
 
 **v2.0** (2026-05-07) — **dayrise-os v4 整合**：追加 v4 typography token（display serif / mono stamp / warm muted）、Three-Layer Mapping 加 register 列、文档头部加 v3 → v4 升级声明。Non-breaking，v3 token 全保留。
 

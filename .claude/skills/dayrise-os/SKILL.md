@@ -585,31 +585,39 @@ body.cyc-brand .cyc-editorial-header .cyc-tagline {
 
 **触发原因（玖玖 2026-05-08 反馈）**："带领人 / 嘉宾 section 框里套框，浅灰框里圆头像框；报名情况 + 已 4 位伙伴报名信息重复"。完整 refactor 见 commit `cf0d6e0`。
 
-### Pattern 10 — Time Gradient Fallback（🆕 v4.2，2026-05-08）
+### Pattern 10 — Time Gradient Fallback（🆕 v4.2 · v4.2.5 落地，2026-05-09）
 
-活动卡片海报缺失时的时段渐变占位。把 `activity.time` 映射到 4 段大理日色 utility class，让占位携带"时间感"。**A 边界**：仅当无海报时降级；有海报永远优先真实图。
+活动卡片海报缺失时的时段渐变占位。把 `activity.time` 映射到 **5 段**大理日色 utility class（radial-gradient 带方向光源），让占位携带"时间感"。**A 边界**：仅当无海报时降级；有海报永远优先真实图。
 
-**4 时段定义**：
+**5 时段定义**（v4.2.5 起，从 v4.2.0 的 4 段 linear 演化）：
 
-| 时段 | 区间 | 色谱 |
-|---|---|---|
-| morning | 5-11 | 苍山日出 · 蓝灰天 → 沙金 → 山绿 |
-| noon | 11-15 | 烈日泛沙金 · 浅蓝天 → 强沙金 → 暖 tan |
-| dusk | 15-19 | 洱海日落 · 西天橙红 → 沙金 → 暮蓝（暖到冷反转）|
-| night | 19-5 | 洱海月夜 · erhai 三色 ladder（v4.1 token 串接）|
+| 时段 | 中文 | 区间 | 色谱 | 光源方向 |
+|---|---|---|---|---|
+| morning | 晨 | < 11:30 | 苍山日出 · 暖金日光 → 浅蓝灰天 | ellipse at 20% 90%（左下日光）|
+| noon | 午 | 11:30-15 | 烈日中午 · 清亮金顶光 → 浅天蓝边 | circle at 50% 0%（正顶）|
+| dusk | 昏 | 15-17 | **下午夕阳** · 暖金光 + 浅暖蓝灰（**软不强**）| ellipse at 75% 25%（右上）|
+| evening | 暮 | 17-20 | **强落日**橙红 → 深暮蓝紫（暖冷剧烈反转）| ellipse at 75% 25%（右上）|
+| night | 夜 | ≥ 20 / < 5 | 深夜 · 月光 → 深 erhai 水底 | circle at 50% 25%（中上月光）|
 
-**派发逻辑**：
+**关键演化**：v4.2.0 baseline 是 4 段 linear（dusk = 洱海日落强红）。v4.2.5 拆 dusk 为 dusk + evening —— "下午 3 点不该是落日红"（玖玖 2026-05-09 反馈），把强反转移到 17 点之后。
+
+**派发逻辑**（兼容半角 / 全角冒号）：
 
 ```js
-// 服务端 api/_activity.js export · 客户端 index.html 同步镜像
-function cycTimeClass(timeStr) {
-  const m = String(timeStr || '').match(/^(\d{1,2}):/);
-  const hour = m ? parseInt(m[1], 10) : null;
-  if (hour == null) return 'cyc-time-noon';
-  if (hour < 5)  return 'cyc-time-night';
-  if (hour < 11) return 'cyc-time-morning';
-  if (hour < 15) return 'cyc-time-noon';
-  if (hour < 19) return 'cyc-time-dusk';
+// 服务端 api/_activity.js export · 客户端 index.html / shanghai/index.html 同步镜像
+export function cycTimeClass(timeStr) {
+  // 兼容半角 / 全角冒号 + 可选 minute（飞书数据兼容）
+  const m = String(timeStr || '').match(/^(\d{1,2})\s*[：:](\d{1,2})?/);
+  if (!m) return 'cyc-time-noon';
+  const h = parseInt(m[1], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
+  if (isNaN(h)) return 'cyc-time-noon';
+  const t = h + (isNaN(min) ? 0 : min) / 60;
+  if (t < 5)    return 'cyc-time-night';
+  if (t < 11.5) return 'cyc-time-morning';
+  if (t < 15)   return 'cyc-time-noon';
+  if (t < 17)   return 'cyc-time-dusk';
+  if (t < 20)   return 'cyc-time-evening';
   return 'cyc-time-night';
 }
 ```
@@ -618,16 +626,18 @@ function cycTimeClass(timeStr) {
 
 ```html
 <!-- 海报缺失 fallback -->
-<div class="home-act-thumb home-act-thumb-empty cyc-time-dusk">📅</div>
+<div class="home-act-thumb home-act-thumb-empty cyc-time-evening">📅</div>
 <div class="el-card-thumb el-card-thumb-empty cyc-time-morning">📅</div>
 ```
 
 **核心规则**：
 
 1. **A 边界**：有海报永远优先（渲染 `<img>`）；缺图才降级到 cyc-time-*
-2. **触发**：`cycTimeClass(activity.time)` 派发，跨夜活动按开始时间，无时间 fallback `cyc-time-noon`
-3. **不进 token**：morning / noon / dusk 用直接 hex（dali 实景色）；只有 night 复用 v4.1 erhai token（避免 token 膨胀）
-4. **不带文字**：占位仅 emoji（📅）+ 渐变背景，文字直接放在外部容器（meta-row / title 在卡片 body 段）
+2. **触发**：`cycTimeClass(activity.time)` 派发，跨夜活动按开始时间，无时间或解析失败 fallback `cyc-time-noon`
+3. **不进 token**：5 段共 20 个 rgba stops 直接写在 utility class（复用范围低，token 化只会膨胀）
+4. **rgba 半透**：让 sand 底渗透。配套 `.home-act-card` / `.el-card` 卡片自身透明化（rgba 0.45），thumb 跟卡片融为一体
+5. **不带文字**：占位仅 emoji（📅）+ 渐变背景，文字直接放在外部容器
+6. **正则全角兼容**：飞书 Bitable 时间字段会有全角 `：`，regex 必须双认
 
 **应用边界**（A 边界 matrix）：
 
@@ -645,8 +655,10 @@ function cycTimeClass(timeStr) {
 - ❌ 不做"始终可见" hero 背景（仅缺图时）
 - ❌ 不直接放可读文字（文字必须在外部容器或带暗化叠加）
 - ❌ 不下沉到 brand identity（避免破 hard rule #21 erhai 边界）
+- ❌ 不用 linear-gradient（v4.2.2 起放弃，理由：色带刷屏感）
+- ❌ 边界不要按"日历直觉"切（v4.2.5 教训：15:00 当 dusk 落日红，跟"用户对下午的体感"错位 → 拆 dusk + evening）
 
-**触发原因 / 决策路径**：见 [[08 dayrise-os v4.2 时段渐变占位提案]]，demo v0 → v0.6 用户验证（3 次失败 + 1 次转向 + 1 次通过）。
+**触发原因 / 决策路径 / 踩坑路径**：完整 v4.2.0 → v4.2.5 演化（4 段 linear → 5 段 radial · 4 次迭代）见 vault `cyc.center/03 设计/_archive/踩坑 2026-05 v4.2 时段渐变（4 段 linear → 5 段 radial）.md`。原 demo v0 → v0.6 用户验证 + 提案 baseline 同档归档。
 
 ## Mascot system（= v3，不变）
 
@@ -730,7 +742,7 @@ If still unclear, ask:
 
 ### 🆕 v4.2 新增（23）
 
-23. ❌ `.cyc-time-morning / noon / dusk / night` 4 个 utility class 仅作 **活动海报缺失降级 fallback** 和**空状态背景**。不做 chrome（topbar / nav / button / pill / 装饰线）/ 不做始终可见装饰 / 不直接覆盖可读文字 / 不做 hero 主背景（仅缺图时）。绑定字段：`activity.time`（开始时间），跨夜活动按开始时间。完整 markup + 派发逻辑见 Pattern 10 Time Gradient Fallback。
+23. ❌ `.cyc-time-morning / noon / dusk / evening / night` **5 个** utility class 仅作 **活动海报缺失降级 fallback** 和**空状态背景**。不做 chrome（topbar / nav / button / pill / 装饰线）/ 不做始终可见装饰 / 不直接覆盖可读文字 / 不做 hero 主背景（仅缺图时）。绑定字段：`activity.time`（开始时间），跨夜活动按开始时间。边界 < 11:30 / 11:30-15 / 15-17 / 17-20 / ≥ 20。完整 markup + 派发逻辑见 Pattern 10 Time Gradient Fallback。
 
 ## Output format
 
@@ -769,6 +781,24 @@ This skill 专属 for cyc.center ("链岛社区工具站"), a vanilla-HTML/CSS/J
 
 ## Changelog
 
+**v4.2.5** (2026-05-09) — **时段渐变 4 段 linear → 5 段 radial**
+- 🆕 加 `evening` 暮（17-20）—— 4 段 → 5 段，承接原 dusk 落日强反转
+- 改 `dusk` 边界 15-19 → 15-17，性格从"洱海日落"改"下午软暖光"
+- 改 `morning` 边界 5-11 → 5-11.5（让"上午"概念延伸过 11 点）
+- 改 Pattern 10 描述全部"4 段"→"5 段"
+- 改 `cycTimeClass` regex 兼容全角冒号 `：`（飞书数据兼容 bug fix）
+- 改 hard rule #23 措辞：4 个 utility class → 5 个
+- 配套 12-dayrise.css `.cyc-time-*` 全部从 linear 实色 → radial rgba 4 stops（v4.2.2-.3 持续优化"色带刷屏 / 看不出时段"反馈，v4.2.5 stabilize）
+- night 不再依赖 `--cyc-erhai-*` token，5 段统一直接 rgba（一致语法）
+- Non-breaking · v4.0/v4.1 全部规则保留 · 仅 Pattern 10 + #23 重写
+- 完整踩坑路径见 vault `cyc.center/03 设计/_archive/踩坑 2026-05 v4.2 时段渐变（4 段 linear → 5 段 radial）.md`
+
+**v4.2.0** (2026-05-08) — **时段渐变占位（baseline）**
+- 🆕 加 4 个 `.cyc-time-morning / noon / dusk / night` utility class（4 段 linear-gradient）
+- 🆕 加 hard rule #23：cyc-time-* 仅作海报缺失 fallback / 空状态
+- 🆕 加 Pattern 10 Time Gradient Fallback
+- 决策路径：demo v0 → v0.6 棱镜失败 → 时段映射转向 → 4 段稳定（已被 v4.2.5 取代）
+
 **v4.1.0** (2026-05-08) — **加洱海三色 environment base**
 - 🆕 加 `--cyc-erhai-deep #2a3f5f` / `--cyc-erhai #5a6e8a` / `--cyc-erhai-light #aab5c4` 三色 token
 - 🆕 hard rule #21：erhai 仅作 environment base，不下沉 brand identity
@@ -776,7 +806,7 @@ This skill 专属 for cyc.center ("链岛社区工具站"), a vanilla-HTML/CSS/J
 - 改 atlas-canvas / atlas-card 文档示例 + styles/10-home.css `.hero-poster-a` 真实代码（用户反馈"首页 hero 墨绿色丑爆了"）
 - 引入 token 概念分层：brand identity vs environment base vs temporal accent
 - Non-breaking · v4.0 全部规则保留 · 仅追加
-- 决策依据见 配色探索 demo v0.4 → v0.6 + 提案文档 `cyc.center/03 设计/07 dayrise-os v4.1 加洱海三色提案.md`
+- 决策依据见 配色探索 demo v0.4 → v0.6 + 提案文档 `cyc.center/03 设计/_archive/决策 2026-05 v4.1 erhai 三色.md`
 
 **v4.0.0** (2026-05-07) — **dayrise rename + editorial signature additions**
 - Renamed daybreak-os → dayrise-os（隐喻：天刚亮 → 日已升起）
@@ -790,7 +820,7 @@ This skill 专属 for cyc.center ("链岛社区工具站"), a vanilla-HTML/CSS/J
 - 触发原因：v3 quiet 是对的，但缺一秒辨认 type signature（对比 ElevenLabs / Hyer 暴露）
 - 来源参考：ElevenLabs editorial restraint + Hyer Aviation spacing generosity
 - v3 token 全部保留，新 token 是 additive，**non-breaking**
-- 决策细节：vault `cyc.center/03 设计/05 dayrise-os 重构提案 (v3 → v4).md`
+- 决策细节：vault `cyc.center/03 设计/_archive/决策 2026-05 dayrise-os v4 重构.md`
 
 **v3.0.0** (2026-05-02) — quiet philosophy 重写（archived 在 .claude/skills/daybreak-os-archived/SKILL.md）
 - 撤回 v2 dramatic 视觉

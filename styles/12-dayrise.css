@@ -163,7 +163,7 @@ body.cyc-brand .cyc-editorial-header .cyc-tagline {
 }
 
 /* ─── 9. v4.2 时段渐变占位（活动海报缺失降级 fallback）─── */
-/* 仅 4 时段 utility class · 由 cycTimeClass(activity.time) 派发 · 见 [[08 dayrise-os v4.2 时段渐变占位提案]]
+/* 5 时段 utility class · 由 cycTimeClass(activity.time) 派发 · 见 [[_archive/踩坑 2026-05 v4.2 时段渐变（4 段 linear → 5 段 radial）]]
  * 边界（Hard rule #23）：仅作海报缺失 fallback / 空状态背景；不做 chrome / 不做始终可见装饰 / 不直接覆盖可读文字。
  *
  * v4.2.2 调整（2026-05-08，玖玖反馈"linear 还是色带刷屏，要氤氲，要参差，noon 太土黄"）:
