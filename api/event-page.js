@@ -198,28 +198,27 @@ ${jsonLd}
 <main class="event-detail">
   ${posterUrl(act) ? `<img class="event-poster" data-zoomable src="/api/poster?token=${encodeURIComponent(act.poster.file_token)}" alt="${title} 海报" loading="eager" onclick="openPosterLightbox(event, '${escapeHtml(act.poster.file_token)}', '${title}')">` : ''}
 
-  <div class="event-meta-row">
-    ${dateStr ? `<span class="event-date-pill">${dateStr}</span>` : ''}
-    ${act.time ? `<span class="event-time-pill">⏰ ${escapeHtml(act.time)}</span>` : ''}
-    ${isPast ? '<span class="event-past-pill">已结束</span>' : ''}
+  <!-- dayrise v4.2.14 (2026-05-10): 详情页 hero 对齐 home-act-card 三区块语言
+       Block 1: datestack（mono 列式，date + time，无 pill 噪点）
+       Block 2: pill-row（types chips + 状态 pill + 状态 pill + 微 ✏️ 类型编辑）
+       Block 3: H1 标题（无并排按钮，全页编辑入口在顶栏）
+       移除项: 顶栏 编辑 与标题旁 + 编辑 重复 → 删后者；event-meta-row 拆 datestack；event-types-row 收并 -->
+  <div class="event-datestack">
+    ${dateStr ? `<div class="event-dateline">${dateStr}</div>` : ''}
+    ${act.time ? `<div class="event-timeline">${escapeHtml(act.time)}</div>` : ''}
+  </div>
+
+  <div class="event-pill-row">
+    ${act.types?.length
+      ? act.types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')
+      : '<span class="event-types-empty">暂无活动类型</span>'}
     ${act.status === '确认举办' && !isPast ? '<span class="event-confirm-pill">✓ 确认举办</span>' : ''}
     ${!isPast ? '<span class="event-open-pill">🌿 对外开放 · 欢迎来玩</span>' : ''}
+    ${isPast ? '<span class="event-past-pill">已结束</span>' : ''}
+    <button class="event-types-edit" type="button" onclick="openTypesModal()" aria-label="编辑活动类型" title="编辑活动类型">✏️</button>
   </div>
 
-  <div class="event-title-row">
-    <h1 class="event-title cyc-display">${title}</h1>
-    <a class="event-edit-btn" href="/generator?edit=${encodeURIComponent(act.record_id)}" title="编辑此活动 / Edit this event">
-      <span class="event-edit-icon" aria-hidden="true">+</span>
-      <span class="event-edit-label">编辑</span>
-    </a>
-  </div>
-
-  <div class="event-types-row">
-    ${act.types?.length
-      ? `<div class="event-types">${act.types.map(t => `<span class="cm-type-chip">${escapeHtml(t)}</span>`).join('')}</div>`
-      : '<span class="event-types-empty">暂无活动类型</span>'}
-    <button class="event-types-edit" type="button" onclick="openTypesModal()">✏️ 类型</button>
-  </div>
+  <h1 class="event-title cyc-display">${title}</h1>
 
   <dl class="event-info">
     ${act.loc    ? `<div class="event-info-row"><dt>📍 地点</dt><dd>${escapeHtml(act.loc)}</dd></div>` : ''}
