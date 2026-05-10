@@ -752,6 +752,22 @@ function getLang() {
   if (navigator.language && navigator.language.toLowerCase().startsWith('en')) return 'en';
   return 'zh';
 }
+// ─────────── 周次计算（W1=5/10–5/16, ..., W4=5/31–6/6）───────────
+// v4.2.16 (2026-05-10) 修：WEEK_THEME_* 必须在 applyLang() 调用之前声明，
+// 否则 5/10 之后 renderHeroLive 进 W>=1 分支会撞 temporal dead zone 整个 IIFE 挂掉，卡片不出来
+function muWeek(ts) {
+  const w1 = new Date('2026-05-10T00:00:00+08:00').getTime();
+  const days = Math.floor((ts - w1) / 86400000);
+  if (days < 0) return 0;
+  if (days < 7)  return 1;
+  if (days < 14) return 2;
+  if (days < 21) return 3;
+  if (days < 28) return 4;
+  return 5;
+}
+const WEEK_THEME_ZH = { 1: 'AI 周', 2: '生物科技 / 长寿周', 3: '机器人 / 硬件周', 4: '文化周' };
+const WEEK_THEME_EN = { 1: 'AI Week', 2: 'Biotech / Longevity Week', 3: 'Robotics / Hardware Week', 4: 'Culture Week' };
+
 function applyLang(lang) {
   document.body.classList.toggle('sh-lang-zh', lang === 'zh');
   document.body.classList.toggle('sh-lang-en', lang === 'en');
@@ -766,20 +782,6 @@ document.getElementById('langToggle').addEventListener('click', function () {
   applyLang(next);
   if (typeof cycTrack === 'function') cycTrack('shanghai_lang_toggle', { to: next });
 });
-
-// ─────────── 周次计算（W1=5/10–5/16, ..., W4=5/31–6/6）───────────
-function muWeek(ts) {
-  const w1 = new Date('2026-05-10T00:00:00+08:00').getTime();
-  const days = Math.floor((ts - w1) / 86400000);
-  if (days < 0) return 0;
-  if (days < 7)  return 1;
-  if (days < 14) return 2;
-  if (days < 21) return 3;
-  if (days < 28) return 4;
-  return 5;
-}
-const WEEK_THEME_ZH = { 1: 'AI 周', 2: '生物科技 / 长寿周', 3: '机器人 / 硬件周', 4: '文化周' };
-const WEEK_THEME_EN = { 1: 'AI Week', 2: 'Biotech / Longevity Week', 3: 'Robotics / Hardware Week', 4: 'Culture Week' };
 
 // ─────────── Hero 当下逻辑 ───────────
 function relTimeText(ts, isEn) {
@@ -1019,15 +1021,16 @@ function renderShanghaiEvent(a) {
          </div>` : ''}
        ${metaLineHtml}`;
 
-  // CTA 行：v4.2.15 直接调 openRsvp（之前 stopPropagation 阻止了 document delegation）
+  // CTA 行：
+  // v4.2.16 (2026-05-10) 修：v4.2.15 用 inline onclick 拼字符串调 openRsvp，碰到含 ' 的 title (如 "Berlin's") 时 HTML &#39; 解码出来的撇号会截断 JS 字符串字面量 → 点击抛 SyntaxError。
+  //   现在恢复纯 .js-rsvp-btn 事件代理：button 不带 onclick，document.click 监听器读 dataset 拿 acts cache 调 openRsvp。
+  //   article 自身 onclick (toggleShCardExpand) 已检查 e.target.closest('button') 跳过展开，所以 button 上根本不需要 stopPropagation。
   const editHref = `/generator?edit=${esc(a.record_id)}`;
-  const titleAttr = esc(a.title || '').replace(/'/g, '&#39;');
-  const titleEnAttr = esc(a.title_en || '').replace(/'/g, '&#39;');
   const ctaButtonHtml = isPlanning
-    ? `<a href="${editHref}" class="home-act-rsvp is-edit" onclick="event.stopPropagation()"><span class="lang-zh">编辑 →</span><span class="lang-en">Edit →</span></a>`
+    ? `<a href="${editHref}" class="home-act-rsvp is-edit"><span class="lang-zh">编辑 →</span><span class="lang-en">Edit →</span></a>`
     : (isPast
         ? '<span class="home-act-rsvp is-past"><span class="lang-zh">已结束</span><span class="lang-en">Past</span></span>'
-        : `<button type="button" class="home-act-rsvp" data-rec-id="${esc(a.record_id)}" onclick="event.stopPropagation();openRsvp('${esc(a.record_id)}','${titleAttr}','${titleEnAttr}',${fee},'${esc(pill.cls)}')">
+        : `<button type="button" class="home-act-rsvp js-rsvp-btn" data-rec-id="${esc(a.record_id)}" data-fee="${fee}" data-type="${esc(pill.cls)}">
              <span class="lang-zh">我要报名 →</span>
              <span class="lang-en">RSVP →</span>
            </button>`);
