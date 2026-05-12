@@ -571,9 +571,8 @@ function migrateOldToNew(oldData) {
   const ybb = findByRole(oldOps, '新媒体和协作管理') || findByName(oldOps, '鸭脖') || findByName(oldTri, '鸭脖');
   enrich(tpl.communityTeam[0], ybb);
 
-  // 自媒体组 leader sync 鸭脖 member_rec_id
-  const mediaGroup = tpl.groups.find(g => g.key === 'media');
-  if (mediaGroup && ybb.member_rec_id) mediaGroup.leader.member_rec_id = ybb.member_rec_id;
+  // v1.3: tpl.groups → tpl.coconstruction.modes (no leader per mode anymore)
+  // 鸭脖的 member_rec_id 已经存在 communityTeam[0]，足够了
 
   // Departures (千帆 + 梁欢)
   enrich(tpl.departures[0], findByRole(oldOps, '物业OTA商业负责人') || findByName(oldOps, '千帆'));
