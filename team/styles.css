@@ -1300,3 +1300,285 @@
       .v2-groups-grid { grid-template-columns: repeat(3, 1fr); }
       .v2-status-grid { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* ════════════════════════════════════════════════════
+     * v1.2 · 财务警告 + Gantt + 具名分组 + JD 内联 + 折叠
+     * ════════════════════════════════════════════════════ */
+
+    /* 财务危机 banner */
+    .v2-fin-alert {
+      background: linear-gradient(135deg, rgba(192,57,43,0.10), rgba(192,57,43,0.04));
+      border: 1px solid rgba(192,57,43,0.35);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(192,57,43,0.08);
+    }
+    .v2-fin-icon { font-size: 22px; line-height: 1.1; flex-shrink: 0; }
+    .v2-fin-body { flex: 1; min-width: 0; }
+    .v2-fin-title {
+      font-size: 12px; font-weight: 800; color: var(--danger);
+      letter-spacing: 0.02em; margin-bottom: 4px;
+    }
+    .v2-fin-numbers { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin: 4px 0 6px; }
+    .v2-fin-from { font-size: 12px; color: var(--muted); text-decoration: line-through; }
+    .v2-fin-arrow { color: var(--danger); font-weight: 700; }
+    .v2-fin-to {
+      font-size: 17px; font-weight: 800; color: var(--danger);
+      font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+    }
+    .v2-fin-note { font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .v2-fin-warn {
+      font-size: 12px; font-weight: 700; color: var(--danger);
+      margin-top: 4px; line-height: 1.5;
+    }
+
+    /* 具名分组（替代抽象数字） */
+    .v2-people-groups {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 8px; margin: 12px 0;
+    }
+    .v2-pg {
+      padding: 12px 14px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      border-left-width: 3px; border-left-style: solid;
+    }
+    .v2-pg-active { border-left-color: var(--green); }
+    .v2-pg-trans  { border-left-color: #c2a14a; }
+    .v2-pg-hot    { border-left-color: var(--orange); }
+    .v2-pg-cold   { border-left-color: rgba(0,0,0,0.2); opacity: 0.75; }
+    .v2-pg-label {
+      font-size: 10px; font-weight: 800; color: var(--text);
+      letter-spacing: 0.06em; margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .v2-pg ul { list-style: none; padding: 0; margin: 0; }
+    .v2-pg li {
+      font-size: 12px; color: var(--text); line-height: 1.55;
+      margin: 4px 0;
+    }
+    .v2-pg li strong { font-weight: 700; }
+    .v2-pg li span { color: var(--muted); margin-left: 4px; }
+    .v2-pg li em {
+      display: block; font-style: normal;
+      font-size: 10.5px; color: var(--muted);
+      margin-top: 1px; padding-left: 2px;
+    }
+    .v2-pg-until {
+      display: inline-block; margin-left: 6px;
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      background: rgba(0,0,0,0.04); padding: 1px 6px; border-radius: 100px;
+    }
+    @media (max-width: 380px) { .v2-people-groups { grid-template-columns: 1fr; } }
+
+    /* Gantt 甘特图 */
+    .v2-gantt {
+      margin: 12px 0;
+      padding: 12px 12px 10px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+    }
+    .v2-gantt-head {
+      position: relative; height: 18px; margin-bottom: 6px;
+      margin-left: 130px;   /* match label col */
+      border-bottom: 1px dashed var(--stroke);
+    }
+    .v2-gantt-month {
+      position: absolute; top: 0;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.02em;
+      transform: translateX(0);
+    }
+    .v2-gantt-body { position: relative; padding-top: 6px; }
+    .v2-gantt-today {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 0;  /* set inline */
+      width: 2px;
+      background: var(--orange);
+      z-index: 5;
+      margin-left: 130px;
+      box-shadow: 0 0 6px rgba(217,101,42,0.5);
+    }
+    .v2-gantt-row {
+      display: grid; grid-template-columns: 122px 1fr;
+      gap: 8px; align-items: center; margin: 5px 0;
+    }
+    .v2-gantt-label {
+      font-size: 11px; color: var(--text); font-weight: 600;
+      line-height: 1.3; text-align: right;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .v2-gantt-track {
+      position: relative; height: 18px;
+      background: rgba(0,0,0,0.04);
+      border-radius: 4px;
+    }
+    .v2-gantt-bar {
+      position: absolute; top: 0; bottom: 0;
+      border-radius: 4px;
+      padding: 0 5px;
+      display: flex; align-items: center;
+      font-size: 9px; font-weight: 700; color: #fff;
+      letter-spacing: 0.01em;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .v2-gantt-tone-active     { background: linear-gradient(135deg, var(--green), var(--green2)); }
+    .v2-gantt-tone-transition { background: linear-gradient(135deg, #b89738, #d9b647); }
+    .v2-gantt-tone-interim    { background: linear-gradient(135deg, #a8501c, var(--orange)); }
+    .v2-gantt-tone-hiring     { background: linear-gradient(135deg, var(--orange), #ed8b5e); }
+    .v2-gantt-tone-peak       { background: linear-gradient(135deg, #a93223, #d04b39); }
+    .v2-gantt-range {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      opacity: 0.85;
+    }
+    .v2-gantt-foot {
+      margin-top: 8px; padding-top: 6px;
+      border-top: 1px dashed var(--stroke);
+      display: flex; gap: 10px; flex-wrap: wrap;
+      font-size: 10px; color: var(--muted);
+    }
+    .v2-gantt-legend {
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .v2-gantt-bar-mini {
+      display: inline-block; width: 14px; height: 10px;
+      border-radius: 2px;
+    }
+    @media (max-width: 480px) {
+      .v2-gantt-head      { margin-left: 80px; }
+      .v2-gantt-today     { margin-left: 80px; }
+      .v2-gantt-row       { grid-template-columns: 72px 1fr; }
+      .v2-gantt-label     { font-size: 10px; }
+      .v2-gantt-bar       { font-size: 8px; padding: 0 3px; }
+      .v2-gantt-range     { display: none; }
+    }
+
+    /* 折叠按钮 (驻店轮值) */
+    .v2-collapse-btn {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; color: var(--text);
+      text-align: left; cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .v2-collapse-btn:hover { background: rgba(28,61,46,0.04); }
+
+    /* Card head wrap + JD 内联展开 */
+    .v2-card-head { cursor: pointer; }
+    .v2-jd-toggle {
+      width: 100%;
+      padding: 9px 12px;
+      margin: 10px -14px -12px;
+      width: calc(100% + 28px);
+      background: rgba(0,0,0,0.03);
+      border: none;
+      border-top: 1px dashed var(--stroke);
+      border-radius: 0 0 16px 16px;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--muted); letter-spacing: 0.04em;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .v2-jd-toggle:hover  { background: rgba(28,61,46,0.06); color: var(--green); }
+    .v2-jd-toggle:active { transform: scale(0.99); }
+    .v2-jd-toggle[aria-expanded="true"] { background: rgba(28,61,46,0.07); color: var(--green); }
+
+    .v2-jd-body {
+      margin: 0 -14px -12px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(28,61,46,0.04), rgba(28,61,46,0.02));
+      border-top: 1px solid var(--stroke);
+      border-radius: 0 0 16px 16px;
+    }
+    .v2-jd-body[hidden] { display: none; }
+    .v2-jd-content { font-size: 12px; line-height: 1.65; color: var(--text); }
+    .v2-jd-oneliner {
+      font-size: 12.5px; font-style: italic;
+      color: var(--text); line-height: 1.7;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.5);
+      border-left: 3px solid var(--green);
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .v2-jd-section { margin-bottom: 10px; }
+    .v2-jd-section:last-child { margin-bottom: 0; }
+    .v2-jd-label {
+      font-size: 10px; font-weight: 800; color: var(--green);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .v2-jd-list { margin: 0; padding-left: 16px; }
+    .v2-jd-list li {
+      font-size: 11.5px; color: var(--text);
+      line-height: 1.6; margin: 2px 0;
+    }
+    .v2-jd-pay {
+      font-size: 12.5px; font-weight: 700; color: var(--orange);
+    }
+    .v2-jd-paysub {
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+    }
+    .v2-jd-foot {
+      margin-top: 8px; padding-top: 8px;
+      border-top: 1px dashed var(--stroke);
+      text-align: right;
+    }
+    .v2-jd-empty {
+      font-size: 12px; color: var(--muted); font-style: italic;
+      text-align: center; padding: 12px;
+    }
+
+    /* Interim 暂代 (老谭暂代店长) */
+    .v2-interim {
+      display: block;
+      font-size: 12px; color: var(--text);
+      margin-top: 2px;
+    }
+    .v2-interim-pill {
+      display: inline-block;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+      background: rgba(217,101,42,0.16); color: var(--orange);
+      padding: 2px 7px; border-radius: 100px;
+      margin-right: 5px; vertical-align: 1px;
+    }
+    .v2-interim em {
+      display: block;
+      font-style: normal;
+      font-size: 10.5px; color: var(--muted);
+      margin-top: 3px; line-height: 1.45;
+    }
+
+    /* Comm card 加 pay 字段 */
+    .v2-comm-pay {
+      font-size: 11px; color: var(--muted);
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .v2-comm-card .v2-comm-pill {
+      position: absolute; top: 10px; right: 10px;
+    }
+    .v2-hotel-card .v2-hotel-pill {
+      position: absolute; top: 10px; right: 10px;
+    }
+
+    /* Card content needs room for pill */
+    .v2-hotel-card, .v2-comm-card {
+      position: relative; padding-top: 32px;
+    }

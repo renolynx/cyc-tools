@@ -49,23 +49,19 @@
   <!-- ===== 【0】团队现状总览 (v1.1) ===== -->
   <div class="section" id="v2-status"></div>
 
-  <!-- ===== 【1】驻店轮值 ===== -->
-  <div class="section">
-    <div class="section-header">
-      <p class="section-title" style="margin-bottom:0;">驻店轮值</p>
+  <!-- ===== 【1】驻店轮值 · 默认折叠 ===== -->
+  <div class="section v2-collapsible">
+    <button class="v2-collapse-btn" id="v2-schedule-toggle" onclick="toggleSchedule()">驻店轮值 ▾</button>
+    <div id="v2-schedule-body" style="display:none;">
+      <div class="week-nav">
+        <button class="nav-btn" onclick="changeWeek(-1)">‹ 上周</button>
+        <span class="week-range" id="wkRange"></span>
+        <button class="nav-btn" onclick="changeWeek(1)">下周 ›</button>
+      </div>
+      <div class="week-strip" id="wkStrip"></div>
+      <div id="schedule-body"></div>
+      <p class="schedule-hint">← 左右滑动查看完整排班</p>
     </div>
-
-    <div class="week-nav">
-      <button class="nav-btn" onclick="changeWeek(-1)">‹ 上周</button>
-      <span class="week-range" id="wkRange"></span>
-      <button class="nav-btn" onclick="changeWeek(1)">下周 ›</button>
-    </div>
-
-    <div class="week-strip" id="wkStrip"></div>
-
-    <div id="schedule-body"></div>
-
-    <p class="schedule-hint">← 左右滑动查看完整排班</p>
   </div>
 
   <!-- ===== 【2】业主 + 法人 ===== -->
@@ -235,21 +231,69 @@ const DEFAULT_DATA = {
 //   控制台可通过 window.__cycV2() 查看
 //   设计依据：vault `cyc.center/03 设计/09 team 页面架构重设计 v1.0.md` (v1.1)
 // ═══════════════════════════════════════════
-const SCHEMA_VERSION = '1.1';
+const SCHEMA_VERSION = '1.2';
 const STORAGE_KEY_V2 = 'cyc-team-data-v2';
 
 const NEW_DEFAULT_DATA = {
   schemaVersion: SCHEMA_VERSION,
   asOf: '2026-05-12',
 
-  // 【0】团队现状总览
+  // 【0】团队现状总览 · 财务 + Gantt + 具名分组
   status: {
-    completion: { active: 1, transition: 1, hiring: 5, departed: 3 },
-    timeline: [
-      { date: '2026-06-30', label: 'Demian 离开 + 酒店团队招齐 deadline', urgency: 'critical' },
-      { date: '2026-07-01', label: '旺季开始',                            urgency: 'high'     },
-      { date: '2026-08-??', label: '悠洋去美国 / 转远程',                  urgency: 'medium'   }
+    // 财务危机（用户 2026-05-12 月汐反馈）
+    financial: {
+      asOf: '2026-05-10',
+      openingBalance: 21917,
+      closingBalance: 2153,
+      note: '4 月人工薪资 + 运营分成 + 代记账年费已结算',
+      alert: '现金流非常危险 — 5 月几乎零余额'
+    },
+
+    // 具名人员分组（替代抽象数字）
+    byCategory: {
+      active: [
+        { name: '悠洋', role: '社区主理人 · 在地负责' },
+        { name: '李姐', role: '客房保洁（在职稳定）' },
+        { name: '鸭脖', role: '自媒体组长' },
+        { name: '天宇', role: '财务' }
+      ],
+      transition: [
+        { name: '老谭',   role: '暂代店长',                     note: '咖啡店本职 · 待遇未对正',  until: '新店长到岗' },
+        { name: 'Demian', role: '过渡支持 · Praxis Hub 代运营',  note: '6/30 离开倒计时',           until: '2026-06-30' },
+        { name: '月汐',   role: '物业层负责人 · 权限交接中',     note: '过去 2 年负责人，退出中',   until: '2026-05-31' }
+      ],
+      hiring: [
+        { role: '店长 Hotel Manager', note: '老谭暂代' },
+        { role: '前台 Front Desk',    note: '完全空缺' }
+      ],
+      departed: [
+        { name: '千帆', role: '物业 OTA 商业负责人', when: '2026-04' },
+        { name: '梁欢', role: 'CYC 社区店长',         when: '2026-04' }
+      ]
+    },
+
+    // Gantt 时间轴 · 5/1 - 8/31（123 天）
+    ganttStart: '2026-05-01',
+    ganttEnd:   '2026-08-31',
+    ganttRows: [
+      { label: '月汐 · 物业交接退出',  start: '2026-05-01', end: '2026-05-31', tone: 'transition' },
+      { label: '老谭 · 暂代店长',      start: '2026-05-01', end: '2026-06-30', tone: 'interim'    },
+      { label: 'Demian · Praxis 代运营', start: '2026-05-01', end: '2026-06-30', tone: 'transition' },
+      { label: '招募 · 店长 + 前台',   start: '2026-05-12', end: '2026-06-30', tone: 'hiring'     },
+      { label: '旺季',                  start: '2026-07-01', end: '2026-08-31', tone: 'peak'       },
+      { label: '悠洋 · 在地负责',       start: '2026-05-01', end: '2026-08-31', tone: 'active'     },
+      { label: '李姐 · 保洁稳定在职',   start: '2026-05-01', end: '2026-08-31', tone: 'active'     },
+      { label: '鸭脖 · 自媒体组长',     start: '2026-05-01', end: '2026-08-31', tone: 'active'     },
+      { label: '天宇 · 财务',           start: '2026-05-01', end: '2026-08-31', tone: 'active'     }
     ],
+
+    keyDates: [
+      { date: '2026-05-31', label: '月汐交接完成',                 urgency: 'high' },
+      { date: '2026-06-30', label: 'Demian 离开 + 招齐 deadline',  urgency: 'critical' },
+      { date: '2026-07-01', label: '旺季开始',                     urgency: 'high' },
+      { date: '2026-08-??', label: '悠洋转远程',                   urgency: 'medium' }
+    ],
+
     hiringPageUrl: '/hiring'
   },
 
@@ -263,15 +307,16 @@ const NEW_DEFAULT_DATA = {
     legalEntity: { name: 'CYC 链岛公司', desc: '法人主体 / 操作实体' }
   },
 
-  // 【3】当下核心团队（替代旧"铁三角"）
+  // 【3】当下核心团队
   coreTeam: {
     onsite: {
       role: '在地负责',
       name: '悠洋',
-      desc: '社区运营、活动策划、长期方向',
+      desc: '社区主理人 · 社区运营、活动策划、长期方向',
       note: '8 月去美国后转远程',
       until: '2026-08',
       status: 'active',
+      jdKey: 'community-lead',
       avatar: '', bio: '', member_rec_id: ''
     },
     transitionSupport: {
@@ -282,59 +327,65 @@ const NEW_DEFAULT_DATA = {
       note: '6 月底离开倒计时',
       until: '2026-06-30',
       status: 'transition',
+      jdKey: '',
       avatar: '', bio: '', member_rec_id: ''
     }
   },
 
-  // 【4】酒店团队（全员招募中，链接到 /hiring）
+  // 【4】酒店团队 · 3 人结构（店长 + 前台 + 保洁）· 义工归社区层
   hotelTeam: [
     {
       roleKey: 'manager', role: '店长 Hotel Manager', name: '',
       status: 'hiring',
-      salaryNote: '¥3,500 底薪 + 渠道差异化抽成 / 全年平均 ¥7,000',
-      jdAnchor: '/hiring#role-manager',
+      interim: { name: '老谭', note: '暂代 · 咖啡店本职 · 待遇未对正' },
+      salaryNote: '¥3,500 底薪 + 渠道差异化抽成',
+      jdKey: 'manager',
       avatar: '', bio: '', member_rec_id: ''
     },
     {
-      roleKey: 'assistant', role: '副店长 Assistant Manager', name: '',
+      roleKey: 'frontdesk', role: '前台 Front Desk', name: '',
       status: 'hiring',
-      salaryNote: '¥4,000 底薪 + 3% 抽成 + 店长可调奖 / 平均 ¥5,200',
-      jdAnchor: '/hiring#role-assistant',
+      salaryNote: '¥4,000 底薪 + 3% 抽成 + 店长可调奖',
+      jdKey: 'frontdesk',
       avatar: '', bio: '', member_rec_id: ''
     },
     {
-      roleKey: 'housekeeper', role: '客房保洁 Housekeeper', name: '',
-      status: 'hiring',
-      salaryNote: '¥3,500 底薪 + 抽查奖 + 全勤奖 / 约 ¥4,000',
-      jdAnchor: '/hiring#role-housekeeper',
-      avatar: '', bio: '', member_rec_id: ''
-    },
-    {
-      roleKey: 'volunteer-a', role: '住宿义工 A', name: '',
-      status: 'hiring',
-      salaryNote: '免费住宿 / 每天 3-4 小时',
-      jdAnchor: '/hiring#role-volunteer',
-      avatar: '', bio: '', member_rec_id: ''
-    },
-    {
-      roleKey: 'volunteer-b', role: '住宿义工 B', name: '',
-      status: 'hiring',
-      salaryNote: '免费住宿 / 每天 3-4 小时',
-      jdAnchor: '/hiring#role-volunteer',
+      roleKey: 'housekeeper', role: '客房保洁 Housekeeper', name: '李姐',
+      status: 'active',
+      salaryNote: '¥3,500 底薪 + 抽查奖 + 全勤奖',
+      jdKey: 'housekeeper',
       avatar: '', bio: '', member_rec_id: ''
     }
   ],
 
-  // 【5】社区团队（仅在职）
+  // 【5】社区团队（含住宿义工，因为"义工是社区层的成员"）
   communityTeam: [
     {
-      role: '自媒体组组长', name: '鸭脖', status: 'active',
-      desc: '新媒体运营 / 自媒体组 lead',
+      role: '自媒体组长', name: '鸭脖', status: 'active',
+      desc: '5 空间共建组中"自媒体组"组长 + CYC 内容运营',
+      salaryNote: '¥2,000 / 月',
+      jdKey: 'media-lead',
       avatar: '', bio: '', member_rec_id: ''
     },
     {
-      role: '财务', name: '', status: 'placeholder',
-      desc: '账务、报销、资金管理',
+      role: '财务', name: '天宇', status: 'active',
+      desc: '月度账务、工资发放、运营分成结算',
+      salaryNote: '¥2,000 / 月',
+      jdKey: 'finance',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      role: '住宿义工 A', name: '', status: 'hiring',
+      desc: '驻地 / 创作 / 住客视角',
+      salaryNote: '免费住宿 · 每天 3-4 小时',
+      jdKey: 'volunteer',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      role: '住宿义工 B', name: '', status: 'hiring',
+      desc: '驻地 / 创作 / 住客视角',
+      salaryNote: '免费住宿 · 每天 3-4 小时',
+      jdKey: 'volunteer',
       avatar: '', bio: '', member_rec_id: ''
     }
   ],
@@ -396,10 +447,10 @@ const NEW_DEFAULT_DATA = {
   ],
 
   // 【8】离任 / 过渡记录（诚实透明）
+  // 离任记录（月汐挪到 status.byCategory.transition，因为她还在过渡中）
   departures: [
-    { name: '月汐', role: '物业层负责人',          tenure: '2024-? → 2026-05', status: 'transitioning', note: '权限交接中' },
-    { name: '千帆', role: '物业 OTA 商业负责人',   tenure: '?    → 2026-04', status: 'departed',      note: '' },
-    { name: '梁欢', role: 'CYC 社区店长',          tenure: '?    → 2026-04', status: 'departed',      note: '跟随千帆离任' }
+    { name: '千帆', role: '物业 OTA 商业负责人', tenure: '?    → 2026-04', status: 'departed', note: '' },
+    { name: '梁欢', role: 'CYC 社区店长',        tenure: '?    → 2026-04', status: 'departed', note: '跟随千帆离任' }
   ],
 
   // 【9】业主代表 / 访客登记（原 reps，改用途）
@@ -498,88 +549,46 @@ function saveData() {
 //   不接管渲染（UI 仍用 DEFAULT_DATA shape）
 // ═══════════════════════════════════════════
 function migrateOldToNew(oldData) {
-  const oldTri  = oldData?.cyc?.triangle || [];
-  const oldOps  = oldData?.cyc?.ops      || [];
-  const oldPxs  = oldData?.praxis        || {};
+  // v1.2: NEW_DEFAULT_DATA 已含具名默认人员（李姐/老谭/鸭脖/天宇/月汐/Demian/悠洋）
+  //       迁移仅 enrich 已知人员的 member_rec_id / avatar / bio
+  const tpl = JSON.parse(JSON.stringify(NEW_DEFAULT_DATA));
+  if (!oldData) return tpl;
 
-  // helpers: 按 name / role 在旧结构中找
+  const oldTri = oldData.cyc?.triangle || [];
+  const oldOps = oldData.cyc?.ops      || [];
+  const oldPxs = oldData.praxis        || {};
   const findByName = (arr, n) => arr.find(x => x && x.name === n) || {};
   const findByRole = (arr, r) => arr.find(x => x && x.role === r) || {};
 
-  const youyangOld   = findByName(oldTri, '悠洋');
-  const yuexiOld     = findByName(oldTri, '月汐');
-  const fangrongOld  = findByName(oldTri, '方荣');
-  const yabboOld     = findByRole(oldOps, '新媒体和协作管理');
-  const qianfanOld   = findByRole(oldOps, '物业OTA商业负责人');
-  const lianghuanOld = findByRole(oldOps, 'CYC社区店长');
+  const enrich = (target, src) => {
+    if (!src) return;
+    if (src.member_rec_id && !target.member_rec_id) target.member_rec_id = src.member_rec_id;
+    if (src.avatar && !target.avatar) target.avatar = src.avatar;
+    if (src.bio && !target.bio)       target.bio    = src.bio;
+  };
 
-  // 深拷贝模板，避免引用污染
-  const tpl = JSON.parse(JSON.stringify(NEW_DEFAULT_DATA));
+  // Ownership rep · 方荣
+  enrich(tpl.ownership.parent.rep, findByName(oldTri, '方荣'));
 
-  // 业主代表（方荣）合并旧数据
-  if (fangrongOld.name) {
-    tpl.ownership.parent.rep.name        = fangrongOld.name;
-    tpl.ownership.parent.rep.desc        = fangrongOld.desc || tpl.ownership.parent.rep.desc;
-    tpl.ownership.parent.rep.member_rec_id = fangrongOld.member_rec_id || '';
-    if (fangrongOld.bio)    tpl.ownership.parent.rep.bio    = fangrongOld.bio;
-    if (fangrongOld.avatar) tpl.ownership.parent.rep.avatar = fangrongOld.avatar;
-  }
+  // Core team
+  enrich(tpl.coreTeam.onsite,            findByName(oldTri, '悠洋'));
+  enrich(tpl.coreTeam.transitionSupport, oldPxs.lead && oldPxs.lead.name === 'Demian' ? oldPxs.lead : null);
 
-  // 悠洋（core team · onsite）
-  if (youyangOld.name) {
-    tpl.coreTeam.onsite.name           = youyangOld.name;
-    tpl.coreTeam.onsite.desc           = youyangOld.desc || tpl.coreTeam.onsite.desc;
-    tpl.coreTeam.onsite.avatar         = youyangOld.avatar || '';
-    tpl.coreTeam.onsite.bio            = youyangOld.bio    || '';
-    tpl.coreTeam.onsite.member_rec_id  = youyangOld.member_rec_id || '';
-  }
+  // Community team · 鸭脖（新媒体）
+  const ybb = findByRole(oldOps, '新媒体和协作管理') || findByName(oldOps, '鸭脖') || findByName(oldTri, '鸭脖');
+  enrich(tpl.communityTeam[0], ybb);
 
-  // Demian（core team · transitionSupport）
-  if (oldPxs.lead && oldPxs.lead.name) {
-    tpl.coreTeam.transitionSupport.name           = oldPxs.lead.name;
-    tpl.coreTeam.transitionSupport.avatar         = oldPxs.lead.avatar || '';
-    tpl.coreTeam.transitionSupport.bio            = oldPxs.lead.bio    || '';
-    tpl.coreTeam.transitionSupport.member_rec_id  = oldPxs.lead.member_rec_id || '';
-  }
-
-  // 鸭脖（community team · 自媒体组组长）
-  if (yabboOld.name) {
-    tpl.communityTeam[0].name           = yabboOld.name;
-    tpl.communityTeam[0].avatar         = yabboOld.avatar || '';
-    tpl.communityTeam[0].bio            = yabboOld.bio    || '';
-    tpl.communityTeam[0].member_rec_id  = yabboOld.member_rec_id || '';
-  }
-
-  // 5 共建组 · 自媒体组 leader = 鸭脖 (sync)
+  // 自媒体组 leader sync 鸭脖 member_rec_id
   const mediaGroup = tpl.groups.find(g => g.key === 'media');
-  if (mediaGroup && yabboOld.name) {
-    mediaGroup.leader.name           = yabboOld.name;
-    mediaGroup.leader.member_rec_id  = yabboOld.member_rec_id || '';
-  }
+  if (mediaGroup && ybb.member_rec_id) mediaGroup.leader.member_rec_id = ybb.member_rec_id;
 
-  // 离任记录 · 月汐 / 千帆 / 梁欢
-  if (yuexiOld.name) {
-    tpl.departures[0].name = yuexiOld.name;
-    tpl.departures[0].role = yuexiOld.role || tpl.departures[0].role;
-    tpl.departures[0].avatar = yuexiOld.avatar || '';
-    tpl.departures[0].member_rec_id = yuexiOld.member_rec_id || '';
-  }
-  if (qianfanOld.name) {
-    tpl.departures[1].name = qianfanOld.name;
-    tpl.departures[1].role = qianfanOld.role || tpl.departures[1].role;
-    tpl.departures[1].avatar = qianfanOld.avatar || '';
-    tpl.departures[1].member_rec_id = qianfanOld.member_rec_id || '';
-  }
-  if (lianghuanOld.name) {
-    tpl.departures[2].name = lianghuanOld.name;
-    tpl.departures[2].role = lianghuanOld.role || tpl.departures[2].role;
-    tpl.departures[2].avatar = lianghuanOld.avatar || '';
-    tpl.departures[2].member_rec_id = lianghuanOld.member_rec_id || '';
-  }
+  // Departures (千帆 + 梁欢)
+  enrich(tpl.departures[0], findByRole(oldOps, '物业OTA商业负责人') || findByName(oldOps, '千帆'));
+  enrich(tpl.departures[1], findByRole(oldOps, 'CYC社区店长')        || findByName(oldOps, '梁欢'));
 
-  // 业主代表列表（原 reps）+ 排班保留
-  tpl.ownershipReps = Array.isArray(oldData?.reps) ? oldData.reps : [];
-  tpl.schedule      = oldData?.schedule || {};
+  // Ownership reps + schedule passthrough
+  tpl.ownershipReps = Array.isArray(oldData.reps) ? oldData.reps : (oldData.ownershipReps || []);
+  tpl.schedule      = oldData.schedule || {};
 
   return tpl;
 }
@@ -1008,7 +1017,123 @@ function render() {
 }
 
 // ═══════════════════════════════════════════
-// v1.1 Phase B · 新 shape renderers
+// v1.2 · JD inline library (JD 卡内联展开)
+// ═══════════════════════════════════════════
+const JD_INLINE = {
+  'manager': {
+    title: '店长 Hotel Manager',
+    oneLiner: '酒店经营负责人。对收入、成本、利润、服务体验、团队稳定整体负责。一句话区分：副店长负责每天把事情做好，店长负责让整个系统持续赚钱、稳定、可复制，并持续抽查执行层不漂移。',
+    duties: [
+      '经营与收入：月度入住率/营收/利润目标 · OTA + 社区导流 · 重点减少 OTA 依赖',
+      '房态与体验：房态系统建立 · 入住体验设计 · 客诉处理',
+      '团队管理 + 抽查：每周抽查副店长 · 每月抽查保洁',
+      'SOP：入住/退房/客诉/房检/清洁验收/突发事件 流程书面化',
+      '成本与物资：固定成本 + 日常消耗管控',
+      '与社区团队协作：月度联席会议 + 联合二销策划',
+      '社区自媒体：经营/系统视角内容（朋友圈周 3+，公众号月 1，小红书周 1）'
+    ],
+    pay: '¥3,500 底薪 + 渠道差异化抽成',
+    payDetail: '社区直订 25% · OTA 10% · OTA 月度超 40% 部分 5% · 长期会员 30%',
+    payExpected: '全年平均 ≈ ¥7,000/月（淡季 5-7k · 旺季 9-13k）',
+    requires: ['1+ 年管理经验', '能管人也能处理琐事', '对数字敏感', '能说"不"', '对社区导流有兴趣，不只靠 OTA'],
+    fullJdLink: '/hiring#role-manager'
+  },
+  'frontdesk': {
+    title: '前台 Front Desk · Assistant Manager',
+    oneLiner: '酒店日常运营的现场执行负责人。统筹待人接物、库存、资产、保洁协调、义工协调——酒店每天能不能正常运转的关键人物。',
+    duties: [
+      '前台接待 / 客户筛选一线判断',
+      '订单房态：日房态表 / OTA 后台 / 与保洁对接',
+      '退房查房：床品 / 损坏登记',
+      '清洁协调 + 验收',
+      '库管（重点）：高频耗材入出库盘点 / 短缺预警',
+      '资产管理（重点）：固定资产清单 / 状态检查',
+      '义工管理（运营任务侧）',
+      '公共空间维护 + 日常记录汇报',
+      '社区自媒体：朋友圈日更（9k 好友 = 主战场）'
+    ],
+    pay: '¥4,000 底薪 + 3% 抽成 + 店长可调奖 0-2% + 月度评优 ¥0-800',
+    payExpected: '全年平均 ≈ ¥5,200/月（淡季 4.5-5.5k · 旺季 6.5-8k）',
+    requires: ['认真稳定靠谱不烦躁', '有服务意识但不讨好', '能清晰表达规则', '会用微信/表格/OTA 后台', '对库存/资产有管理意识'],
+    fullJdLink: '/hiring#role-assistant'
+  },
+  'housekeeper': {
+    title: '客房保洁 Housekeeper',
+    oneLiner: '直接负责房间和公共区域的清洁标准。是酒店"入住体验"的最一线把关人。没有合格的保洁，前面所有的运营努力都会归零。',
+    duties: [
+      '房间清洁：退房深度清扫 / 床品 / 卫浴 / 地面',
+      '公共区域清洁',
+      '物品检查与上报',
+      '床品 / 布草管理',
+      '配合 SOP + 接受店长月 1 次随机抽查'
+    ],
+    pay: '¥3,500 底薪 + 抽查奖 ¥500 + 全勤奖 ¥200 + 旺季加班 ¥100-150/天',
+    payExpected: '标准 ¥3,700-4,000 · 优秀含旺季 ¥4,200-5,000',
+    requires: ['身体健康', '有责任心 · 对"干净"有自己标准', '不偷懒不瞒事', '能听得进反馈'],
+    fullJdLink: '/hiring#role-housekeeper'
+  },
+  'media-lead': {
+    title: '自媒体组长',
+    oneLiner: '5 空间共建组中"自媒体组"组长，承担 CYC 社区对外内容触达的统筹。把"社区拥有酒店"这件事翻译成可见、有温度、有视角的内容。',
+    duties: [
+      '内容策略：公众号 / 小红书 / 视频号 月度内容方向',
+      '团队产出协调：店长 / 副店长 / 义工 的发布节奏 + 视角分工',
+      '审核流程：小红书 review · 公众号社区运营 review + 终审',
+      '数据复盘：阅读 / 互动 / 自媒体来源转化',
+      '4 起步活动的对外宣发（鸭脖既有 KOL + bounty 机制）',
+      '长期价值住客 funnel 设计与执行'
+    ],
+    pay: '¥2,000 / 月（当前现状）',
+    requires: ['内容力 + 平台运营经验', '自驱动', '视觉审美 + 文案表达', '能协调多人内容产出', '对社区文化有共鸣'],
+    fullJdLink: ''
+  },
+  'finance': {
+    title: '财务',
+    oneLiner: 'CYC 链岛公司月度账务、工资发放、运营分成结算、对外汇报。资金安全的最后一道线。',
+    duties: [
+      '月度收支记账',
+      '工资及报销发放（次月 5 日前）',
+      '年度代记账协调',
+      '现金流跟踪 + 月度财报',
+      '运营分成结算（店长/副店长/保洁的抽查奖 + 抽成）',
+      '关键事项预警（如现金流危险时及时通报）'
+    ],
+    pay: '¥2,000 / 月（当前现状）',
+    requires: ['基础财务知识', '会用飞书表格 + Excel', '责任心 + 守口如瓶', '不烦琐能定期推动', '对小金额敏感'],
+    fullJdLink: ''
+  },
+  'volunteer': {
+    title: '住宿义工',
+    oneLiner: '每天 3-4 小时配合副店长 + 创造性贡献 = 免费住宿。驻地艺术家气质，不是分担前台的廉价劳力。',
+    duties: [
+      '运营协助（副店长侧）：前台 / 公区 / 活动支持',
+      '创造性贡献（社区团队侧）：项目发起 / 内容创作 / 社区连接',
+      '自媒体产出：朋友圈周 5+ / 视频号月 2 / 公众号月 1 / 小红书周 2',
+      '驻地 / 创作 / 住客视角'
+    ],
+    pay: '免费住宿 + 社区参与权',
+    requires: ['稳定入住 1+ 月', '有自己想做的事（创作/研究/活动）', '主动 + 自我组织', '有边界'],
+    fullJdLink: '/hiring#role-volunteer'
+  },
+  'community-lead': {
+    title: '社区主理人',
+    oneLiner: '在地社区运营负责人。把客户筛选、社区营造、二销策划落地。8 月去美国后转远程，远程持续负责社区 OS 产品方向 + 跨节点协同。',
+    duties: [
+      '客户筛选标准制定 + 一线把关',
+      '社区营造（5 空间共建组激发 + 长住客户开发）',
+      '与店长的月度联席会议',
+      '二销策略策划',
+      '社区 OS 产品 + 工具（远程持续）',
+      '706 跨节点协调'
+    ],
+    pay: '由 706 支持中心年度合同覆盖',
+    requires: ['9 年 706 社区经验', '跨地域跨节点视野', '产品 + 运营 + 技术语言', '能远程持续协同'],
+    fullJdLink: ''
+  }
+};
+
+// ═══════════════════════════════════════════
+// v1.1+ Phase B · 新 shape renderers
 // ═══════════════════════════════════════════
 function escV2(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -1020,31 +1145,158 @@ function daysFromToday(dateStr) {
   return Math.ceil((d.getTime() - now.getTime()) / 86400000);
 }
 
+// Gantt 位置计算：把日期映射到 0-100% 区间
+function ganttPct(dateStr, startStr, endStr) {
+  const d = new Date(dateStr).getTime();
+  const s = new Date(startStr).getTime();
+  const e = new Date(endStr).getTime();
+  return Math.max(0, Math.min(100, ((d - s) / (e - s)) * 100));
+}
+
+// JD inline 渲染
+function renderInlineJD(jdKey) {
+  const jd = JD_INLINE[jdKey];
+  if (!jd) return '<div class="v2-jd-empty">暂无 JD 内容</div>';
+  return `
+    <div class="v2-jd-content">
+      <div class="v2-jd-oneliner">${escV2(jd.oneLiner)}</div>
+      <div class="v2-jd-section">
+        <div class="v2-jd-label">核心职责</div>
+        <ul class="v2-jd-list">${(jd.duties || []).map(d => `<li>${escV2(d)}</li>`).join('')}</ul>
+      </div>
+      <div class="v2-jd-section">
+        <div class="v2-jd-label">薪酬</div>
+        <div class="v2-jd-pay">${escV2(jd.pay)}</div>
+        ${jd.payDetail   ? `<div class="v2-jd-paysub">${escV2(jd.payDetail)}</div>` : ''}
+        ${jd.payExpected ? `<div class="v2-jd-paysub">${escV2(jd.payExpected)}</div>` : ''}
+      </div>
+      <div class="v2-jd-section">
+        <div class="v2-jd-label">必备能力</div>
+        <ul class="v2-jd-list">${(jd.requires || []).map(r => `<li>${escV2(r)}</li>`).join('')}</ul>
+      </div>
+      ${jd.fullJdLink ? `<div class="v2-jd-foot"><a href="${escV2(jd.fullJdLink)}" target="_blank" class="v2-link-sm">完整 JD →</a></div>` : ''}
+    </div>
+  `;
+}
+
+// 切换 JD 展开 (data-jd-toggle 触发)
+window.toggleJD = function(btn) {
+  const card = btn.closest('[data-jd-card]');
+  if (!card) return;
+  const body = card.querySelector('[data-jd-body]');
+  if (!body) return;
+  const isOpen = !body.hidden;
+  body.hidden = isOpen;
+  btn.textContent = isOpen ? '展开 JD ▾' : '收起 JD ▴';
+  btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+};
+
+// 折叠驻店轮值
+window.toggleSchedule = function() {
+  const body = document.getElementById('v2-schedule-body');
+  const btn  = document.getElementById('v2-schedule-toggle');
+  if (!body || !btn) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  btn.textContent = isOpen ? '驻店轮值 ▾' : '驻店轮值 ▴';
+  if (!isOpen) { renderWeekStrip(); renderSchedule(); }
+};
+
 function renderV2Status() {
   const s = data.status || {};
-  const c = s.completion || { active: 0, transition: 0, hiring: 0, departed: 0 };
-  const tl = s.timeline || [];
+  const fin = s.financial || {};
+  const bc = s.byCategory || {};
+  const rows = s.ganttRows || [];
+  const ganttStart = s.ganttStart || '2026-05-01';
+  const ganttEnd   = s.ganttEnd   || '2026-08-31';
+  const todayPct = ganttPct(new Date().toISOString().slice(0,10), ganttStart, ganttEnd);
+
+  // 月份 tick (每月第 1 天的位置)
+  const months = ['2026-05-01','2026-06-01','2026-07-01','2026-08-01','2026-09-01'];
+  const monthLabels = ['5 月','6 月','7 月','8 月'];
+
   document.getElementById('v2-status').innerHTML = `
     <div class="section-header">
       <p class="section-title" style="margin-bottom:0;">团队现状 · ${escV2(data.asOf || '')}</p>
       <a href="/hiring" target="_blank" class="v2-link-sm">完整战略 → /hiring</a>
     </div>
-    <div class="v2-status-grid">
-      <div class="v2-stat"><div class="v2-stat-n">${c.active}</div><div class="v2-stat-l">在职</div></div>
-      <div class="v2-stat v2-stat-trans"><div class="v2-stat-n">${c.transition}</div><div class="v2-stat-l">过渡</div></div>
-      <div class="v2-stat v2-stat-hot"><div class="v2-stat-n">${c.hiring}</div><div class="v2-stat-l">招募中</div></div>
-      <div class="v2-stat v2-stat-cold"><div class="v2-stat-n">${c.departed}</div><div class="v2-stat-l">已离任</div></div>
+
+    ${fin.alert ? `
+      <div class="v2-fin-alert">
+        <div class="v2-fin-icon">🚨</div>
+        <div class="v2-fin-body">
+          <div class="v2-fin-title">现金流警告 · ${escV2(fin.asOf)} 结算</div>
+          <div class="v2-fin-numbers">
+            <span class="v2-fin-from">初始余额 ¥${(fin.openingBalance || 0).toLocaleString()}</span>
+            <span class="v2-fin-arrow">→</span>
+            <span class="v2-fin-to">结算后 ¥${(fin.closingBalance || 0).toLocaleString()}</span>
+          </div>
+          <div class="v2-fin-note">${escV2(fin.note || '')}</div>
+          <div class="v2-fin-warn">${escV2(fin.alert)}</div>
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="v2-people-groups">
+      ${(bc.active || []).length ? `
+        <div class="v2-pg v2-pg-active">
+          <div class="v2-pg-label">在职 · ${(bc.active || []).length}</div>
+          <ul>${(bc.active || []).map(p => `<li><strong>${escV2(p.name)}</strong> <span>${escV2(p.role)}</span></li>`).join('')}</ul>
+        </div>` : ''}
+      ${(bc.transition || []).length ? `
+        <div class="v2-pg v2-pg-trans">
+          <div class="v2-pg-label">过渡 · ${(bc.transition || []).length}</div>
+          <ul>${(bc.transition || []).map(p => `<li>
+            <strong>${escV2(p.name)}</strong> <span>${escV2(p.role)}</span>
+            ${p.note ? `<em>${escV2(p.note)}</em>` : ''}
+            ${p.until ? `<span class="v2-pg-until">${escV2(p.until)}</span>` : ''}
+          </li>`).join('')}</ul>
+        </div>` : ''}
+      ${(bc.hiring || []).length ? `
+        <div class="v2-pg v2-pg-hot">
+          <div class="v2-pg-label">招募中 · ${(bc.hiring || []).length}</div>
+          <ul>${(bc.hiring || []).map(p => `<li>
+            <strong>${escV2(p.role)}</strong>
+            ${p.note ? `<em>${escV2(p.note)}</em>` : ''}
+          </li>`).join('')}</ul>
+        </div>` : ''}
+      ${(bc.departed || []).length ? `
+        <div class="v2-pg v2-pg-cold">
+          <div class="v2-pg-label">已离任 · ${(bc.departed || []).length}</div>
+          <ul>${(bc.departed || []).map(p => `<li>
+            <strong>${escV2(p.name)}</strong> <span>${escV2(p.role)}</span>
+            ${p.when ? `<span class="v2-pg-until">${escV2(p.when)}</span>` : ''}
+          </li>`).join('')}</ul>
+        </div>` : ''}
     </div>
-    <div class="v2-timeline">
-      ${tl.map(t => {
-        const days = daysFromToday(t.date);
-        const daysTxt = days == null ? '' : (days > 0 ? `${days} 天后` : (days === 0 ? '今天' : `${-days} 天前`));
-        return `<div class="v2-tl-row v2-urg-${escV2(t.urgency || 'medium')}">
-          <div class="v2-tl-date">${escV2(t.date)}</div>
-          <div class="v2-tl-label">${escV2(t.label)}</div>
-          <div class="v2-tl-cd">${daysTxt}</div>
-        </div>`;
-      }).join('')}
+
+    <div class="v2-gantt">
+      <div class="v2-gantt-head">
+        ${monthLabels.map((m, i) => `<div class="v2-gantt-month" style="left:${ganttPct(months[i], ganttStart, ganttEnd)}%;">${m}</div>`).join('')}
+      </div>
+      <div class="v2-gantt-body">
+        <div class="v2-gantt-today" style="left:${todayPct}%;" title="今天"></div>
+        ${rows.map(r => {
+          const left = ganttPct(r.start, ganttStart, ganttEnd);
+          const right = ganttPct(r.end, ganttStart, ganttEnd);
+          const width = Math.max(2, right - left);
+          return `<div class="v2-gantt-row">
+            <div class="v2-gantt-label">${escV2(r.label)}</div>
+            <div class="v2-gantt-track">
+              <div class="v2-gantt-bar v2-gantt-tone-${escV2(r.tone)}" style="left:${left}%; width:${width}%;">
+                <span class="v2-gantt-range">${escV2(r.start.slice(5))} – ${escV2(r.end.slice(5))}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="v2-gantt-foot">
+        <span class="v2-gantt-legend"><span class="v2-gantt-bar-mini v2-gantt-tone-active"></span>在职</span>
+        <span class="v2-gantt-legend"><span class="v2-gantt-bar-mini v2-gantt-tone-transition"></span>过渡</span>
+        <span class="v2-gantt-legend"><span class="v2-gantt-bar-mini v2-gantt-tone-interim"></span>暂代</span>
+        <span class="v2-gantt-legend"><span class="v2-gantt-bar-mini v2-gantt-tone-hiring"></span>招募中</span>
+        <span class="v2-gantt-legend"><span class="v2-gantt-bar-mini v2-gantt-tone-peak"></span>旺季</span>
+      </div>
     </div>
   `;
 }
@@ -1083,22 +1335,30 @@ function renderV2CoreTeam() {
   document.getElementById('v2-coreteam').innerHTML = `
     <p class="section-title">当下核心团队 · 平行协同</p>
     <div class="v2-core-grid">
-      <div class="v2-core-card v2-core-onsite" onclick="openDetail('coreTeam.onsite', null)">
-        <div class="v2-core-tag-row"><span class="v2-core-tag">在地负责</span></div>
-        <div class="v2-core-name">${escV2(displayName(o))}</div>
-        <div class="v2-core-desc">${escV2(o.desc || '')}</div>
-        ${o.note ? `<div class="v2-core-note">${escV2(o.note)}</div>` : ''}
-        ${o.until ? `<div class="v2-core-cd">${escV2(o.until)}${dO != null ? ` · ${dO} 天后` : ''}</div>` : ''}
-      </div>
-      <div class="v2-core-card v2-core-trans" onclick="openDetail('coreTeam.transitionSupport', null)">
-        <div class="v2-core-tag-row">
-          <span class="v2-core-tag v2-core-tag-trans">过渡支持</span>
-          ${t.brandTag ? `<span class="v2-core-brand">${escV2(t.brandTag)}</span>` : ''}
+      <div class="v2-core-card v2-core-onsite" data-jd-card>
+        <div class="v2-card-head" onclick="openDetail('coreTeam.onsite', null)">
+          <div class="v2-core-tag-row"><span class="v2-core-tag">在地负责</span></div>
+          <div class="v2-core-name">${escV2(displayName(o))}</div>
+          <div class="v2-core-desc">${escV2(o.desc || '')}</div>
+          ${o.note ? `<div class="v2-core-note">${escV2(o.note)}</div>` : ''}
+          ${o.until ? `<div class="v2-core-cd">${escV2(o.until)}${dO != null ? ` · ${dO} 天后` : ''}</div>` : ''}
         </div>
-        <div class="v2-core-name">${escV2(displayName(t))}</div>
-        <div class="v2-core-desc">${escV2(t.desc || '')}</div>
-        ${t.note ? `<div class="v2-core-note v2-core-note-hot">${escV2(t.note)}</div>` : ''}
-        ${t.until ? `<div class="v2-core-cd v2-core-cd-hot">${escV2(t.until)}${dT != null ? ` · ${dT} 天后离开` : ''}</div>` : ''}
+        ${o.jdKey ? `
+          <button class="v2-jd-toggle" onclick="toggleJD(this)" aria-expanded="false">展开 JD ▾</button>
+          <div class="v2-jd-body" data-jd-body hidden>${renderInlineJD(o.jdKey)}</div>
+        ` : ''}
+      </div>
+      <div class="v2-core-card v2-core-trans" data-jd-card>
+        <div class="v2-card-head" onclick="openDetail('coreTeam.transitionSupport', null)">
+          <div class="v2-core-tag-row">
+            <span class="v2-core-tag v2-core-tag-trans">过渡支持</span>
+            ${t.brandTag ? `<span class="v2-core-brand">${escV2(t.brandTag)}</span>` : ''}
+          </div>
+          <div class="v2-core-name">${escV2(displayName(t))}</div>
+          <div class="v2-core-desc">${escV2(t.desc || '')}</div>
+          ${t.note ? `<div class="v2-core-note v2-core-note-hot">${escV2(t.note)}</div>` : ''}
+          ${t.until ? `<div class="v2-core-cd v2-core-cd-hot">${escV2(t.until)}${dT != null ? ` · ${dT} 天后离开` : ''}</div>` : ''}
+        </div>
       </div>
     </div>
     <div class="v2-core-bridge">↑ 月度联席会议 · 双向协同 ↑</div>
@@ -1107,21 +1367,36 @@ function renderV2CoreTeam() {
 
 function renderV2HotelTeam() {
   const list = data.hotelTeam || [];
+  // 招募 stat
+  const hiringCount = list.filter(h => h.status === 'hiring').length;
+  const activeCount = list.filter(h => h.status === 'active').length;
   document.getElementById('v2-hotel').innerHTML = `
     <div class="section-header">
-      <p class="section-title" style="margin-bottom:0;">CYC 链岛酒店团队 · 全员招募中</p>
-      <a href="/hiring" target="_blank" class="v2-link-sm">岗位 JD →</a>
+      <p class="section-title" style="margin-bottom:0;">酒店团队 · 3 人结构（招 ${hiringCount} / 在职 ${activeCount}）</p>
     </div>
     <div class="v2-hotel-grid">
-      ${list.map((h, i) => `
-        <div class="v2-hotel-card" onclick="openDetail('hotelTeam', ${i})">
-          <div class="v2-hotel-pill v2-pill-${escV2(h.status)}">${h.status === 'hiring' ? '招募中' : escV2(h.status)}</div>
-          <div class="v2-hotel-role">${escV2(h.role)}</div>
-          <div class="v2-hotel-name">${h.name ? escV2(displayName(h)) : '<span class="v2-vacant">虚位以待</span>'}</div>
-          <div class="v2-hotel-pay">${escV2(h.salaryNote || '')}</div>
-          <a href="${escV2(h.jdAnchor || '/hiring')}" target="_blank" class="v2-hotel-jd" onclick="event.stopPropagation();">查看完整 JD →</a>
-        </div>
-      `).join('')}
+      ${list.map((h, i) => {
+        const isHiring = h.status === 'hiring';
+        const isActive = h.status === 'active';
+        const interim = h.interim;
+        return `
+        <div class="v2-hotel-card v2-status-${escV2(h.status)}" data-jd-card>
+          <div class="v2-card-head" onclick="openDetail('hotelTeam', ${i})">
+            <div class="v2-hotel-pill v2-pill-${escV2(h.status)}">${isHiring ? '招募中' : isActive ? '在职' : escV2(h.status)}</div>
+            <div class="v2-hotel-role">${escV2(h.role)}</div>
+            <div class="v2-hotel-name">
+              ${isActive && h.name ? `<strong>${escV2(displayName(h))}</strong>` : ''}
+              ${isHiring && !interim ? '<span class="v2-vacant">虚位以待</span>' : ''}
+              ${isHiring && interim ? `<span class="v2-interim"><span class="v2-interim-pill">暂代</span> ${escV2(interim.name)}<em>${escV2(interim.note || '')}</em></span>` : ''}
+            </div>
+            <div class="v2-hotel-pay">${escV2(h.salaryNote || '')}</div>
+          </div>
+          ${h.jdKey ? `
+            <button class="v2-jd-toggle" onclick="toggleJD(this)" aria-expanded="false">展开 JD ▾</button>
+            <div class="v2-jd-body" data-jd-body hidden>${renderInlineJD(h.jdKey)}</div>
+          ` : ''}
+        </div>`;
+      }).join('')}
     </div>
   `;
 }
@@ -1129,14 +1404,23 @@ function renderV2HotelTeam() {
 function renderV2CommunityTeam() {
   const list = data.communityTeam || [];
   document.getElementById('v2-community').innerHTML = `
-    <p class="section-title">社区团队</p>
+    <p class="section-title">社区团队（含住宿义工）</p>
     <div class="v2-comm-grid">
       ${list.map((c, i) => `
-        <div class="v2-comm-card v2-comm-${escV2(c.status)}" onclick="openDetail('communityTeam', ${i})">
-          <div class="v2-comm-role">${escV2(c.role)}</div>
-          <div class="v2-comm-name">${c.name ? escV2(displayName(c)) : '<span class="v2-vacant">占位 / 待补</span>'}</div>
-          <div class="v2-comm-desc">${escV2(c.desc || '')}</div>
-          <div class="v2-comm-pill v2-pill-${escV2(c.status)}">${c.status === 'active' ? '在职' : c.status === 'placeholder' ? '占位' : escV2(c.status)}</div>
+        <div class="v2-comm-card v2-comm-${escV2(c.status)}" data-jd-card>
+          <div class="v2-card-head" onclick="openDetail('communityTeam', ${i})">
+            <div class="v2-comm-pill v2-pill-${escV2(c.status)}">${c.status === 'active' ? '在职' : c.status === 'hiring' ? '招募中' : escV2(c.status)}</div>
+            <div class="v2-comm-role">${escV2(c.role)}</div>
+            <div class="v2-comm-name">
+              ${c.name ? `<strong>${escV2(displayName(c))}</strong>` : '<span class="v2-vacant">虚位以待</span>'}
+            </div>
+            <div class="v2-comm-desc">${escV2(c.desc || '')}</div>
+            ${c.salaryNote ? `<div class="v2-comm-pay">${escV2(c.salaryNote)}</div>` : ''}
+          </div>
+          ${c.jdKey ? `
+            <button class="v2-jd-toggle" onclick="toggleJD(this)" aria-expanded="false">展开 JD ▾</button>
+            <div class="v2-jd-body" data-jd-body hidden>${renderInlineJD(c.jdKey)}</div>
+          ` : ''}
         </div>
       `).join('')}
     </div>
