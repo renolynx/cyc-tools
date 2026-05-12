@@ -70,22 +70,19 @@
   <!-- ===== 【3】当下核心团队 ===== -->
   <div class="section" id="v2-coreteam"></div>
 
-  <!-- ===== 【4】CYC 链岛酒店团队 · 招募中 ===== -->
-  <div class="section" id="v2-hotel"></div>
-
-  <!-- ===== 【5】社区团队 ===== -->
-  <div class="section" id="v2-community"></div>
-
-  <!-- ===== 【6】接下来 2 个月 · 活动 Roadmap ===== -->
+  <!-- ===== ⭐【4】空间共建 · CYC 核心策略 (位置提前 / 视觉重头) ===== -->
   <div class="section" id="v2-roadmap"></div>
 
-  <!-- ===== 【7】5 共建组 ===== -->
-  <div class="section" id="v2-groups"></div>
+  <!-- ===== 【5】CYC 链岛酒店团队 ===== -->
+  <div class="section" id="v2-hotel"></div>
 
-  <!-- ===== 【8】过渡 / 离任记录 ===== -->
+  <!-- ===== 【6】社区团队（含住宿义工） ===== -->
+  <div class="section" id="v2-community"></div>
+
+  <!-- ===== 【7】过渡 / 离任记录 ===== -->
   <div class="section" id="v2-departures"></div>
 
-  <!-- ===== 【9】业主代表 / 访客登记 ===== -->
+  <!-- ===== 【8】业主代表 / 访客登记 ===== -->
   <div class="section" id="v2-reps"></div>
 
   <!-- legacy DOM 占位（v1.0 渲染节点保留为隐藏 fallback，避免老 render 函数 crash） -->
@@ -231,7 +228,7 @@ const DEFAULT_DATA = {
 //   控制台可通过 window.__cycV2() 查看
 //   设计依据：vault `cyc.center/03 设计/09 team 页面架构重设计 v1.0.md` (v1.1)
 // ═══════════════════════════════════════════
-const SCHEMA_VERSION = '1.2';
+const SCHEMA_VERSION = '1.3';
 const STORAGE_KEY_V2 = 'cyc-team-data-v2';
 
 const NEW_DEFAULT_DATA = {
@@ -272,19 +269,16 @@ const NEW_DEFAULT_DATA = {
       ]
     },
 
-    // Gantt 时间轴 · 5/1 - 8/31（123 天）
+    // Gantt 时间轴 · 战略 threads (不是个人在职时间)
     ganttStart: '2026-05-01',
     ganttEnd:   '2026-08-31',
     ganttRows: [
-      { label: '月汐 · 物业交接退出',  start: '2026-05-01', end: '2026-05-31', tone: 'transition' },
-      { label: '老谭 · 暂代店长',      start: '2026-05-01', end: '2026-06-30', tone: 'interim'    },
-      { label: 'Demian · Praxis 代运营', start: '2026-05-01', end: '2026-06-30', tone: 'transition' },
-      { label: '招募 · 店长 + 前台',   start: '2026-05-12', end: '2026-06-30', tone: 'hiring'     },
-      { label: '旺季',                  start: '2026-07-01', end: '2026-08-31', tone: 'peak'       },
-      { label: '悠洋 · 在地负责',       start: '2026-05-01', end: '2026-08-31', tone: 'active'     },
-      { label: '李姐 · 保洁稳定在职',   start: '2026-05-01', end: '2026-08-31', tone: 'active'     },
-      { label: '鸭脖 · 自媒体组长',     start: '2026-05-01', end: '2026-08-31', tone: 'active'     },
-      { label: '天宇 · 财务',           start: '2026-05-01', end: '2026-08-31', tone: 'active'     }
+      { label: '月汐 → 方荣 公户交接',     start: '2026-05-01', end: '2026-05-31', tone: 'transition' },
+      { label: '酒店管理团队 招募+面试',   start: '2026-05-12', end: '2026-05-31', tone: 'hiring'     },
+      { label: '空间共建推进窗口',         start: '2026-05-12', end: '2026-06-30', tone: 'active'     },
+      { label: '旺季',                     start: '2026-07-01', end: '2026-08-31', tone: 'peak'       },
+      { label: '悠洋 · 北京阶段',          start: '2026-07-01', end: '2026-07-31', tone: 'transition' },
+      { label: '悠洋 · 赴美 / 转远程',     start: '2026-08-01', end: '2026-08-31', tone: 'transition' }
     ],
 
     keyDates: [
@@ -391,60 +385,59 @@ const NEW_DEFAULT_DATA = {
   ],
 
   // 【6】接下来 2 个月活动 Roadmap（Demian 的"创作型社区"愿景）
-  activityRoadmap: {
-    vision: '从松散活动场，转向创作型社区',
-    visionSource: 'Demian 的思考笔记',
-    targetAudience: '有真实创作冲动 / 愿意做成作品的人 / 对社会、关系、身心、地方文化、生活方式有真实关切 / 愿意共创、互相支持、长期成长',
+  // 【6】空间共建 · CYC 核心社区行动策略（活动 + 5 行动模式 合并）
+  //   共建 = 核心策略；活动 = 共建的具体执行；5 组 = 行动模式分工
+  coconstruction: {
+    title: '空间共建',
+    subtitle: 'CYC 核心社区行动策略',
+    vision: '空间共建是 CYC 的核心社区行动策略。通过具体的"清理 / 设计 / 制作 / 庆祝 / 媒体"行动，树立社群核心价值，通过行动调性做持续的人群筛选。',
+    purpose: '这是我们把"开放但有筛选"做出来的方式 — 既是住客的核心 invitation，也是义工和各角色招募的方向标。',
+    window: {
+      start: '2026-05-12',
+      end:   '2026-06-30',
+      note:  '悠洋 + Demian 在地期间推动 · 6/30 后需新接力者'
+    },
+    targetAudience: '有真实创作冲动 / 愿意做成作品的人 / 对社会、关系、身心、地方文化、生活方式有真实关切 / 不只是消费活动，愿意共创、互相支持、长期成长',
+    // 5 行动模式
+    modes: [
+      { key: 'clearance',   emoji: '♻️', name: '清理', desc: '老物 / 闲置物 / 空间清理' },
+      { key: 'design',      emoji: '🎨', name: '设计', desc: '空间 / 视觉 / 物料' },
+      { key: 'making',      emoji: '🔨', name: '制作', desc: '手工 / 共创 / 在地生产' },
+      { key: 'celebration', emoji: '🎉', name: '庆祝', desc: '仪式 / 活动 / 公共记忆节点' },
+      { key: 'media',       emoji: '📸', name: '媒体', desc: '内容 / 招募 / 对外触达' }
+    ],
+    // 当前推进的活动（5-6 月窗口）
     activities: [
       {
         key: 'jung-dream',
         title: '荣格心理学潜意识梦创作工作坊',
-        duration: '4 周',
-        status: '准备开始',
-        leader: 'Demian',
-        targetGroup: ''
+        duration: '4 周', status: '准备开始',
+        leader: '66', leaderTbd: false,
+        modeKeys: ['celebration']
       },
       {
         key: 'ai-workshop',
-        title: 'AI Workshop · 把你真正想做的东西做出来 + 创意支持团体',
-        duration: '4 周',
-        status: '筹备中',
-        leader: '',
-        targetGroup: ''
+        title: 'AI Workshop · 把想做的东西做出来 + 创意支持团体',
+        duration: '4 周', status: '筹备中',
+        leader: '张凡', leaderTbd: false,
+        modeKeys: ['making']
       },
       {
         key: 'zine-food',
         title: '云南大理特色健康饮食菜单 Zine 共创',
-        duration: '2 周',
-        status: '筹备中',
-        leader: 'JIAYU',
-        startDate: '2026-06 初',
-        targetGroup: '制作组 + 出清组'
+        duration: '2 周', status: '计划方向',
+        leader: '', leaderTbd: true,
+        modeKeys: ['making', 'clearance']
       },
       {
         key: 'zine-shops',
         title: '大理有趣小店合集 Zine 共创',
-        duration: '2 周',
-        status: '未筹备',
-        leader: '',
-        targetGroup: ''
+        duration: '2 周', status: '未筹备',
+        leader: '', leaderTbd: true,
+        modeKeys: ['making', 'media']
       }
     ]
   },
-
-  // 【7】5 共建组（4 待启动 + 1 active）
-  groups: [
-    { key: 'clearance',   emoji: '♻️', name: '出清组',   desc: '老物 / 闲置物的循环',
-      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: '' },
-    { key: 'design',      emoji: '🎨', name: '设计组',   desc: '空间 / 视觉 / 物料',
-      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: '' },
-    { key: 'celebration', emoji: '🎉', name: '庆祝组',   desc: '仪式 / 活动 / 节点',
-      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: '' },
-    { key: 'making',      emoji: '🔨', name: '制作组',   desc: '手工 / 共创 / 在地生产',
-      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: 'zine-food' },
-    { key: 'media',       emoji: '📸', name: '自媒体组', desc: '内容 / 招募 / 对外触达',
-      status: 'active',  leader: { name: '鸭脖', member_rec_id: '' }, members: [], activatedBy: '' }
-  ],
 
   // 【8】离任 / 过渡记录（诚实透明）
   // 离任记录（月汐挪到 status.byCategory.transition，因为她还在过渡中）
@@ -743,7 +736,7 @@ async function preloadLinkedMembers() {
   if (data.coreTeam) { collect(data.coreTeam.onsite); collect(data.coreTeam.transitionSupport); }
   (data.hotelTeam      || []).forEach(collect);
   (data.communityTeam  || []).forEach(collect);
-  (data.groups         || []).forEach(g => g && g.leader && collect(g.leader));
+  // v1.3: groups → coconstruction.modes (modes 不再 own leader，所以跳过)
   (data.departures     || []).forEach(collect);
   // legacy fallback（保险，旧数据如果还在）
   if (data.cyc) {
@@ -906,7 +899,7 @@ function getScheduleOptions() {
   }
   (data.hotelTeam     || []).forEach(h => { if (h.name) names.push(h.name); });
   (data.communityTeam || []).forEach(c => { if (c.name) names.push(c.name); });
-  (data.groups        || []).forEach(g => { if (g.leader && g.leader.name) names.push(g.leader.name); });
+  // v1.3: groups → coconstruction.modes (no leader name in modes anymore)
   return [...new Set(names)];
 }
 
@@ -1002,16 +995,13 @@ function setSchedule(key, value) {
 // Render
 // ═══════════════════════════════════════════
 function render() {
-  renderWeekStrip();
-  renderSchedule();
-  // v1.1 Phase B renderers
+  // v1.3 renderers · 驻店轮值 默认折叠不调用，展开时再渲染
   renderV2Status();
   renderV2Ownership();
   renderV2CoreTeam();
   renderV2HotelTeam();
   renderV2CommunityTeam();
-  renderV2Roadmap();
-  renderV2Groups();
+  renderV2Coconstruction();   // 合并原 Roadmap + Groups
   renderV2Departures();
   renderV2Reps();
 }
@@ -1221,22 +1211,6 @@ function renderV2Status() {
       <a href="/hiring" target="_blank" class="v2-link-sm">完整战略 → /hiring</a>
     </div>
 
-    ${fin.alert ? `
-      <div class="v2-fin-alert">
-        <div class="v2-fin-icon">🚨</div>
-        <div class="v2-fin-body">
-          <div class="v2-fin-title">现金流警告 · ${escV2(fin.asOf)} 结算</div>
-          <div class="v2-fin-numbers">
-            <span class="v2-fin-from">初始余额 ¥${(fin.openingBalance || 0).toLocaleString()}</span>
-            <span class="v2-fin-arrow">→</span>
-            <span class="v2-fin-to">结算后 ¥${(fin.closingBalance || 0).toLocaleString()}</span>
-          </div>
-          <div class="v2-fin-note">${escV2(fin.note || '')}</div>
-          <div class="v2-fin-warn">${escV2(fin.alert)}</div>
-        </div>
-      </div>
-    ` : ''}
-
     <div class="v2-people-groups">
       ${(bc.active || []).length ? `
         <div class="v2-pg v2-pg-active">
@@ -1427,54 +1401,90 @@ function renderV2CommunityTeam() {
   `;
 }
 
-function renderV2Roadmap() {
-  const r = data.activityRoadmap || {};
-  const acts = r.activities || [];
+// v1.3: 空间共建 (合并原 roadmap + groups)
+function renderV2Coconstruction() {
+  const cc = data.coconstruction || {};
+  const modes = cc.modes || [];
+  const acts  = cc.activities || [];
+  const win   = cc.window || {};
+
+  // 计算每个 mode 是否被当前活动激发
+  const modeActivated = {};
+  acts.forEach(a => (a.modeKeys || []).forEach(k => { modeActivated[k] = (modeActivated[k] || 0) + 1; }));
+
+  const modeBy = {};
+  modes.forEach(m => { modeBy[m.key] = m; });
+
+  const statusClass = s =>
+    s === '准备开始' ? 'ready' :
+    s === '筹备中'   ? 'plan'  :
+    s === '计划方向' ? 'direction' :
+    'todo';
+
   document.getElementById('v2-roadmap').innerHTML = `
-    <p class="section-title">接下来 2 个月 · 活动 Roadmap</p>
-    ${r.vision ? `<div class="v2-roadmap-vision">"${escV2(r.vision)}"<span class="v2-roadmap-vsrc">${escV2(r.visionSource || '')}</span></div>` : ''}
-    ${r.targetAudience ? `<div class="v2-roadmap-aud">面向: <span>${escV2(r.targetAudience)}</span></div>` : ''}
-    <div class="v2-roadmap-list">
-      ${acts.map((a, i) => `
-        <div class="v2-act-card" onclick="openDetail('activityRoadmap.activities', ${i})">
-          <div class="v2-act-num">${String(i+1).padStart(2,'0')}</div>
-          <div class="v2-act-body">
-            <div class="v2-act-status v2-act-${escV2(a.status === '准备开始' ? 'ready' : a.status === '筹备中' ? 'plan' : 'todo')}">${escV2(a.status || '')}</div>
-            <div class="v2-act-title">${escV2(a.title || '')}</div>
-            <div class="v2-act-meta">
-              <span class="v2-act-dur">${escV2(a.duration || '')}</span>
-              ${a.leader ? `<span class="v2-act-leader">· 负责人: ${escV2(a.leader)}</span>` : ''}
-              ${a.startDate ? `<span class="v2-act-start">· ${escV2(a.startDate)}</span>` : ''}
-              ${a.targetGroup ? `<span class="v2-act-tg">· 触发: ${escV2(a.targetGroup)}</span>` : ''}
+    <div class="v2-cc-block">
+      <div class="v2-cc-head">
+        <div class="v2-cc-star">⭐</div>
+        <div>
+          <div class="v2-cc-title">${escV2(cc.title || '空间共建')}</div>
+          <div class="v2-cc-subtitle">${escV2(cc.subtitle || '')}</div>
+        </div>
+      </div>
+
+      ${cc.vision ? `<div class="v2-cc-vision">${escV2(cc.vision)}</div>` : ''}
+      ${cc.purpose ? `<div class="v2-cc-purpose">${escV2(cc.purpose)}</div>` : ''}
+
+      ${win.start ? `
+        <div class="v2-cc-window">
+          <span class="v2-cc-window-pill">推进窗口</span>
+          <strong>${escV2(win.start)} → ${escV2(win.end)}</strong>
+          ${win.note ? `<span class="v2-cc-window-note">${escV2(win.note)}</span>` : ''}
+        </div>
+      ` : ''}
+
+      <div class="v2-cc-modes-label">5 行动模式</div>
+      <div class="v2-cc-modes-row">
+        ${modes.map(m => {
+          const isActivated = !!modeActivated[m.key];
+          return `<div class="v2-cc-mode ${isActivated ? 'is-active' : 'is-quiet'}" title="${escV2(m.desc)}">
+            <div class="v2-cc-mode-emoji">${escV2(m.emoji)}</div>
+            <div class="v2-cc-mode-name">${escV2(m.name)}</div>
+            ${isActivated ? `<div class="v2-cc-mode-count">激发 ×${modeActivated[m.key]}</div>` : '<div class="v2-cc-mode-count">未激发</div>'}
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="v2-cc-acts-label">当前推进的共建活动</div>
+      <div class="v2-cc-acts">
+        ${acts.map((a, i) => `
+          <div class="v2-cc-act" onclick="openDetail('coconstruction.activities', ${i})">
+            <div class="v2-cc-act-num">${String(i+1).padStart(2,'0')}</div>
+            <div class="v2-cc-act-body">
+              <div class="v2-cc-act-row1">
+                <span class="v2-cc-act-status v2-act-${statusClass(a.status)}">${escV2(a.status || '')}</span>
+                <span class="v2-cc-act-dur">⏱ ${escV2(a.duration || '')}</span>
+              </div>
+              <div class="v2-cc-act-title">${escV2(a.title || '')}</div>
+              <div class="v2-cc-act-row2">
+                <span class="v2-cc-act-leader-l">负责人:</span>
+                ${a.leaderTbd
+                  ? `<span class="v2-cc-act-tbd">待定</span>`
+                  : `<span class="v2-cc-act-leader">${escV2(a.leader || '')}</span>`}
+                <span class="v2-cc-act-modes">${(a.modeKeys || []).map(k => {
+                  const m = modeBy[k]; return m ? `<span class="v2-cc-act-mode-pill" title="${escV2(m.desc)}">${escV2(m.emoji)} ${escV2(m.name)}</span>` : '';
+                }).join('')}</span>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
+        `).join('')}
+      </div>
 
-function renderV2Groups() {
-  const list = data.groups || [];
-  const acts = (data.activityRoadmap && data.activityRoadmap.activities) || [];
-  document.getElementById('v2-groups').innerHTML = `
-    <p class="section-title">5 共建组 · 通过活动激发</p>
-    <div class="v2-groups-grid">
-      ${list.map((g, i) => {
-        const isActive = g.status === 'active';
-        const triggered = g.activatedBy ? acts.find(a => a.key === g.activatedBy) : null;
-        const leaderName = g.leader && g.leader.name ? g.leader.name : '';
-        return `
-          <div class="v2-group-card ${isActive ? 'v2-g-active' : 'v2-g-pending'}" onclick="openDetail('groups', ${i})">
-            <div class="v2-group-emoji">${escV2(g.emoji || '·')}</div>
-            <div class="v2-group-name">${escV2(g.name)}</div>
-            <div class="v2-group-status">${isActive ? '激活' : '待启动'}</div>
-            <div class="v2-group-desc">${escV2(g.desc || '')}</div>
-            ${leaderName ? `<div class="v2-group-leader">组长 · ${escV2(leaderName)}</div>` : ''}
-            ${triggered ? `<div class="v2-group-via">将由「${escV2((triggered.title || '').slice(0,14))}…」激发</div>` : ''}
-          </div>
-        `;
-      }).join('')}
+      ${cc.targetAudience ? `
+        <div class="v2-cc-audience">
+          <div class="v2-cc-audience-label">→ 人群筛选机制 · 想吸引的人</div>
+          <div>${escV2(cc.targetAudience)}</div>
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -1641,18 +1651,18 @@ function openDetail(path, idx) {
   const isVolunteer = path.includes('volunteers');
   const isRep = (path === 'reps' || path === 'ownershipReps');
   // v1.1 Phase B: 非 role-shape 的新条目（活动 / 共建组 / 离任）走只读 view
-  const isV2NonRole = path.startsWith('activityRoadmap') || path === 'groups' || path === 'departures';
+  const isV2NonRole = path.startsWith('activityRoadmap') || path.startsWith('coconstruction') || path === 'groups' || path === 'departures';
 
   if (isV2NonRole) {
     // 只读卡片视图（Phase C 再加编辑）
     let bodyHtml = '';
-    if (path.startsWith('activityRoadmap')) {
+    if (path.startsWith('activityRoadmap') || path.startsWith('coconstruction.activities')) {
       bodyHtml = `
         <div class="modal-title" style="margin-bottom:4px;">${escV2(item.title || '')}</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${escV2(item.status || '')} · ${escV2(item.duration || '')}</div>
-        ${item.leader     ? `<div class="form-group"><label class="form-label">负责人</label><div>${escV2(item.leader)}</div></div>` : ''}
-        ${item.startDate  ? `<div class="form-group"><label class="form-label">开始时间</label><div>${escV2(item.startDate)}</div></div>` : ''}
-        ${item.targetGroup? `<div class="form-group"><label class="form-label">触发 / 关联组</label><div>${escV2(item.targetGroup)}</div></div>` : ''}
+        ${item.leader ? `<div class="form-group"><label class="form-label">负责人</label><div>${escV2(item.leader)}</div></div>` : ''}
+        ${item.leaderTbd ? `<div class="form-group"><label class="form-label">负责人</label><div style="color:var(--orange);font-style:italic;">待定</div></div>` : ''}
+        ${(item.modeKeys && item.modeKeys.length) ? `<div class="form-group"><label class="form-label">关联行动模式</label><div>${item.modeKeys.join(' · ')}</div></div>` : ''}
       `;
     } else if (path === 'groups') {
       bodyHtml = `

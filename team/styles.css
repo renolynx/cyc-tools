@@ -1582,3 +1582,183 @@
     .v2-hotel-card, .v2-comm-card {
       position: relative; padding-top: 32px;
     }
+
+    /* ════════════════════════════════════════════════════
+     * v1.3 · 空间共建 (合并 roadmap + groups)
+     * 视觉重头，作为 CYC 核心策略的视觉签名
+     * ════════════════════════════════════════════════════ */
+
+    .v2-cc-block {
+      background: linear-gradient(135deg, rgba(28,61,46,0.06), rgba(217,101,42,0.04));
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 18px 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05),
+                  0 0 0 0.5px rgba(255,255,255,0.6) inset;
+    }
+    .v2-cc-head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .v2-cc-star {
+      font-size: 22px; line-height: 1;
+    }
+    .v2-cc-title {
+      font-size: 18px; font-weight: 800;
+      color: var(--green); letter-spacing: -0.01em;
+    }
+    .v2-cc-subtitle {
+      font-size: 11px; font-weight: 600; color: var(--orange);
+      letter-spacing: 0.06em; margin-top: 2px;
+    }
+    .v2-cc-vision {
+      font-size: 13px; line-height: 1.75; color: var(--text);
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.6);
+      border-left: 3px solid var(--green);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .v2-cc-purpose {
+      font-size: 12px; line-height: 1.7; color: var(--muted);
+      padding: 0 4px;
+      margin-bottom: 10px;
+    }
+    .v2-cc-window {
+      display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      padding: 7px 12px;
+      background: rgba(217,101,42,0.10);
+      border: 1px solid rgba(217,101,42,0.25);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .v2-cc-window-pill {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+      background: var(--orange); color: #fff;
+      padding: 2px 8px; border-radius: 100px;
+      text-transform: uppercase;
+    }
+    .v2-cc-window strong {
+      color: var(--text); font-variant-numeric: tabular-nums;
+    }
+    .v2-cc-window-note {
+      color: var(--muted); font-size: 11px; font-weight: 500;
+    }
+
+    .v2-cc-modes-label, .v2-cc-acts-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      color: var(--green); text-transform: uppercase;
+      margin: 14px 0 8px;
+    }
+
+    .v2-cc-modes-row {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+    }
+    .v2-cc-mode {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 9px 4px 7px;
+      text-align: center;
+    }
+    .v2-cc-mode.is-active {
+      border-color: rgba(28,61,46,0.4);
+      background: rgba(28,61,46,0.08);
+      box-shadow: 0 1px 3px rgba(28,61,46,0.08);
+    }
+    .v2-cc-mode.is-quiet { opacity: 0.55; }
+    .v2-cc-mode-emoji { font-size: 18px; line-height: 1; margin-bottom: 2px; }
+    .v2-cc-mode-name {
+      font-size: 11px; font-weight: 700; color: var(--text);
+    }
+    .v2-cc-mode-count {
+      font-size: 9px; font-weight: 600;
+      color: var(--muted); margin-top: 2px;
+    }
+    .v2-cc-mode.is-active .v2-cc-mode-count { color: var(--green); }
+    @media (max-width: 400px) {
+      .v2-cc-modes-row { grid-template-columns: repeat(5, 1fr); }
+      .v2-cc-mode-name { font-size: 10px; }
+    }
+
+    .v2-cc-acts {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .v2-cc-act {
+      display: grid; grid-template-columns: 32px 1fr;
+      gap: 10px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px 14px 12px 10px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .v2-cc-act:active { transform: scale(0.99); }
+    .v2-cc-act-num {
+      font-size: 22px; font-weight: 800; color: var(--green);
+      opacity: 0.35; letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums; line-height: 1.1;
+    }
+    .v2-cc-act-body { min-width: 0; }
+    .v2-cc-act-row1 {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .v2-cc-act-status {
+      display: inline-block;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      padding: 3px 8px; border-radius: 100px;
+    }
+    .v2-cc-act-status.v2-act-ready     { background: rgba(28,61,46,0.16); color: var(--green); }
+    .v2-cc-act-status.v2-act-plan      { background: rgba(217,101,42,0.16); color: var(--orange); }
+    .v2-cc-act-status.v2-act-direction { background: rgba(217,170,42,0.18); color: #8b6a14; }
+    .v2-cc-act-status.v2-act-todo      { background: rgba(0,0,0,0.06); color: #888; }
+    .v2-cc-act-dur {
+      font-size: 11px; color: var(--muted); font-weight: 600;
+    }
+    .v2-cc-act-title {
+      font-size: 13.5px; font-weight: 700; color: var(--text);
+      line-height: 1.4; margin-bottom: 6px;
+    }
+    .v2-cc-act-row2 {
+      display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+      font-size: 11px;
+    }
+    .v2-cc-act-leader-l { color: var(--muted); }
+    .v2-cc-act-leader {
+      color: var(--text); font-weight: 700; margin-right: 4px;
+    }
+    .v2-cc-act-tbd {
+      color: var(--orange); font-weight: 700;
+      background: rgba(217,101,42,0.12);
+      padding: 1px 8px; border-radius: 100px;
+      font-size: 10px; margin-right: 4px;
+      font-style: italic;
+    }
+    .v2-cc-act-modes {
+      display: inline-flex; gap: 3px; flex-wrap: wrap;
+      margin-left: 4px;
+    }
+    .v2-cc-act-mode-pill {
+      display: inline-block;
+      font-size: 10px; font-weight: 600;
+      background: rgba(28,61,46,0.08); color: var(--green);
+      padding: 1px 7px; border-radius: 100px;
+      letter-spacing: 0.02em;
+    }
+
+    .v2-cc-audience {
+      margin-top: 14px; padding: 11px 14px;
+      background: rgba(28,61,46,0.06);
+      border-radius: var(--r-sm);
+      font-size: 12px; line-height: 1.65; color: var(--text);
+    }
+    .v2-cc-audience-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--green); text-transform: uppercase;
+      margin-bottom: 4px;
+    }
