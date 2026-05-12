@@ -46,7 +46,10 @@
     </div>
   </div>
 
-  <!-- ===== 本周驻店轮值 (TOP) ===== -->
+  <!-- ===== 【0】团队现状总览 (v1.1) ===== -->
+  <div class="section" id="v2-status"></div>
+
+  <!-- ===== 【1】驻店轮值 ===== -->
   <div class="section">
     <div class="section-header">
       <p class="section-title" style="margin-bottom:0;">驻店轮值</p>
@@ -65,57 +68,39 @@
     <p class="schedule-hint">← 左右滑动查看完整排班</p>
   </div>
 
-  <!-- ===== CYC 铁三角 ===== -->
-  <div class="section">
-    <div class="section-header">
-      <span class="community-badge badge-cyc">
-        <span class="community-dot dot-green"></span>
-        CYC 链岛青年社区
-      </span>
-    </div>
-    <p class="section-title">铁三角 · 核心治理</p>
-    <div class="triangle-grid" id="cyc-triangle"></div>
-  </div>
+  <!-- ===== 【2】业主 + 法人 ===== -->
+  <div class="section" id="v2-ownership"></div>
 
-  <!-- CYC 运营层 -->
-  <div class="section">
-    <p class="section-title">运营层</p>
-    <div class="role-group" id="cyc-ops"></div>
-  </div>
+  <!-- ===== 【3】当下核心团队 ===== -->
+  <div class="section" id="v2-coreteam"></div>
 
-  <!-- CYC 义工 -->
-  <div class="section">
-    <p class="section-title">CYC 社区义工</p>
-    <div class="volunteer-grid" id="cyc-volunteers"></div>
-  </div>
+  <!-- ===== 【4】CYC 链岛酒店团队 · 招募中 ===== -->
+  <div class="section" id="v2-hotel"></div>
 
-  <!-- ===== Praxis Hub ===== -->
-  <div class="section" style="margin-top: 36px;">
-    <div class="section-header">
-      <span class="community-badge badge-praxis">
-        <span class="community-dot dot-orange"></span>
-        Praxis Hub · P社
-      </span>
-    </div>
-    <p class="section-title">主理人</p>
-    <div class="role-group" id="praxis-lead"></div>
-  </div>
+  <!-- ===== 【5】社区团队 ===== -->
+  <div class="section" id="v2-community"></div>
 
-  <div class="section">
-    <p class="section-title">P社义工</p>
-    <div class="volunteer-grid" id="praxis-volunteers"></div>
-  </div>
+  <!-- ===== 【6】接下来 2 个月 · 活动 Roadmap ===== -->
+  <div class="section" id="v2-roadmap"></div>
 
-  <!-- ===== 社区代表 ===== -->
-  <div class="section" style="margin-top: 36px;">
-    <div class="section-header">
-      <span class="section-title" style="margin-bottom: 0;">社区代表</span>
-      <button class="btn btn-sm btn-orange edit-only" onclick="openAddRep()">+ 添加</button>
-    </div>
-    <div class="rep-list" id="reps-list"></div>
-    <div id="reps-empty" style="font-size: 13px; color: var(--muted); padding: 16px 0; text-align: center;">
-      暂无社区代表
-    </div>
+  <!-- ===== 【7】5 共建组 ===== -->
+  <div class="section" id="v2-groups"></div>
+
+  <!-- ===== 【8】过渡 / 离任记录 ===== -->
+  <div class="section" id="v2-departures"></div>
+
+  <!-- ===== 【9】业主代表 / 访客登记 ===== -->
+  <div class="section" id="v2-reps"></div>
+
+  <!-- legacy DOM 占位（v1.0 渲染节点保留为隐藏 fallback，避免老 render 函数 crash） -->
+  <div style="display:none">
+    <div id="cyc-triangle"></div>
+    <div id="cyc-ops"></div>
+    <div id="cyc-volunteers"></div>
+    <div id="praxis-lead"></div>
+    <div id="praxis-volunteers"></div>
+    <div id="reps-list"></div>
+    <div id="reps-empty"></div>
   </div>
 
   <footer>
@@ -441,60 +426,71 @@ let _membersFullById = {};
 let _loadingFull = {};   // rec_id → Promise，避免同一 id 并发拉
 
 function loadData() {
+  // Phase B: data 直接是 v1.1 新 shape
+  //   1. 优先从 v2 key 加载（v1.1 已存在）
+  //   2. 否则: 加载 legacy v1.0 数据 → migrate → 写入 v2 key
+  //   3. 老 'cyc-team-data' 永远不被覆盖（rollback safety）
+
+  // Step 1: 尝试 v2 key
+  const v2Saved = localStorage.getItem(STORAGE_KEY_V2);
+  if (v2Saved) {
+    try {
+      const parsed = JSON.parse(v2Saved);
+      if (parsed && parsed.schemaVersion === SCHEMA_VERSION) {
+        data = parsed;
+        if (!data.schedule)       data.schedule = {};
+        if (!data.ownershipReps)  data.ownershipReps = [];
+        window.__cycV2Data = data;
+        return;
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Step 2: 加载 + 清洗 legacy v1.0 shape
+  let legacy;
   const saved = localStorage.getItem('cyc-team-data');
   if (saved) {
-    try { data = JSON.parse(saved); } catch { data = structuredClone(DEFAULT_DATA); }
+    try { legacy = JSON.parse(saved); } catch { legacy = structuredClone(DEFAULT_DATA); }
   } else {
-    data = structuredClone(DEFAULT_DATA);
+    legacy = structuredClone(DEFAULT_DATA);
   }
-  if (!data.reps) data.reps = [];
-  if (!data.schedule) data.schedule = {};
-  // Migrate old array-based schedule
-  if (data.schedule.days && Array.isArray(data.schedule.days)) {
-    data.schedule = {};
-  }
-  // Migrate: ensure detail fields exist
+  if (!legacy.reps) legacy.reps = [];
+  if (!legacy.schedule) legacy.schedule = {};
+  if (legacy.schedule.days && Array.isArray(legacy.schedule.days)) legacy.schedule = {};
+
   const addFields = obj => {
+    if (!obj) return;
     if (!obj.jd && obj.jd !== '') obj.jd = '';
     if (!obj.bio && obj.bio !== '') obj.bio = '';
     if (!obj.since && obj.since !== '') obj.since = '';
     if (!obj.avatar && obj.avatar !== '') obj.avatar = '';
-    // B 战役：关联到社区成员池的 record_id（空 = 未关联，沿用本地字段）
     if (typeof obj.member_rec_id !== 'string') obj.member_rec_id = '';
   };
-  data.cyc.triangle.forEach(addFields);
-  data.cyc.ops.forEach(addFields);
-  data.cyc.volunteers.forEach(addFields);
-  addFields(data.praxis.lead);
-  data.praxis.volunteers.forEach(addFields);
-  // Migrate: add new ops
-  if (data.cyc.ops.length < 4) {
-    const existingRoles = data.cyc.ops.map(o => o.role);
-    DEFAULT_DATA.cyc.ops.forEach(op => {
-      if (!existingRoles.includes(op.role)) data.cyc.ops.push({ ...op });
-    });
-  }
+  (legacy.cyc?.triangle  || []).forEach(addFields);
+  (legacy.cyc?.ops       || []).forEach(addFields);
+  (legacy.cyc?.volunteers|| []).forEach(addFields);
+  if (legacy.praxis?.lead) addFields(legacy.praxis.lead);
+  (legacy.praxis?.volunteers || []).forEach(addFields);
 
-  // ───────── v1.1 Phase A · 自动跑迁移到 localStorage 'cyc-team-data-v2' + window.__cycV2Data ─────────
-  // 不接管渲染，仅生成新形状供 Phase B 消费 + 控制台 inspect
-  try {
-    const v2 = migrateOldToNew(data);
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(v2));
-    window.__cycV2Data = v2;
-    console.info(
-      '%c📦 CYC /team v1.1 Phase A · 数据迁移就绪',
-      'background:#1c3d2e;color:#fff;padding:3px 8px;border-radius:4px;font-weight:600;',
-      '\n  · 控制台输入  __cycV2()       看新数据形状' +
-      '\n  · 控制台输入  __cycV2Old()    看旧数据形状' +
-      '\n  · 控制台输入  __cycV2Diff()   看迁移摘要 (推荐)' +
-      '\n  · localStorage 键 cyc-team-data-v2 已写入'
-    );
-  } catch (e) {
-    console.error('[CYC team v1.1 migrate] auto-run failed:', e);
-  }
+  // Step 3: 迁移到 v2 shape，作为 data
+  data = migrateOldToNew(legacy);
+  localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(data));
+  window.__cycV2Data = data;
+
+  console.info(
+    '%c📦 CYC /team v1.1 Phase B · UI 已切换到新结构',
+    'background:#1c3d2e;color:#fff;padding:3px 8px;border-radius:4px;font-weight:600;',
+    '\n  · 旧数据保留在 localStorage cyc-team-data (rollback safe)' +
+    '\n  · 新数据在 localStorage cyc-team-data-v2' +
+    '\n  · 控制台输入  __cycV2()     看当前数据' +
+    '\n  · 控制台输入  __cycV2Diff() 看迁移摘要'
+  );
 }
 
-function saveData() { localStorage.setItem('cyc-team-data', JSON.stringify(data)); }
+function saveData() {
+  // Phase B: 写到 v2 key，不动 legacy key
+  localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(data));
+}
 
 // ═══════════════════════════════════════════
 // v1.1 migration · old shape → new shape
@@ -733,6 +729,14 @@ async function loadFullMember(rec_id) {
 async function preloadLinkedMembers() {
   const ids = new Set();
   const collect = obj => obj && obj.member_rec_id && ids.add(obj.member_rec_id);
+  // v1.1 paths
+  if (data.ownership && data.ownership.parent) collect(data.ownership.parent.rep);
+  if (data.coreTeam) { collect(data.coreTeam.onsite); collect(data.coreTeam.transitionSupport); }
+  (data.hotelTeam      || []).forEach(collect);
+  (data.communityTeam  || []).forEach(collect);
+  (data.groups         || []).forEach(g => g && g.leader && collect(g.leader));
+  (data.departures     || []).forEach(collect);
+  // legacy fallback（保险，旧数据如果还在）
   if (data.cyc) {
     (data.cyc.triangle || []).forEach(collect);
     (data.cyc.ops || []).forEach(collect);
@@ -886,8 +890,14 @@ function applyEditMode() {
 // ═══════════════════════════════════════════
 function getScheduleOptions() {
   const names = [];
-  data.cyc.volunteers.forEach(v => { if (v.name) names.push(v.name); });
-  data.cyc.ops.forEach(o => { if (o.name) names.push(o.name); });
+  // v1.1: 用酒店团队 + 社区团队 + 共建组组长 + 核心 2 人 作为排班候选
+  if (data.coreTeam) {
+    if (data.coreTeam.onsite && data.coreTeam.onsite.name)             names.push(data.coreTeam.onsite.name);
+    if (data.coreTeam.transitionSupport && data.coreTeam.transitionSupport.name) names.push(data.coreTeam.transitionSupport.name);
+  }
+  (data.hotelTeam     || []).forEach(h => { if (h.name) names.push(h.name); });
+  (data.communityTeam || []).forEach(c => { if (c.name) names.push(c.name); });
+  (data.groups        || []).forEach(g => { if (g.leader && g.leader.name) names.push(g.leader.name); });
   return [...new Set(names)];
 }
 
@@ -985,12 +995,253 @@ function setSchedule(key, value) {
 function render() {
   renderWeekStrip();
   renderSchedule();
-  renderTriangle();
-  renderOps();
-  renderCycVolunteers();
-  renderPraxisLead();
-  renderPraxisVolunteers();
-  renderReps();
+  // v1.1 Phase B renderers
+  renderV2Status();
+  renderV2Ownership();
+  renderV2CoreTeam();
+  renderV2HotelTeam();
+  renderV2CommunityTeam();
+  renderV2Roadmap();
+  renderV2Groups();
+  renderV2Departures();
+  renderV2Reps();
+}
+
+// ═══════════════════════════════════════════
+// v1.1 Phase B · 新 shape renderers
+// ═══════════════════════════════════════════
+function escV2(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function daysFromToday(dateStr) {
+  if (!dateStr || dateStr.indexOf('?') !== -1) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.ceil((d.getTime() - now.getTime()) / 86400000);
+}
+
+function renderV2Status() {
+  const s = data.status || {};
+  const c = s.completion || { active: 0, transition: 0, hiring: 0, departed: 0 };
+  const tl = s.timeline || [];
+  document.getElementById('v2-status').innerHTML = `
+    <div class="section-header">
+      <p class="section-title" style="margin-bottom:0;">团队现状 · ${escV2(data.asOf || '')}</p>
+      <a href="/hiring" target="_blank" class="v2-link-sm">完整战略 → /hiring</a>
+    </div>
+    <div class="v2-status-grid">
+      <div class="v2-stat"><div class="v2-stat-n">${c.active}</div><div class="v2-stat-l">在职</div></div>
+      <div class="v2-stat v2-stat-trans"><div class="v2-stat-n">${c.transition}</div><div class="v2-stat-l">过渡</div></div>
+      <div class="v2-stat v2-stat-hot"><div class="v2-stat-n">${c.hiring}</div><div class="v2-stat-l">招募中</div></div>
+      <div class="v2-stat v2-stat-cold"><div class="v2-stat-n">${c.departed}</div><div class="v2-stat-l">已离任</div></div>
+    </div>
+    <div class="v2-timeline">
+      ${tl.map(t => {
+        const days = daysFromToday(t.date);
+        const daysTxt = days == null ? '' : (days > 0 ? `${days} 天后` : (days === 0 ? '今天' : `${-days} 天前`));
+        return `<div class="v2-tl-row v2-urg-${escV2(t.urgency || 'medium')}">
+          <div class="v2-tl-date">${escV2(t.date)}</div>
+          <div class="v2-tl-label">${escV2(t.label)}</div>
+          <div class="v2-tl-cd">${daysTxt}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderV2Ownership() {
+  const o = data.ownership || {};
+  const parent = o.parent || {};
+  const rep = parent.rep || {};
+  const legal = o.legalEntity || {};
+  document.getElementById('v2-ownership').innerHTML = `
+    <p class="section-title">业主 · 法人</p>
+    <div class="v2-owner-card" onclick="openDetail('ownership.parent.rep', null)">
+      <div class="v2-owner-l1">
+        <div class="v2-owner-tag">业主</div>
+        <div class="v2-owner-name">${escV2(parent.name || '—')}</div>
+      </div>
+      <div class="v2-owner-l2">
+        <div class="v2-owner-rep-label">业主代表</div>
+        <div class="v2-owner-rep-name">${escV2(displayName(rep))}</div>
+        <div class="v2-owner-rep-desc">${escV2(rep.desc || '')}</div>
+      </div>
+      <div class="v2-owner-l3">
+        <div class="v2-owner-tag v2-owner-tag-alt">法人</div>
+        <div class="v2-owner-legal">${escV2(legal.name || '')} <span class="v2-owner-legal-desc">${escV2(legal.desc || '')}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderV2CoreTeam() {
+  const c = data.coreTeam || {};
+  const o = c.onsite || {};
+  const t = c.transitionSupport || {};
+  const dO = daysFromToday(o.until && o.until.length >= 10 ? o.until : null);
+  const dT = daysFromToday(t.until);
+  document.getElementById('v2-coreteam').innerHTML = `
+    <p class="section-title">当下核心团队 · 平行协同</p>
+    <div class="v2-core-grid">
+      <div class="v2-core-card v2-core-onsite" onclick="openDetail('coreTeam.onsite', null)">
+        <div class="v2-core-tag-row"><span class="v2-core-tag">在地负责</span></div>
+        <div class="v2-core-name">${escV2(displayName(o))}</div>
+        <div class="v2-core-desc">${escV2(o.desc || '')}</div>
+        ${o.note ? `<div class="v2-core-note">${escV2(o.note)}</div>` : ''}
+        ${o.until ? `<div class="v2-core-cd">${escV2(o.until)}${dO != null ? ` · ${dO} 天后` : ''}</div>` : ''}
+      </div>
+      <div class="v2-core-card v2-core-trans" onclick="openDetail('coreTeam.transitionSupport', null)">
+        <div class="v2-core-tag-row">
+          <span class="v2-core-tag v2-core-tag-trans">过渡支持</span>
+          ${t.brandTag ? `<span class="v2-core-brand">${escV2(t.brandTag)}</span>` : ''}
+        </div>
+        <div class="v2-core-name">${escV2(displayName(t))}</div>
+        <div class="v2-core-desc">${escV2(t.desc || '')}</div>
+        ${t.note ? `<div class="v2-core-note v2-core-note-hot">${escV2(t.note)}</div>` : ''}
+        ${t.until ? `<div class="v2-core-cd v2-core-cd-hot">${escV2(t.until)}${dT != null ? ` · ${dT} 天后离开` : ''}</div>` : ''}
+      </div>
+    </div>
+    <div class="v2-core-bridge">↑ 月度联席会议 · 双向协同 ↑</div>
+  `;
+}
+
+function renderV2HotelTeam() {
+  const list = data.hotelTeam || [];
+  document.getElementById('v2-hotel').innerHTML = `
+    <div class="section-header">
+      <p class="section-title" style="margin-bottom:0;">CYC 链岛酒店团队 · 全员招募中</p>
+      <a href="/hiring" target="_blank" class="v2-link-sm">岗位 JD →</a>
+    </div>
+    <div class="v2-hotel-grid">
+      ${list.map((h, i) => `
+        <div class="v2-hotel-card" onclick="openDetail('hotelTeam', ${i})">
+          <div class="v2-hotel-pill v2-pill-${escV2(h.status)}">${h.status === 'hiring' ? '招募中' : escV2(h.status)}</div>
+          <div class="v2-hotel-role">${escV2(h.role)}</div>
+          <div class="v2-hotel-name">${h.name ? escV2(displayName(h)) : '<span class="v2-vacant">虚位以待</span>'}</div>
+          <div class="v2-hotel-pay">${escV2(h.salaryNote || '')}</div>
+          <a href="${escV2(h.jdAnchor || '/hiring')}" target="_blank" class="v2-hotel-jd" onclick="event.stopPropagation();">查看完整 JD →</a>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderV2CommunityTeam() {
+  const list = data.communityTeam || [];
+  document.getElementById('v2-community').innerHTML = `
+    <p class="section-title">社区团队</p>
+    <div class="v2-comm-grid">
+      ${list.map((c, i) => `
+        <div class="v2-comm-card v2-comm-${escV2(c.status)}" onclick="openDetail('communityTeam', ${i})">
+          <div class="v2-comm-role">${escV2(c.role)}</div>
+          <div class="v2-comm-name">${c.name ? escV2(displayName(c)) : '<span class="v2-vacant">占位 / 待补</span>'}</div>
+          <div class="v2-comm-desc">${escV2(c.desc || '')}</div>
+          <div class="v2-comm-pill v2-pill-${escV2(c.status)}">${c.status === 'active' ? '在职' : c.status === 'placeholder' ? '占位' : escV2(c.status)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderV2Roadmap() {
+  const r = data.activityRoadmap || {};
+  const acts = r.activities || [];
+  document.getElementById('v2-roadmap').innerHTML = `
+    <p class="section-title">接下来 2 个月 · 活动 Roadmap</p>
+    ${r.vision ? `<div class="v2-roadmap-vision">"${escV2(r.vision)}"<span class="v2-roadmap-vsrc">${escV2(r.visionSource || '')}</span></div>` : ''}
+    ${r.targetAudience ? `<div class="v2-roadmap-aud">面向: <span>${escV2(r.targetAudience)}</span></div>` : ''}
+    <div class="v2-roadmap-list">
+      ${acts.map((a, i) => `
+        <div class="v2-act-card" onclick="openDetail('activityRoadmap.activities', ${i})">
+          <div class="v2-act-num">${String(i+1).padStart(2,'0')}</div>
+          <div class="v2-act-body">
+            <div class="v2-act-status v2-act-${escV2(a.status === '准备开始' ? 'ready' : a.status === '筹备中' ? 'plan' : 'todo')}">${escV2(a.status || '')}</div>
+            <div class="v2-act-title">${escV2(a.title || '')}</div>
+            <div class="v2-act-meta">
+              <span class="v2-act-dur">${escV2(a.duration || '')}</span>
+              ${a.leader ? `<span class="v2-act-leader">· 负责人: ${escV2(a.leader)}</span>` : ''}
+              ${a.startDate ? `<span class="v2-act-start">· ${escV2(a.startDate)}</span>` : ''}
+              ${a.targetGroup ? `<span class="v2-act-tg">· 触发: ${escV2(a.targetGroup)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderV2Groups() {
+  const list = data.groups || [];
+  const acts = (data.activityRoadmap && data.activityRoadmap.activities) || [];
+  document.getElementById('v2-groups').innerHTML = `
+    <p class="section-title">5 共建组 · 通过活动激发</p>
+    <div class="v2-groups-grid">
+      ${list.map((g, i) => {
+        const isActive = g.status === 'active';
+        const triggered = g.activatedBy ? acts.find(a => a.key === g.activatedBy) : null;
+        const leaderName = g.leader && g.leader.name ? g.leader.name : '';
+        return `
+          <div class="v2-group-card ${isActive ? 'v2-g-active' : 'v2-g-pending'}" onclick="openDetail('groups', ${i})">
+            <div class="v2-group-emoji">${escV2(g.emoji || '·')}</div>
+            <div class="v2-group-name">${escV2(g.name)}</div>
+            <div class="v2-group-status">${isActive ? '激活' : '待启动'}</div>
+            <div class="v2-group-desc">${escV2(g.desc || '')}</div>
+            ${leaderName ? `<div class="v2-group-leader">组长 · ${escV2(leaderName)}</div>` : ''}
+            ${triggered ? `<div class="v2-group-via">将由「${escV2((triggered.title || '').slice(0,14))}…」激发</div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderV2Departures() {
+  const list = data.departures || [];
+  if (list.length === 0) {
+    document.getElementById('v2-departures').innerHTML = '';
+    return;
+  }
+  document.getElementById('v2-departures').innerHTML = `
+    <p class="section-title">过渡 / 离任记录 · 诚实透明</p>
+    <div class="v2-dep-list">
+      ${list.map((d, i) => `
+        <div class="v2-dep-card v2-dep-${escV2(d.status)}" onclick="openDetail('departures', ${i})">
+          <div class="v2-dep-l">
+            <div class="v2-dep-name">${escV2(d.name)}</div>
+            <div class="v2-dep-role">${escV2(d.role)}</div>
+          </div>
+          <div class="v2-dep-r">
+            <div class="v2-dep-tenure">${escV2(d.tenure)}</div>
+            <div class="v2-dep-pill v2-pill-${escV2(d.status)}">${d.status === 'transitioning' ? '过渡退出中' : '已离任'}</div>
+            ${d.note ? `<div class="v2-dep-note">${escV2(d.note)}</div>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderV2Reps() {
+  const list = data.ownershipReps || [];
+  const el = document.getElementById('v2-reps');
+  el.innerHTML = `
+    <div class="section-header">
+      <p class="section-title" style="margin-bottom:0;">业主代表 / 访客登记</p>
+      <button class="btn btn-sm btn-orange edit-only" onclick="openAddRep()">+ 添加</button>
+    </div>
+    ${list.length === 0
+      ? `<div class="v2-reps-empty">暂无登记（706 集团其他角色来访可在此登记）</div>`
+      : `<div class="v2-reps-list">
+          ${list.map((r, i) => `
+            <div class="v2-rep-card" onclick="openDetail('ownershipReps', ${i})">
+              <div class="v2-rep-type">${escV2(r.type || '代表')}</div>
+              <div class="v2-rep-name">${escV2(r.name || '')}</div>
+              <div class="v2-rep-desc">${escV2(r.desc || '')}</div>
+            </div>
+          `).join('')}
+        </div>`
+    }
+  `;
 }
 
 function nameOrVacant(name) { return name || '<span class="vacant">空缺</span>'; }
@@ -1100,10 +1351,53 @@ function getItem(path, idx) {
 
 function openDetail(path, idx) {
   const item = getItem(path, idx);
+  if (!item) { console.warn('[openDetail] item not found at', path, idx); return; }
   const modal = document.getElementById('detail-modal');
   const content = document.getElementById('detail-content');
   const isVolunteer = path.includes('volunteers');
-  const isRep = path === 'reps';
+  const isRep = (path === 'reps' || path === 'ownershipReps');
+  // v1.1 Phase B: 非 role-shape 的新条目（活动 / 共建组 / 离任）走只读 view
+  const isV2NonRole = path.startsWith('activityRoadmap') || path === 'groups' || path === 'departures';
+
+  if (isV2NonRole) {
+    // 只读卡片视图（Phase C 再加编辑）
+    let bodyHtml = '';
+    if (path.startsWith('activityRoadmap')) {
+      bodyHtml = `
+        <div class="modal-title" style="margin-bottom:4px;">${escV2(item.title || '')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${escV2(item.status || '')} · ${escV2(item.duration || '')}</div>
+        ${item.leader     ? `<div class="form-group"><label class="form-label">负责人</label><div>${escV2(item.leader)}</div></div>` : ''}
+        ${item.startDate  ? `<div class="form-group"><label class="form-label">开始时间</label><div>${escV2(item.startDate)}</div></div>` : ''}
+        ${item.targetGroup? `<div class="form-group"><label class="form-label">触发 / 关联组</label><div>${escV2(item.targetGroup)}</div></div>` : ''}
+      `;
+    } else if (path === 'groups') {
+      bodyHtml = `
+        <div class="modal-title" style="margin-bottom:4px;">${escV2(item.emoji || '')} ${escV2(item.name || '')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${item.status === 'active' ? '激活' : '待启动'} · ${escV2(item.desc || '')}</div>
+        ${item.leader && item.leader.name ? `<div class="form-group"><label class="form-label">组长</label><div>${escV2(item.leader.name)}</div></div>` : ''}
+        ${item.activatedBy ? `<div class="form-group"><label class="form-label">激发活动 key</label><div>${escV2(item.activatedBy)}</div></div>` : ''}
+        <div class="form-group"><label class="form-label">组员数</label><div>${(item.members || []).length}</div></div>
+      `;
+    } else if (path === 'departures') {
+      bodyHtml = `
+        <div class="modal-title" style="margin-bottom:4px;">${escV2(item.name || '')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${escV2(item.role || '')}</div>
+        <div class="form-group"><label class="form-label">任期</label><div>${escV2(item.tenure || '')}</div></div>
+        <div class="form-group"><label class="form-label">状态</label><div>${item.status === 'transitioning' ? '过渡退出中' : '已离任'}</div></div>
+        ${item.note ? `<div class="form-group"><label class="form-label">备注</label><div>${escV2(item.note)}</div></div>` : ''}
+      `;
+    }
+    content.innerHTML = `
+      ${bodyHtml}
+      <div class="modal-actions">
+        <button class="btn btn-sm btn-outline" onclick="closeDetail()">关闭</button>
+      </div>
+      ${editMode ? `<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(217,101,42,0.08);font-size:12px;color:var(--orange);text-align:center;">Phase C 将开放此类条目编辑</div>` : ''}
+    `;
+    modal.classList.add('active');
+    return;
+  }
+
   const emoji = item.emoji || (isRep ? '🏷️' : '👤');
 
   if (editMode) {
@@ -1421,15 +1715,19 @@ function saveDetail(path, idx) {
 }
 
 function deleteRep(idx) {
-  data.reps.splice(idx, 1);
+  // v1.1: 使用 ownershipReps
+  const list = data.ownershipReps || data.reps;
+  if (!list) return;
+  list.splice(idx, 1);
   saveData(); render(); closeDetail();
 }
 
 function openAddRep() {
   if (!editMode) return;
-  data.reps.push({ type: '', name: '新代表', desc: '' });
+  if (!data.ownershipReps) data.ownershipReps = [];
+  data.ownershipReps.push({ type: '', name: '新代表', desc: '' });
   saveData(); render();
-  openDetail('reps', data.reps.length - 1);
+  openDetail('ownershipReps', data.ownershipReps.length - 1);
 }
 
 function closeDetail() { document.getElementById('detail-modal').classList.remove('active'); }
