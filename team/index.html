@@ -244,6 +244,187 @@ const DEFAULT_DATA = {
 };
 
 // ═══════════════════════════════════════════
+// v1.1 NEW data shape (Phase A · 2026-05-12)
+//   不动 UI · 新旧并行 · UI 仍用 DEFAULT_DATA 渲染
+//   迁移结果存到 localStorage 'cyc-team-data-v2'
+//   控制台可通过 window.__cycV2() 查看
+//   设计依据：vault `cyc.center/03 设计/09 team 页面架构重设计 v1.0.md` (v1.1)
+// ═══════════════════════════════════════════
+const SCHEMA_VERSION = '1.1';
+const STORAGE_KEY_V2 = 'cyc-team-data-v2';
+
+const NEW_DEFAULT_DATA = {
+  schemaVersion: SCHEMA_VERSION,
+  asOf: '2026-05-12',
+
+  // 【0】团队现状总览
+  status: {
+    completion: { active: 1, transition: 1, hiring: 5, departed: 3 },
+    timeline: [
+      { date: '2026-06-30', label: 'Demian 离开 + 酒店团队招齐 deadline', urgency: 'critical' },
+      { date: '2026-07-01', label: '旺季开始',                            urgency: 'high'     },
+      { date: '2026-08-??', label: '悠洋去美国 / 转远程',                  urgency: 'medium'   }
+    ],
+    hiringPageUrl: '/hiring'
+  },
+
+  // 【2】业主 + 法人（不展示众筹人，走 cyc.homes）
+  ownership: {
+    parent: {
+      name: '706 资管总公司',
+      desc: '业主主体',
+      rep: { name: '方荣', role: '业主代表', desc: '资源治理 / 对外关系', member_rec_id: '' }
+    },
+    legalEntity: { name: 'CYC 链岛公司', desc: '法人主体 / 操作实体' }
+  },
+
+  // 【3】当下核心团队（替代旧"铁三角"）
+  coreTeam: {
+    onsite: {
+      role: '在地负责',
+      name: '悠洋',
+      desc: '社区运营、活动策划、长期方向',
+      note: '8 月去美国后转远程',
+      until: '2026-08',
+      status: 'active',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    transitionSupport: {
+      role: '过渡支持',
+      name: 'Demian',
+      desc: '以 Praxis Hub 名义代运营 CYC',
+      brandTag: 'Praxis Hub',
+      note: '6 月底离开倒计时',
+      until: '2026-06-30',
+      status: 'transition',
+      avatar: '', bio: '', member_rec_id: ''
+    }
+  },
+
+  // 【4】酒店团队（全员招募中，链接到 /hiring）
+  hotelTeam: [
+    {
+      roleKey: 'manager', role: '店长 Hotel Manager', name: '',
+      status: 'hiring',
+      salaryNote: '¥3,500 底薪 + 渠道差异化抽成 / 全年平均 ¥7,000',
+      jdAnchor: '/hiring#role-manager',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      roleKey: 'assistant', role: '副店长 Assistant Manager', name: '',
+      status: 'hiring',
+      salaryNote: '¥4,000 底薪 + 3% 抽成 + 店长可调奖 / 平均 ¥5,200',
+      jdAnchor: '/hiring#role-assistant',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      roleKey: 'housekeeper', role: '客房保洁 Housekeeper', name: '',
+      status: 'hiring',
+      salaryNote: '¥3,500 底薪 + 抽查奖 + 全勤奖 / 约 ¥4,000',
+      jdAnchor: '/hiring#role-housekeeper',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      roleKey: 'volunteer-a', role: '住宿义工 A', name: '',
+      status: 'hiring',
+      salaryNote: '免费住宿 / 每天 3-4 小时',
+      jdAnchor: '/hiring#role-volunteer',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      roleKey: 'volunteer-b', role: '住宿义工 B', name: '',
+      status: 'hiring',
+      salaryNote: '免费住宿 / 每天 3-4 小时',
+      jdAnchor: '/hiring#role-volunteer',
+      avatar: '', bio: '', member_rec_id: ''
+    }
+  ],
+
+  // 【5】社区团队（仅在职）
+  communityTeam: [
+    {
+      role: '自媒体组组长', name: '鸭脖', status: 'active',
+      desc: '新媒体运营 / 自媒体组 lead',
+      avatar: '', bio: '', member_rec_id: ''
+    },
+    {
+      role: '财务', name: '', status: 'placeholder',
+      desc: '账务、报销、资金管理',
+      avatar: '', bio: '', member_rec_id: ''
+    }
+  ],
+
+  // 【6】接下来 2 个月活动 Roadmap（Demian 的"创作型社区"愿景）
+  activityRoadmap: {
+    vision: '从松散活动场，转向创作型社区',
+    visionSource: 'Demian 的思考笔记',
+    targetAudience: '有真实创作冲动 / 愿意做成作品的人 / 对社会、关系、身心、地方文化、生活方式有真实关切 / 愿意共创、互相支持、长期成长',
+    activities: [
+      {
+        key: 'jung-dream',
+        title: '荣格心理学潜意识梦创作工作坊',
+        duration: '4 周',
+        status: '准备开始',
+        leader: 'Demian',
+        targetGroup: ''
+      },
+      {
+        key: 'ai-workshop',
+        title: 'AI Workshop · 把你真正想做的东西做出来 + 创意支持团体',
+        duration: '4 周',
+        status: '筹备中',
+        leader: '',
+        targetGroup: ''
+      },
+      {
+        key: 'zine-food',
+        title: '云南大理特色健康饮食菜单 Zine 共创',
+        duration: '2 周',
+        status: '筹备中',
+        leader: 'JIAYU',
+        startDate: '2026-06 初',
+        targetGroup: '制作组 + 出清组'
+      },
+      {
+        key: 'zine-shops',
+        title: '大理有趣小店合集 Zine 共创',
+        duration: '2 周',
+        status: '未筹备',
+        leader: '',
+        targetGroup: ''
+      }
+    ]
+  },
+
+  // 【7】5 共建组（4 待启动 + 1 active）
+  groups: [
+    { key: 'clearance',   emoji: '♻️', name: '出清组',   desc: '老物 / 闲置物的循环',
+      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: '' },
+    { key: 'design',      emoji: '🎨', name: '设计组',   desc: '空间 / 视觉 / 物料',
+      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: '' },
+    { key: 'celebration', emoji: '🎉', name: '庆祝组',   desc: '仪式 / 活动 / 节点',
+      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: '' },
+    { key: 'making',      emoji: '🔨', name: '制作组',   desc: '手工 / 共创 / 在地生产',
+      status: 'pending', leader: { name: '', member_rec_id: '' }, members: [], activatedBy: 'zine-food' },
+    { key: 'media',       emoji: '📸', name: '自媒体组', desc: '内容 / 招募 / 对外触达',
+      status: 'active',  leader: { name: '鸭脖', member_rec_id: '' }, members: [], activatedBy: '' }
+  ],
+
+  // 【8】离任 / 过渡记录（诚实透明）
+  departures: [
+    { name: '月汐', role: '物业层负责人',          tenure: '2024-? → 2026-05', status: 'transitioning', note: '权限交接中' },
+    { name: '千帆', role: '物业 OTA 商业负责人',   tenure: '?    → 2026-04', status: 'departed',      note: '' },
+    { name: '梁欢', role: 'CYC 社区店长',          tenure: '?    → 2026-04', status: 'departed',      note: '跟随千帆离任' }
+  ],
+
+  // 【9】业主代表 / 访客登记（原 reps，改用途）
+  ownershipReps: [],
+
+  // 保留：排班
+  schedule: {}
+};
+
+// ═══════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════
 let data = {};
@@ -293,9 +474,168 @@ function loadData() {
       if (!existingRoles.includes(op.role)) data.cyc.ops.push({ ...op });
     });
   }
+
+  // ───────── v1.1 Phase A · 自动跑迁移到 localStorage 'cyc-team-data-v2' + window.__cycV2Data ─────────
+  // 不接管渲染，仅生成新形状供 Phase B 消费 + 控制台 inspect
+  try {
+    const v2 = migrateOldToNew(data);
+    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(v2));
+    window.__cycV2Data = v2;
+    console.info(
+      '%c📦 CYC /team v1.1 Phase A · 数据迁移就绪',
+      'background:#1c3d2e;color:#fff;padding:3px 8px;border-radius:4px;font-weight:600;',
+      '\n  · 控制台输入  __cycV2()       看新数据形状' +
+      '\n  · 控制台输入  __cycV2Old()    看旧数据形状' +
+      '\n  · 控制台输入  __cycV2Diff()   看迁移摘要 (推荐)' +
+      '\n  · localStorage 键 cyc-team-data-v2 已写入'
+    );
+  } catch (e) {
+    console.error('[CYC team v1.1 migrate] auto-run failed:', e);
+  }
 }
 
 function saveData() { localStorage.setItem('cyc-team-data', JSON.stringify(data)); }
+
+// ═══════════════════════════════════════════
+// v1.1 migration · old shape → new shape
+//   Phase A: 只生成 + 存到 v2 key + 暴露 window.__cycV2
+//   不接管渲染（UI 仍用 DEFAULT_DATA shape）
+// ═══════════════════════════════════════════
+function migrateOldToNew(oldData) {
+  const oldTri  = oldData?.cyc?.triangle || [];
+  const oldOps  = oldData?.cyc?.ops      || [];
+  const oldPxs  = oldData?.praxis        || {};
+
+  // helpers: 按 name / role 在旧结构中找
+  const findByName = (arr, n) => arr.find(x => x && x.name === n) || {};
+  const findByRole = (arr, r) => arr.find(x => x && x.role === r) || {};
+
+  const youyangOld   = findByName(oldTri, '悠洋');
+  const yuexiOld     = findByName(oldTri, '月汐');
+  const fangrongOld  = findByName(oldTri, '方荣');
+  const yabboOld     = findByRole(oldOps, '新媒体和协作管理');
+  const qianfanOld   = findByRole(oldOps, '物业OTA商业负责人');
+  const lianghuanOld = findByRole(oldOps, 'CYC社区店长');
+
+  // 深拷贝模板，避免引用污染
+  const tpl = JSON.parse(JSON.stringify(NEW_DEFAULT_DATA));
+
+  // 业主代表（方荣）合并旧数据
+  if (fangrongOld.name) {
+    tpl.ownership.parent.rep.name        = fangrongOld.name;
+    tpl.ownership.parent.rep.desc        = fangrongOld.desc || tpl.ownership.parent.rep.desc;
+    tpl.ownership.parent.rep.member_rec_id = fangrongOld.member_rec_id || '';
+    if (fangrongOld.bio)    tpl.ownership.parent.rep.bio    = fangrongOld.bio;
+    if (fangrongOld.avatar) tpl.ownership.parent.rep.avatar = fangrongOld.avatar;
+  }
+
+  // 悠洋（core team · onsite）
+  if (youyangOld.name) {
+    tpl.coreTeam.onsite.name           = youyangOld.name;
+    tpl.coreTeam.onsite.desc           = youyangOld.desc || tpl.coreTeam.onsite.desc;
+    tpl.coreTeam.onsite.avatar         = youyangOld.avatar || '';
+    tpl.coreTeam.onsite.bio            = youyangOld.bio    || '';
+    tpl.coreTeam.onsite.member_rec_id  = youyangOld.member_rec_id || '';
+  }
+
+  // Demian（core team · transitionSupport）
+  if (oldPxs.lead && oldPxs.lead.name) {
+    tpl.coreTeam.transitionSupport.name           = oldPxs.lead.name;
+    tpl.coreTeam.transitionSupport.avatar         = oldPxs.lead.avatar || '';
+    tpl.coreTeam.transitionSupport.bio            = oldPxs.lead.bio    || '';
+    tpl.coreTeam.transitionSupport.member_rec_id  = oldPxs.lead.member_rec_id || '';
+  }
+
+  // 鸭脖（community team · 自媒体组组长）
+  if (yabboOld.name) {
+    tpl.communityTeam[0].name           = yabboOld.name;
+    tpl.communityTeam[0].avatar         = yabboOld.avatar || '';
+    tpl.communityTeam[0].bio            = yabboOld.bio    || '';
+    tpl.communityTeam[0].member_rec_id  = yabboOld.member_rec_id || '';
+  }
+
+  // 5 共建组 · 自媒体组 leader = 鸭脖 (sync)
+  const mediaGroup = tpl.groups.find(g => g.key === 'media');
+  if (mediaGroup && yabboOld.name) {
+    mediaGroup.leader.name           = yabboOld.name;
+    mediaGroup.leader.member_rec_id  = yabboOld.member_rec_id || '';
+  }
+
+  // 离任记录 · 月汐 / 千帆 / 梁欢
+  if (yuexiOld.name) {
+    tpl.departures[0].name = yuexiOld.name;
+    tpl.departures[0].role = yuexiOld.role || tpl.departures[0].role;
+    tpl.departures[0].avatar = yuexiOld.avatar || '';
+    tpl.departures[0].member_rec_id = yuexiOld.member_rec_id || '';
+  }
+  if (qianfanOld.name) {
+    tpl.departures[1].name = qianfanOld.name;
+    tpl.departures[1].role = qianfanOld.role || tpl.departures[1].role;
+    tpl.departures[1].avatar = qianfanOld.avatar || '';
+    tpl.departures[1].member_rec_id = qianfanOld.member_rec_id || '';
+  }
+  if (lianghuanOld.name) {
+    tpl.departures[2].name = lianghuanOld.name;
+    tpl.departures[2].role = lianghuanOld.role || tpl.departures[2].role;
+    tpl.departures[2].avatar = lianghuanOld.avatar || '';
+    tpl.departures[2].member_rec_id = lianghuanOld.member_rec_id || '';
+  }
+
+  // 业主代表列表（原 reps）+ 排班保留
+  tpl.ownershipReps = Array.isArray(oldData?.reps) ? oldData.reps : [];
+  tpl.schedule      = oldData?.schedule || {};
+
+  return tpl;
+}
+
+// Phase A 自动迁移：每次 loadData 之后调用，存到 v2 key，不接管渲染
+function runMigrationV2() {
+  try {
+    const newShape = migrateOldToNew(data);
+    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(newShape));
+    window.__cycV2Data = newShape;
+    return newShape;
+  } catch (e) {
+    console.error('[CYC team v1.1 migrate] failed:', e);
+    return null;
+  }
+}
+
+// Console helpers · 控制台输入 __cycV2() / __cycV2Diff() 查看
+window.__cycV2 = function() {
+  const m = window.__cycV2Data || runMigrationV2();
+  console.log('%c📦 CYC /team v1.1 新数据形状', 'font-weight:700;color:#1c3d2e;font-size:13px;', m);
+  return m;
+};
+
+window.__cycV2Old = function() {
+  console.log('%c📋 CYC /team 当前旧数据（DEFAULT_DATA shape）', 'font-weight:700;color:#b4531c;font-size:13px;', data);
+  return data;
+};
+
+window.__cycV2Diff = function() {
+  const oldD = data;
+  const newD = window.__cycV2Data || runMigrationV2();
+  const summary = {
+    '【旧】铁三角': (oldD?.cyc?.triangle || []).map(t => `${t.role} · ${t.name || '(空)'}`),
+    '【新】业主代表': `${newD.ownership.parent.rep.name} (来自 706 资管总公司)`,
+    '【新】法人': newD.ownership.legalEntity.name,
+    '【旧】运营层 4 角色': (oldD?.cyc?.ops || []).map(o => `${o.role} · ${o.name || '(空)'}`),
+    '【新】当下核心': `在地: ${newD.coreTeam.onsite.name} (${newD.coreTeam.onsite.until} 转远程) · 过渡: ${newD.coreTeam.transitionSupport.name} (${newD.coreTeam.transitionSupport.until} 离开)`,
+    '【新】酒店团队': newD.hotelTeam.map(h => `${h.role} · ${h.status}`),
+    '【新】社区团队': newD.communityTeam.map(c => `${c.role} · ${c.name || '(空)'} · ${c.status}`),
+    '【新】活动 Roadmap': newD.activityRoadmap.activities.map(a => `${a.title.slice(0,18)}… · ${a.status}`),
+    '【新】5 共建组': newD.groups.map(g => `${g.emoji} ${g.name} · ${g.status}`),
+    '【新】离任记录': newD.departures.map(d => `${d.name} · ${d.role} · ${d.status}`),
+    '【新】schemaVersion': newD.schemaVersion,
+    '【新】timeline': newD.status.timeline.map(t => `${t.date} · ${t.label} [${t.urgency}]`)
+  };
+  console.log('%c🔀 CYC /team v1.0 → v1.1 数据迁移摘要', 'font-weight:700;color:#1c3d2e;font-size:14px;');
+  Object.entries(summary).forEach(([k, v]) => {
+    console.log(`%c${k}`, 'font-weight:600;color:#b4531c;', v);
+  });
+  return summary;
+};
 
 // ═══════════════════════════════════════════
 // Date helpers (same pattern as activity calendar)
