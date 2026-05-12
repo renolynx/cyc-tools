@@ -39,6 +39,7 @@
     { "source": "/food", "destination": "/food/index.html" },
     { "source": "/youyang", "destination": "/youyang/index.html" },
     { "source": "/doujiadraft", "destination": "/doujiadraft/index.html" },
+    { "source": "/hiring", "destination": "/hiring/index.html" },
     { "source": "/events/:id", "destination": "/api/event-page?id=:id" },
     { "source": "/events", "destination": "/api/events-list" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap-xml" },
