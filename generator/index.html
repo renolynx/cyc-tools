@@ -18,6 +18,16 @@
 <meta property="og:locale:alternate" content="en_US">
 <link rel="canonical" href="https://cyc.center/">
 <link rel="stylesheet" href="/styles.css">
+<style>
+/* Phase 3.2.7 改日期 + 3.2.8 过滤筹备中 — 5/11 加 */
+.date-edit-field { background: rgba(255,180,80,0.06); border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+.date-edit-input { font-size: 15px; padding: 6px 10px; border: 1px solid rgba(0,0,0,0.18); border-radius: 6px; background: #fff; cursor: pointer; }
+.preview-act.unconfirmed { opacity: 0.5; }
+.preview-act.unconfirmed .preview-act-hdr span:first-child { text-decoration: line-through; text-decoration-color: rgba(0,0,0,0.3); }
+.unconfirmed-tag { display: inline-block; margin-left: 8px; padding: 1px 7px; font-size: 11px; background: rgba(150,140,120,0.18); color: #6b5d44; border-radius: 4px; text-decoration: none !important; vertical-align: middle; }
+.preview-hidden-hint { font-size: 12px; color: #8a7a5e; padding: 6px 10px; background: rgba(255,200,100,0.08); border-radius: 6px; margin: 8px 0 4px; text-align: center; }
+.preview-hidden-hint:empty { display: none; }
+</style>
 </head>
 <body>
 
@@ -67,6 +77,7 @@
         <button class="copy-mode-btn" data-mode="full" onclick="setCopyMode('full')">📋 完整版</button>
       </div>
       <p class="copy-mode-hint" id="copyModeHint">仅含简介，避免微信折叠（推荐发群用）</p>
+      <div class="preview-hidden-hint" id="hiddenHint"></div>
       <button class="copy-btn" id="copyBtn" onclick="doCopy()">复制通告文本</button>
       <div class="poster-gallery" id="posterGallery"></div>
     </div>
@@ -233,6 +244,9 @@ function makeCard(a,idx){
     +'<button class="del-btn" onclick="event.stopPropagation();delAct(\''+a.id+'\')">×</button>'
     +'</div>'
     +'<div class="act-body" id="body-'+a.id+'" style="display:none">'
+    +'<div class="field date-edit-field"><label>📅 当前日期 <span class="opt">改这里 = 把活动挪到新日期，record_id 不变（已同步过的活动会更新飞书原条目）</span></label>'
+      +'<input type="date" id="date-edit-'+a.id+'" class="date-edit-input" value="'+selDate+'" onchange="moveActDate(\''+a.id+'\',this.value)">'
+    +'</div>'
     +'<div class="field"><label>活动标题</label><input placeholder="如：手机摄影美学工作坊" value="'+esc(a.title)+'" oninput="upd(\''+a.id+'\',\'title\',this.value)"></div>'
     +'<div class="field-row">'
       +'<div class="field"><label>时间段</label><input placeholder="如：14:30-17:00" value="'+esc(a.time)+'" oninput="upd(\''+a.id+'\',\'time\',this.value)"></div>'
@@ -320,6 +334,25 @@ function addAct(){
   setTimeout(()=>{const b=document.getElementById('body-'+a.id);if(b)b.style.display='';},50);
 }
 function delAct(id){for(const k in data)data[k]=data[k].filter(a=>a.id!==id);renderActs();renderWeek()}
+// Phase 3.2.7: 改日期 — 把活动从 data[oldDate] 挪到 data[newDate]，保留 record_id
+// 后端 add-activity.js 已支持 record_id PUT + 日期 overwrite，所以这里只动前端 bucket
+function moveActDate(id, newDateStr){
+  if(!newDateStr) return;
+  let oldDate = null;
+  for(const k in data){ if(data[k].find(x=>x.id===id)){ oldDate=k; break; } }
+  if(!oldDate || oldDate===newDateStr) return;
+  const act = data[oldDate].find(x=>x.id===id);
+  if(!act) return;
+  data[oldDate] = data[oldDate].filter(x=>x.id!==id);
+  if(!data[oldDate].length) delete data[oldDate];
+  if(!data[newDateStr]) data[newDateStr] = [];
+  data[newDateStr].push(act);
+  selDate = newDateStr;
+  activePreviewId = id;
+  renderWeek(); renderActs(); genPreview();
+  // 移动后让用户感知到："这条已经挪到新日期了"
+  setTimeout(()=>jumpToAct(newDateStr, id), 50);
+}
 function addFlow(id){const a=find(id);if(!a)return;a.flow.push('');renderFlows(a);genPreview()}
 function rmFlow(id,i){const a=find(id);if(!a)return;a.flow.splice(i,1);renderFlows(a);genPreview()}
 function updFlow(id,i,v){const a=find(id);if(a){a.flow[i]=v;genPreview()}}
@@ -451,9 +484,10 @@ function genPreview(){
     html+='<div class="preview-day">';
     sortByTime(data[key]).forEach(a=>{
       const isActive=activePreviewId===a.id;
+      const isUnconfirmed = a.status !== '确认举办';  // Phase 3.2.8: 未确认的 dim + 标记
       const body=actBodyText(a, full);
-      html+='<div class="preview-act'+(isActive?' active-preview':'')+'" onclick="jumpToAct(\''+key+'\',\''+a.id+'\')">'
-        +'<div class="preview-act-hdr"><span>【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题')+'</span><span class="edit-hint">点击编辑 →</span></div>'
+      html+='<div class="preview-act'+(isActive?' active-preview':'')+(isUnconfirmed?' unconfirmed':'')+'" onclick="jumpToAct(\''+key+'\',\''+a.id+'\')">'
+        +'<div class="preview-act-hdr"><span>【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题')+(isUnconfirmed?'<span class="unconfirmed-tag">⚠️ 未确认</span>':'')+'</span><span class="edit-hint">点击编辑 →</span></div>'
         +(body?'<div class="preview-act-body">'+escHtml(body)+'</div>':'')
         +'</div>';
     });
@@ -467,17 +501,27 @@ function genPreview(){
   html+='<div class="preview-cyc-footer">'+footerHtml+'</div>';
   box.innerHTML=html;
   renderPosterGallery();
+  // Phase 3.2.8: 算未确认数，提示用户「复制时会被排除」
+  let hiddenCount = 0;
+  days.forEach(k=>{ hiddenCount += data[k].filter(a=>a.status!=='确认举办').length; });
+  const hint = document.getElementById('hiddenHint');
+  if(hint){
+    hint.textContent = hiddenCount > 0
+      ? '⚠️ '+hiddenCount+' 条未确认活动不会进通告复制（改状态为"确认举办"才会进）'
+      : '';
+  }
 }
 function plainText(){
   const todayStr=fmt(today);
-  const days=Object.keys(data).filter(k=>data[k]&&data[k].length&&k>=todayStr).sort();
+  // Phase 3.2.8: 严格过滤 — 只有「确认举办」进可复制通告
+  const days=Object.keys(data).filter(k=>data[k]&&data[k].some(a=>a.status==='确认举办')&&k>=todayStr).sort();
   if(!days.length)return'';
   const full = copyMode === 'full';
   const tpl = CYC_TEMPLATES[previewCity] || CYC_TEMPLATES['大理'];
   let txt=tpl.header;
   days.forEach(key=>{
     const d=new Date(key+'T00:00:00'),lbl=dayLabel(d),m=d.getMonth()+1,day=d.getDate();
-    sortByTime(data[key]).forEach(a=>{
+    sortByTime(data[key]).filter(a=>a.status==='确认举办').forEach(a=>{
       txt+='\n\n【'+lbl+'】 '+m+'月'+day+'日  '+(a.title||'活动标题');
       const b=actBodyText(a, full);if(b)txt+='\n'+b;
     });
